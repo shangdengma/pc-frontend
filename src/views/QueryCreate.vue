@@ -67,7 +67,7 @@
         <span>预计费用</span>
         <strong>{{ selectedPrice !== '' ? `¥${selectedPrice}` : '—' }}</strong>
       </div>
-      <p class="cost-hint">费用在查询任务创建成功后从账户余额中扣除；查询失败的订单将自动退款。</p>
+      <p class="cost-hint">提交后将预占本次查询额度；任务成功后完成结算，失败或终止时自动释放。</p>
     </div>
 
     <div class="flow-card">
@@ -400,4 +400,3 @@ onMounted(async () => {
   }
 }
 </style>
-

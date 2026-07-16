@@ -47,30 +47,36 @@
       </div>
     </section>
 
-    <div v-if="dialogVisible && !isSubAccount" class="modal-mask" @click.self="closeDialog">
-      <div class="modal-card">
-        <div class="modal-head"><h3>{{ editing ? labels.adjustQuota : labels.addSub }}</h3><button type="button" aria-label="关闭" @click="closeDialog">×</button></div>
-        <div class="form-grid">
+    <AppModal
+      :open="dialogVisible && !isSubAccount"
+      :title="editing ? labels.adjustQuota : labels.addSub"
+      eyebrow="子账号管理"
+      :description="editing ? '调整后立即影响该子账号的可用额度' : '创建后由主账号统一管理权限与额度'"
+      size="md"
+      @close="closeDialog"
+    >
+      <div class="form-grid">
           <label v-if="!editing">{{ labels.loginName }}<input v-model.trim="form.userName" :placeholder="labels.loginNamePlaceholder" /></label>
           <label v-if="!editing">{{ labels.nickName }}<input v-model.trim="form.nickName" :placeholder="labels.nickNamePlaceholder" /></label>
           <label v-if="!editing">{{ labels.phone }}<input v-model.trim="form.phonenumber" :placeholder="labels.optional" /></label>
           <label v-if="!editing">{{ labels.password }}<input v-model.trim="form.password" type="password" :placeholder="labels.passwordPlaceholder" /></label>
           <label>{{ labels.quotaYuan }}<input v-model.trim="form.subAccountQuota" type="number" min="0" step="0.01" placeholder="500" /></label>
-        </div>
-        <p v-if="message" class="form-message">{{ message }}</p>
-        <div class="modal-actions"><button type="button" class="ghost-btn" @click="closeDialog">{{ labels.cancel }}</button><button type="button" class="primary-btn" :disabled="saving" @click="submit">{{ saving ? labels.saving : labels.confirm }}</button></div>
       </div>
-    </div>
+      <p v-if="message" class="form-message">{{ message }}</p>
+      <template #footer>
+        <button type="button" class="ghost-btn" @click="closeDialog">{{ labels.cancel }}</button>
+        <button type="button" class="primary-btn" :disabled="saving" @click="submit">{{ saving ? labels.saving : labels.confirm }}</button>
+      </template>
+    </AppModal>
 
-    <div v-if="detailVisible && !isSubAccount" class="modal-mask detail-mask" @click.self="closeDetail">
-      <div class="detail-card">
-        <div class="modal-head detail-head">
-          <div>
-            <h3>{{ detailAccount?.nickName || detailAccount?.userName }} 的{{ detailType === 'records' ? '查询记录' : '账户流水' }}</h3>
-            <p>{{ detailAccount?.userName }}</p>
-          </div>
-          <button type="button" aria-label="关闭" @click="closeDetail">×</button>
-        </div>
+    <AppModal
+      :open="detailVisible && !isSubAccount"
+      :title="`${detailAccount?.nickName || detailAccount?.userName || '子账号'} 的${detailType === 'records' ? '查询记录' : '账户流水'}`"
+      eyebrow="子账号详情"
+      :description="detailAccount?.userName || ''"
+      size="xl"
+      @close="closeDetail"
+    >
         <div class="detail-tabs">
           <button :class="{ active: detailType === 'records' }" @click="switchDetail('records')">查询记录</button>
           <button :class="{ active: detailType === 'logs' }" @click="switchDetail('logs')">账户流水</button>
@@ -108,20 +114,20 @@
             </tbody>
           </table>
         </div>
-        <div class="pager">
+      <div class="pager">
           <span>共 {{ detailTotal }} 条</span>
           <button class="ghost-btn" :disabled="detailPage.pageNum <= 1 || detailLoading" @click="changeDetailPage(-1)">上一页</button>
           <span>第 {{ detailPage.pageNum }} 页</span>
           <button class="ghost-btn" :disabled="detailRows.length < detailPage.pageSize || detailLoading" @click="changeDetailPage(1)">下一页</button>
-        </div>
       </div>
-    </div>
+    </AppModal>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus, ShieldAlert } from '@lucide/vue'
+import AppModal from '../components/AppModal.vue'
 import { createSubAccount, deleteSubAccount, listSubAccountLogs, listSubAccountRecords, listSubAccounts, updateSubAccountQuota } from '../api/subAccount'
 import { getUserProfile } from '../api/user'
 import { getUser, setUser } from '../utils/auth'
@@ -322,7 +328,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.sub-page { width: min(1480px, 100%); margin: 0 auto; display: grid; gap: 16px; }
+.sub-page { width: min(1360px, 100%); margin: 0 auto; display: grid; gap: 16px; }
 .no-permission-card { padding: 52px 40px; text-align: center; color: #52627a; }
 .no-permission-card h3 { margin: 14px 0 8px; color: #07162d; font-size: 24px; }
 .no-permission-card p { margin: 0 auto; max-width: 560px; line-height: 1.8; }
@@ -332,7 +338,7 @@ onMounted(async () => {
 .sub-quota-view span { display: block; color: #66758c; font-size: 14px; }
 .sub-quota-view strong { display: block; margin-top: 8px; color: #07162d; font-size: 24px; }
 .sub-quota-view div:last-child strong { color: #0b9f62; }
-.sub-hero { min-height: 104px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 8px; color: #101828; background: #fff; box-shadow: var(--shadow-panel); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.sub-hero { min-height: auto; padding: 0 0 18px; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; color: #101828; background: transparent; box-shadow: none; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .sub-hero p { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
 .sub-hero h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
 .sub-hero span { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
@@ -340,9 +346,10 @@ onMounted(async () => {
 .primary-btn { min-height: 42px; background: #2168f3; color: #fff; padding: 0 18px; box-shadow: none; }
 .primary-btn:disabled { opacity: .55; cursor: not-allowed; }
 .ghost-btn { background: #f4f7fb; color: #2168f3; padding: 10px 16px; border: 1px solid #dce6f5; }
-.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.sub-summary > div, .sub-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
-.sub-summary > div { padding: 18px 20px; }
+.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
+.sub-summary > div, .sub-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
+.sub-summary > div:last-child { border-right: 0; }
 .sub-summary span, .quota-block span { color: #66758c; font-size: 14px; }
 .sub-summary strong { display: block; margin-top: 8px; font-size: 24px; color: #07162d; }
 .sub-card { overflow: hidden; }
@@ -361,24 +368,15 @@ onMounted(async () => {
 .row-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .row-actions button { min-height: 34px; border: 1px solid #dbe6f6; background: #fff; color: #2168f3; border-radius: 6px; padding: 0 11px; font-weight: 700; cursor: pointer; }
 .row-actions .danger { color: #e24a4a; background: #fff7f7; border-color: #ffdada; }
-.modal-mask { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(10, 24, 48, .38); }
-.modal-card { width: min(560px, calc(100vw - 40px)); background: #fff; border-radius: 8px; box-shadow: 0 28px 80px rgba(10, 24, 48, .24); }
-.modal-head { padding: 22px 26px; border-bottom: 1px solid #edf1f7; display: flex; justify-content: space-between; align-items: center; }
-.modal-head h3 { margin: 0; font-size: 22px; }
-.modal-head button { border: 0; background: transparent; font-size: 28px; cursor: pointer; color: #77859a; }
-.form-grid { padding: 24px 26px 8px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .form-grid label { display: grid; gap: 9px; color: #24344d; font-weight: 800; }
 .form-grid input { height: 42px; border: 1px solid #dbe3ef; border-radius: 9px; padding: 0 12px; font-size: 15px; outline: none; }
 .form-grid input:focus { border-color: #2168f3; box-shadow: 0 0 0 3px rgba(33,104,243,.12); }
-.form-message { margin: 6px 26px 0; color: #e24a4a; }
-.modal-actions { padding: 22px 26px 26px; display: flex; justify-content: flex-end; gap: 12px; }
-
-.detail-mask { place-items: end center; padding: 34px; }
-.detail-card { width: min(1180px, calc(100vw - 72px)); max-height: calc(100vh - 80px); background: #fff; border-radius: 8px; box-shadow: 0 30px 90px rgba(10,24,48,.26); display: grid; grid-template-rows: auto auto 1fr auto; overflow: hidden; }
-.detail-tabs { padding: 14px 22px; border-bottom: 1px solid #edf1f7; display: flex; gap: 10px; }
+.form-message { margin: 8px 0 0; color: #e24a4a; }
+.detail-tabs { margin: -4px 0 16px; padding-bottom: 12px; border-bottom: 1px solid #edf1f7; display: flex; gap: 10px; }
 .detail-tabs button { height: 38px; padding: 0 18px; border-radius: 6px; border: 1px solid #dbe6f6; background: #fff; color: #64748b; font-weight: 700; cursor: pointer; }
 .detail-tabs .active { color: #2168f3; border-color: #2168f3; background: #eef5ff; }
-.detail-body { overflow: auto; padding: 0 22px; }
+.detail-body { overflow: auto; max-height: 56vh; padding: 0; }
 .detail-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .detail-table th { position: sticky; top: 0; background: #f6f8fb; color: #52627a; text-align: left; padding: 14px 12px; border-bottom: 1px solid #e5ebf4; white-space: nowrap; }
 .detail-table td { padding: 15px 12px; border-bottom: 1px solid #edf1f7; color: #17233c; vertical-align: top; }
@@ -390,11 +388,9 @@ onMounted(async () => {
 .amount { font-weight: 900; }
 .amount.plus { color: #0b9f62; }
 .amount.minus { color: #df3f3f; }
-.pager { padding: 16px 22px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border-top: 1px solid #edf1f7; color: #64748b; }
+.pager { margin: 18px -22px -22px; padding: 14px 22px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-top: 1px solid #edf1f7; border-radius: 0; color: #64748b; }
 @media (max-width: 1180px) { .account-row { grid-template-columns: 1fr 1fr; } .row-actions { justify-content: flex-start; } .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 720px) { .sub-quota-view, .sub-summary, .form-grid { grid-template-columns: 1fr; } .sub-hero { align-items: stretch; flex-direction: column; } .detail-mask { padding: 12px; } .detail-card { width: 100%; max-height: calc(100vh - 24px); } }
+@media (max-width: 720px) { .sub-quota-view, .sub-summary, .form-grid { grid-template-columns: 1fr; } .sub-hero { align-items: stretch; flex-direction: column; } }
 </style>
-
-
 
 

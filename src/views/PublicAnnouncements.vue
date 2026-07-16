@@ -66,27 +66,30 @@
       </div>
     </div>
 
-    <div v-if="detail" class="announcement-modal-mask" @click.self="detail = null">
-      <article class="announcement-modal" role="dialog" aria-modal="true" aria-labelledby="announcement-detail-title">
-        <button class="dialog-close" type="button" aria-label="关闭公告详情" @click="detail = null">
-          <X :size="18" />
-        </button>
+    <AppModal
+      :open="!!detail"
+      :title="detail?.title || '平台公告'"
+      eyebrow="公告详情"
+      :description="detail?.date || '-'"
+      size="lg"
+      @close="detail = null"
+    >
+      <template v-if="detail">
         <div class="announcement-detail-head">
           <span class="announcement-tag" :class="detail.type">{{ detail.tag }}</span>
           <span v-if="detail.isTop" class="announcement-top"><Pin :size="13" />置顶</span>
         </div>
-        <h3 id="announcement-detail-title">{{ detail.title }}</h3>
-        <p class="announcement-detail-date"><CalendarDays :size="15" />{{ detail.date || '-' }}</p>
         <div class="announcement-detail-content">{{ detail.content || '暂无公告正文' }}</div>
-      </article>
-    </div>
+      </template>
+    </AppModal>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { CalendarDays, CircleAlert, Megaphone, Pin, RefreshCw, X } from '@lucide/vue'
+import { CalendarDays, CircleAlert, Megaphone, Pin, RefreshCw } from '@lucide/vue'
+import AppModal from '../components/AppModal.vue'
 import { getAnnouncements } from '../api/notice'
 
 const route = useRoute()
@@ -180,21 +183,22 @@ onMounted(loadAnnouncements)
 
 <style scoped>
 .public-announcements-page {
-  width: min(1280px, 100%);
+  width: min(1180px, 100%);
   margin: 0 auto;
 }
 
 .public-announcements-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  min-height: 112px;
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: var(--shadow-panel);
+  min-height: auto;
+  padding: 0 0 18px;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .eyebrow {
@@ -402,50 +406,10 @@ onMounted(loadAnnouncements)
   cursor: pointer;
 }
 
-.announcement-modal-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  display: grid;
-  place-items: center;
-  padding: 28px;
-  background: rgba(15, 23, 42, 0.45);
-}
-
-.announcement-modal {
-  position: relative;
-  width: min(720px, 100%);
-  max-height: calc(100vh - 56px);
-  overflow: auto;
-  padding: 30px;
-  border: 1px solid #dfe6ef;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 24px 70px rgba(13, 34, 66, 0.22);
-}
-
-.announcement-modal .dialog-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  display: grid;
-  place-items: center;
-  border: 0;
-}
-
 .announcement-detail-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-right: 48px;
-}
-
-.announcement-modal h3 {
-  margin: 20px 0 10px;
-  padding-right: 48px;
-  color: #17243a;
-  font-size: 22px;
-  line-height: 1.45;
 }
 
 .announcement-detail-date {

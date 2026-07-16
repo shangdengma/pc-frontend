@@ -36,14 +36,15 @@
       </article>
     </div>
 
-    <div v-if="detail" class="message-modal-mask" @click.self="detail = null">
-      <div class="message-modal">
-        <button class="dialog-close" type="button" @click="detail = null">×</button>
-        <div class="modal-head">
-          <p class="eyebrow">消息详情</p>
-          <h3>{{ detail.title || '消息通知' }}</h3>
-          <span>{{ formatTime(detail.createTime) }}</span>
-        </div>
+    <AppModal
+      :open="!!detail"
+      :title="detail?.title || '消息通知'"
+      eyebrow="消息详情"
+      :description="detail ? formatTime(detail.createTime) : ''"
+      size="md"
+      @close="detail = null"
+    >
+      <template v-if="detail">
         <p class="detail-content">{{ detail.content || '-' }}</p>
         <div v-if="imageList(detail).length" class="message-images">
           <img v-for="url in imageList(detail)" :key="url" :src="url" alt="通知图片" />
@@ -52,13 +53,14 @@
           <button v-if="!isRead(detail)" class="primary-btn" type="button" @click="markRead(detail)">标记已读</button>
           <a v-if="detail.link" class="ghost-btn" :href="detail.link">查看相关内容</a>
         </div>
-      </div>
-    </div>
+      </template>
+    </AppModal>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import AppModal from '../components/AppModal.vue'
 import { getUserNotices, markNoticeRead } from '../api/notice'
 import { getUser } from '../utils/auth'
 import { formatDateTime } from '../utils/format'
@@ -120,22 +122,23 @@ onMounted(loadMessages)
 
 <style scoped>
 .messages-page {
-  width: min(1280px, 100%);
+  width: min(1180px, 100%);
   margin: 0 auto;
 }
 
 .messages-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  min-height: 104px;
-  padding: 22px 24px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  min-height: auto;
+  padding: 0 0 18px;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
   color: #101828;
-  background: #ffffff;
-  box-shadow: var(--shadow-panel);
+  background: transparent;
+  box-shadow: none;
 }
 
 .eyebrow {
@@ -268,10 +271,14 @@ onMounted(loadMessages)
 }
 
 .message-main p {
+  display: -webkit-box;
+  overflow: hidden;
   margin: 8px 0 0;
   color: #667085;
   line-height: 1.7;
-  white-space: pre-wrap;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .message-meta {
@@ -311,62 +318,6 @@ onMounted(loadMessages)
   font-weight: 700;
 }
 
-.message-modal-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 32px;
-  background: rgba(15, 23, 42, 0.46);
-}
-
-.message-modal {
-  position: relative;
-  width: min(680px, 100%);
-  max-height: calc(100vh - 64px);
-  overflow: auto;
-  padding: 28px;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
-}
-
-.dialog-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: 6px;
-  color: #667085;
-  background: #f2f4f7;
-  font-size: 20px;
-}
-
-.modal-head {
-  margin-bottom: 18px;
-  padding-right: 42px;
-}
-
-.modal-head .eyebrow {
-  color: var(--blue);
-}
-
-.modal-head h3 {
-  margin: 0;
-  color: #101828;
-  font-size: 22px;
-}
-
-.modal-head span {
-  display: block;
-  margin-top: 8px;
-  color: #667085;
-  font-size: 13px;
-}
-
 .detail-content {
   margin: 0;
   color: #344054;
@@ -401,6 +352,5 @@ onMounted(loadMessages)
   .ghost-light-btn { width: 100%; }
   .message-title-row { align-items: flex-start; flex-direction: column; gap: 6px; }
   .message-card { padding: 16px; }
-  .message-modal-mask { padding: 16px; }
 }
 </style>

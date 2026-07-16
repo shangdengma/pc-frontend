@@ -70,18 +70,16 @@
       </div>
     </div>
 
-    <div v-if="panelVisible" class="cert-panel-mask" @click.self="closePanel">
-      <div class="cert-panel">
-        <div class="panel-head">
-          <div>
-            <h3>{{ panelTitle }}</h3>
-            <p>{{ panelDesc }}</p>
-          </div>
-          <button type="button" class="dialog-close" @click="closePanel">×</button>
-        </div>
-
-        <div v-if="detailLoading" class="state-box">正在加载详情...</div>
-        <template v-else>
+    <AppModal
+      :open="panelVisible"
+      :title="panelTitle"
+      eyebrow="企业认证"
+      :description="panelDesc"
+      size="lg"
+      @close="closePanel"
+    >
+      <div v-if="detailLoading" class="state-box">正在加载详情...</div>
+      <template v-else>
           <div class="cert-form-grid">
             <label>
               <span>企业名称</span>
@@ -134,15 +132,15 @@
             <button type="button" class="ghost-btn" :disabled="saving" @click="saveDraft">保存草稿</button>
             <button type="button" class="primary-action small" :disabled="saving" @click="submitAudit">提交审核</button>
           </div>
-        </template>
-      </div>
-    </div>
+      </template>
+    </AppModal>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { BadgeCheck, Building2, CircleX, Clock3, FilePenLine, ShieldCheck } from '@lucide/vue'
+import AppModal from '../components/AppModal.vue'
 import { getUserProfile } from '../api/user'
 import { getUser, setUser } from '../utils/auth'
 import {
@@ -490,7 +488,7 @@ onMounted(async () => {
 <style scoped>
 /* 整体布局：状态卡片与认证记录更均衡的两栏 */
 .cert-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(360px, .82fr) minmax(0, 1.18fr);
   align-items: stretch;
 }
 
@@ -614,12 +612,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 14px;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  transition: border-color 0.16s ease, background 0.16s ease;
 }
 
 .cert-list-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.07);
+  border-color: #cfd9e7;
+  background: #f8fafc;
 }
 
 .cert-item-ico {
@@ -677,6 +675,4 @@ onMounted(async () => {
   }
 }
 </style>
-
-
 

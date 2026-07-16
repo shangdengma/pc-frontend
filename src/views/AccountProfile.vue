@@ -93,41 +93,28 @@
 
     <p v-if="message" :class="['profile-message', messageType]">{{ message }}</p>
 
-    <div v-if="editorVisible" class="profile-modal-mask" @click.self="closeEditor">
-      <section class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-editor-title">
-        <header>
-          <div>
-            <p>账户资料</p>
-            <h3 id="profile-editor-title">编辑基本信息</h3>
-          </div>
-          <button class="modal-close" type="button" aria-label="关闭" @click="closeEditor">×</button>
-        </header>
-
-        <div class="editor-grid">
-          <label>
-            <span>邮箱</span>
-            <input ref="emailInput" v-model.trim="form.email" type="email" maxlength="50" placeholder="请输入工作邮箱">
-          </label>
-        </div>
-
-        <footer>
+    <AppModal :open="editorVisible" title="编辑基本信息" eyebrow="账户资料" size="md" @close="closeEditor">
+      <div class="editor-grid">
+        <label>
+          <span>邮箱</span>
+          <input ref="emailInput" v-model.trim="form.email" type="email" maxlength="50" placeholder="请输入工作邮箱">
+        </label>
+      </div>
+      <template #footer>
           <button class="ghost-btn" type="button" :disabled="saving" @click="closeEditor">取消</button>
           <button class="primary-btn compact" type="button" :disabled="saving" @click="saveProfile">{{ saving ? '保存中' : '保存' }}</button>
-        </footer>
-      </section>
-    </div>
+      </template>
+    </AppModal>
 
-    <div v-if="passwordEditorVisible" class="profile-modal-mask" @click.self="closePasswordEditor">
-      <section class="profile-modal password-modal" role="dialog" aria-modal="true" aria-labelledby="password-editor-title">
-        <header>
-          <div>
-            <p>账户安全</p>
-            <h3 id="password-editor-title">修改登录密码</h3>
-          </div>
-          <button class="modal-close" type="button" aria-label="关闭" @click="closePasswordEditor">×</button>
-        </header>
-
-        <div class="password-editor">
+    <AppModal
+      :open="passwordEditorVisible"
+      title="修改登录密码"
+      eyebrow="账户安全"
+      description="修改成功后需要重新登录"
+      size="md"
+      @close="closePasswordEditor"
+    >
+      <div class="password-editor">
           <label>
             <span>当前密码</span>
             <input ref="currentPasswordInput" v-model="passwordForm.oldPassword" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" placeholder="请输入当前密码">
@@ -155,20 +142,19 @@
             <span>显示密码</span>
           </label>
           <p class="password-rule">需同时校验当前密码和手机验证码。新密码为 8-64 位，且包含英文字母和数字；修改成功后需重新登录。</p>
-        </div>
-
-        <footer>
+      </div>
+      <template #footer>
           <button class="ghost-btn" type="button" :disabled="passwordChanging" @click="closePasswordEditor">取消</button>
           <button class="primary-btn compact" type="button" :disabled="passwordChanging" @click="changePassword">{{ passwordChanging ? '提交中' : '确认修改' }}</button>
-        </footer>
-      </section>
-    </div>
+      </template>
+    </AppModal>
   </div>
 </template>
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import AppModal from '../components/AppModal.vue'
 import { getMyEnterpriseCertList } from '../api/enterpriseCert'
 import { getUserProfile, sendPasswordCode, updateUserPassword, updateUserProfile, uploadUserAvatar } from '../api/user'
 import { removeToken, setUser } from '../utils/auth'
@@ -413,7 +399,7 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 
 <style scoped>
 .account-profile-page { width: min(1180px, 100%); margin: 0 auto; display: grid; gap: 16px; }
-.profile-summary { min-height: 112px; padding: 22px 24px; display: flex; align-items: center; gap: 18px; background: #fff; color: #101828; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-panel); }
+.profile-summary { min-height: auto; padding: 0 0 18px; display: flex; align-items: center; gap: 18px; background: transparent; color: #101828; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
 .summary-avatar, .row-logo { flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: #fff; color: #1d5baa; font-weight: 800; }
 .summary-avatar { width: 64px; height: 64px; border: 1px solid #dce6f3; border-radius: 8px; font-size: 26px; background: #eef4ff; }
 .summary-avatar img, .row-logo img { width: 100%; height: 100%; object-fit: cover; }
@@ -450,19 +436,11 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .upload-action input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .profile-message { position: fixed; top: 84px; left: 50%; z-index: 70; margin: 0; padding: 11px 18px; transform: translateX(-50%); border: 1px solid #abefc6; border-radius: 6px; background: #ecfdf3; color: #027a48; box-shadow: 0 10px 25px rgba(16, 24, 40, .12); }
 .profile-message.error { border-color: #fecdca; background: #fef3f2; color: #b42318; }
-.profile-modal-mask { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; background: rgba(12, 25, 45, .48); }
-.profile-modal { width: min(650px, 100%); overflow: hidden; border-radius: 8px; background: #fff; box-shadow: 0 24px 80px rgba(9, 30, 66, .24); }
-.profile-modal > header { padding: 24px 28px; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #e7ebf1; }
-.profile-modal header p, .profile-modal header h3 { margin: 0; letter-spacing: 0; }
-.profile-modal header p { margin-bottom: 5px; color: #718096; font-size: 13px; }
-.profile-modal header h3 { font-size: 22px; color: #142239; }
-.modal-close { width: 36px; height: 36px; border: 0; background: transparent; color: #7b8798; font-size: 28px; line-height: 1; cursor: pointer; }
-.editor-grid { padding: 26px 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .editor-grid label { display: grid; gap: 8px; color: #344054; font-weight: 600; }
 .editor-grid input, .editor-grid select { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: 6px; background: #fff; color: #17243a; font: inherit; outline: none; }
 .editor-grid input:focus, .editor-grid select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
-.password-modal { width: min(540px, 100%); }
-.password-editor { padding: 26px 28px 8px; display: grid; gap: 18px; }
+.password-editor { display: grid; gap: 18px; }
 .password-editor > label:not(.password-visibility) { display: grid; gap: 8px; color: #344054; font-weight: 600; }
 .password-editor input[type="password"], .password-editor input[type="text"] { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: 6px; background: #fff; color: #17243a; font: inherit; outline: none; }
 .password-editor input[type="password"]:focus, .password-editor input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
@@ -473,7 +451,6 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .password-visibility { width: fit-content; display: inline-flex; align-items: center; gap: 8px; color: #59677a; font-size: 14px; cursor: pointer; }
 .password-visibility input { width: 16px; height: 16px; accent-color: #2168d5; }
 .password-rule { margin: 0; padding: 12px 14px; border-left: 3px solid #7aa7ee; background: #f5f8fd; color: #66758a; font-size: 13px; line-height: 1.65; }
-.profile-modal footer { padding: 18px 28px 24px; display: flex; justify-content: flex-end; gap: 12px; }
 .ghost-btn { min-width: 96px; height: 42px; border: 1px solid #d8e0eb; border-radius: 6px; background: #fff; color: #344054; font: inherit; cursor: pointer; }
 @media (max-width: 760px) {
   .profile-summary { padding: 24px; flex-wrap: wrap; }

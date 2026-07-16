@@ -158,17 +158,15 @@
       </section>
     </template>
 
-    <div v-if="codeDialog" class="modal-mask" @click.self="closeCodeDialog">
-      <div class="modal-card agent-modal">
-        <div class="modal-head">
-          <div>
-            <h3>{{ editingCode ? '调整邀请码' : '生成邀请码' }}</h3>
-            <p>{{ editingCode ? '修改后仅影响后续注册使用。' : '创建后可复制给客户注册使用。' }}</p>
-          </div>
-          <button type="button" aria-label="关闭" @click="closeCodeDialog">x</button>
-        </div>
-
-        <div class="notice-tip">
+    <AppModal
+      :open="codeDialog"
+      :title="editingCode ? '调整邀请码' : '生成邀请码'"
+      eyebrow="代理中心"
+      :description="editingCode ? '修改后仅影响后续注册使用' : '创建后可复制给客户注册使用'"
+      size="md"
+      @close="closeCodeDialog"
+    >
+      <div class="notice-tip">
           注册赠送余额会优先从代理账户扣除；如果代理余额不足，新用户将不会获得赠送余额。
         </div>
 
@@ -179,13 +177,12 @@
           <label>备注<input v-model.trim="codeForm.remark" placeholder="例如 7月活动渠道" /></label>
         </div>
 
-        <p v-if="message" class="form-message">{{ message }}</p>
-        <div class="modal-actions">
-          <button class="ghost-btn" type="button" @click="closeCodeDialog">取消</button>
-          <button class="primary-btn" type="button" :disabled="saving" @click="saveCode">{{ saving ? '提交中...' : '确认保存' }}</button>
-        </div>
-      </div>
-    </div>
+      <p v-if="message" class="form-message">{{ message }}</p>
+      <template #footer>
+        <button class="ghost-btn" type="button" @click="closeCodeDialog">取消</button>
+        <button class="primary-btn" type="button" :disabled="saving" @click="saveCode">{{ saving ? '提交中...' : '确认保存' }}</button>
+      </template>
+    </AppModal>
 
     <div v-if="toast" class="toast">{{ toast }}</div>
   </div>
@@ -194,6 +191,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { Search } from '@lucide/vue'
+import AppModal from '../components/AppModal.vue'
 import { createAgentInviteCode, getAgentOverview, listAgentCustomerConsumptions, listAgentCustomerRecharges, listAgentCustomers, listAgentInviteCodes, updateAgentInviteCode } from '../api/agent'
 
 const isAgent = ref(true)
@@ -364,8 +362,8 @@ onMounted(loadAll)
 </script>
 
 <style scoped>
-.agent-page { max-width: 1480px; margin: 0 auto; color: #0f172a; }
-.agent-hero { min-height: 104px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 24px; color: #101828; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-panel); }
+.agent-page { width: min(1360px, 100%); margin: 0 auto; display: grid; gap: 16px; color: #0f172a; }
+.agent-hero { min-height: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 0 0 18px; color: #101828; background: transparent; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
 .hero-copy p { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
 .hero-copy h2 { margin: 0 0 8px; font-size: 24px; line-height: 1.2; }
 .hero-copy span { color: var(--muted); font-size: 14px; }
@@ -376,13 +374,14 @@ onMounted(loadAll)
 .soft-btn { color: #344054; background: #fff; border: 1px solid #dbe3ee; }
 .ghost-btn { color: #2563d8; background: #fff; border: 1px solid #dbe6f4; box-shadow: none; }
 .text-btn { height: 36px; color: #2563d8; background: #eef5ff; }
-.agent-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
-.summary-card, .agent-card { background: #fff; border: 1px solid #e6edf6; border-radius: 8px; box-shadow: none; }
-.summary-card { padding: 18px 20px; }
+.agent-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; margin: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
+.summary-card, .agent-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.summary-card { min-height: 104px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
+.summary-card:last-child { border-right: 0; }
 .summary-card span { display: block; color: #64748b; margin-bottom: 10px; font-weight: 700; }
 .summary-card strong { display: block; font-size: 24px; line-height: 1.2; }
 .summary-card em { display: block; margin-top: 8px; color: #64748b; font-style: normal; font-size: 13px; }
-.agent-workspace { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 16px; align-items: start; }
+.agent-workspace { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
 .agent-card { padding: 20px; }
 .card-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
 .card-head h3 { margin: 0 0 6px; font-size: 18px; }
@@ -438,19 +437,12 @@ onMounted(loadAll)
 .empty-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 8px; background: #eaf2ff; color: #2563d8; font-size: 22px; font-weight: 800; }
 .no-permission h3 { margin: 0 0 8px; }
 .no-permission p { margin: 0; color: #64748b; }
-.modal-mask { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(15, 23, 42, .48); }
-.modal-card { width: min(720px, calc(100vw - 48px)); padding: 24px; background: #fff; border-radius: 8px; box-shadow: 0 28px 80px rgba(15, 23, 42, .26); }
-.modal-head { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid #e6edf6; }
-.modal-head h3 { margin: 0 0 6px; font-size: 20px; }
-.modal-head p { margin: 0; color: #64748b; }
-.modal-head button { width: 34px; height: 34px; border: 0; background: #f2f5fa; border-radius: 6px; font-size: 20px; cursor: pointer; }
 .notice-tip { margin-bottom: 18px; padding: 12px 14px; border-left: 3px solid var(--blue); background: #f4f8ff; color: #1e40af; line-height: 1.55; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
 .form-grid label { display: grid; gap: 8px; color: #344054; font-weight: 800; }
 .form-grid input { height: 44px; padding: 0 13px; border: 1px solid #d7e1ee; border-radius: 7px; outline: none; font-weight: 600; }
 .form-grid input:focus { border-color: #78a6ff; box-shadow: 0 0 0 3px rgba(47, 111, 228, .12); }
 .form-message { padding: 12px 14px; color: #d92d20; background: #fff2f1; border: 1px solid #ffd5d2; border-radius: 10px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
 .toast { position: fixed; right: 34px; bottom: 34px; z-index: 100; padding: 12px 18px; color: #fff; background: #0f172a; border-radius: 8px; box-shadow: 0 12px 32px rgba(15, 23, 42, .24); font-weight: 700; }
 @media (max-width: 1280px) {
   .agent-workspace { grid-template-columns: 1fr; }

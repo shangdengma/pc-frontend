@@ -91,28 +91,30 @@
       </div>
     </div>
 
-    <div v-if="payDialogVisible" class="dialog-mask" @click.self="closePayDialog">
-      <div class="pay-dialog">
-        <button class="dialog-close" type="button" @click="closePayDialog">×</button>
-        <h3>{{ payDialogTitle }}</h3>
-        <p>{{ payDialogTip }}</p>
-        <div class="qr-wrap">
-          <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="支付二维码" />
-          <div v-else class="state-box">正在生成二维码...</div>
-        </div>
-        <div class="dialog-actions">
-          <a v-if="payInfo" class="ghost-btn" :href="payInfo" target="_blank" rel="noreferrer">打开支付链接</a>
-          <button class="primary-action small" type="button" @click="queryPayStatus">我已支付，刷新状态</button>
-        </div>
-        <p class="polling-text">{{ pollingText }}</p>
+    <AppModal
+      :open="payDialogVisible"
+      :title="payDialogTitle"
+      :description="payDialogTip"
+      size="sm"
+      @close="closePayDialog"
+    >
+      <div class="qr-wrap">
+        <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="支付二维码" />
+        <div v-else class="state-box">正在生成二维码...</div>
       </div>
-    </div>
+      <div class="dialog-actions">
+        <a v-if="payInfo" class="ghost-btn" :href="payInfo" target="_blank" rel="noreferrer">打开支付链接</a>
+        <button class="primary-action small" type="button" @click="queryPayStatus">我已支付，刷新状态</button>
+      </div>
+      <p class="polling-text">{{ pollingText }}</p>
+    </AppModal>
   </section>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import QRCode from 'qrcode'
+import AppModal from '../components/AppModal.vue'
 import { getUserBalance, getUserProfile } from '../api/user'
 import { getUserPackageList } from '../api/comboMeal'
 import { createEpayOrder, queryOrder } from '../api/pay'

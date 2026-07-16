@@ -2151,68 +2151,9 @@ textarea::placeholder {
 }
 
 /* ============================================================
-   12. 弹窗 / 对话框
+   12. 弹窗内容
+   弹窗外壳统一由 AppModal 提供，这里只保留业务内容样式。
    ============================================================ */
-
-.dialog-mask,
-.cert-panel-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 32px;
-  background: rgba(16, 24, 40, 0.45);
-  backdrop-filter: blur(2px);
-}
-
-.pay-dialog {
-  position: relative;
-  width: 420px;
-  padding: 28px;
-  border-radius: var(--radius-lg);
-  text-align: center;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-modal);
-}
-
-.dialog-close,
-.modal-close,
-.modal-head > button:last-child {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  width: 32px;
-  height: 32px;
-  display: inline-grid;
-  place-items: center;
-  border: 0;
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  background: #f4f6f9;
-  font-size: 20px;
-  line-height: 1;
-}
-
-.dialog-close:hover,
-.modal-close:hover,
-.modal-head > button:last-child:hover {
-  color: var(--text);
-  background: #e9eef5;
-}
-
-.pay-dialog h3 {
-  margin: 4px 0 8px;
-  font-size: 19px;
-  font-weight: 700;
-}
-
-.pay-dialog p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13.5px;
-}
 
 .qr-wrap {
   display: grid;
@@ -2240,16 +2181,6 @@ textarea::placeholder {
   margin-top: 16px !important;
   color: var(--muted) !important;
   font-size: 13px;
-}
-
-.modal-card,
-.detail-card,
-.message-modal,
-.cert-panel,
-.invoice-dialog {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-modal);
 }
 
 /* ============================================================

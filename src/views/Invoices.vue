@@ -106,16 +106,15 @@
       </div>
     </div>
 
-    <div v-if="applyVisible" class="invoice-modal-mask" @click.self="closeApplyDialog">
-      <div class="invoice-modal apply-modal">
-        <button class="dialog-close" type="button" @click="closeApplyDialog">×</button>
-        <div class="modal-head">
-          <p class="eyebrow">发票申请</p>
-          <h3>填写开票信息</h3>
-          <span>带 * 为必填项</span>
-        </div>
-
-        <form class="invoice-form" @submit.prevent="submitInvoice">
+    <AppModal
+      :open="applyVisible"
+      title="填写开票信息"
+      eyebrow="发票申请"
+      description="请准确填写企业开票资料，带 * 为必填项"
+      size="lg"
+      @close="closeApplyDialog"
+    >
+      <form class="invoice-form" @submit.prevent="submitInvoice">
           <label>
             <span>发票类型 <b>*</b></span>
             <select v-model="form.types">
@@ -159,19 +158,18 @@
               {{ submitting ? '提交中...' : '提交申请' }}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </AppModal>
 
-    <div v-if="detail" class="invoice-modal-mask" @click.self="detail = null">
-      <div class="invoice-modal detail-modal">
-        <button class="dialog-close" type="button" @click="detail = null">×</button>
-        <div class="modal-head">
-          <p class="eyebrow">发票详情</p>
-          <h3>{{ detail.title || '发票申请' }}</h3>
-          <span>{{ detail.createdate || '-' }}</span>
-        </div>
-        <div class="detail-grid">
+    <AppModal
+      :open="!!detail"
+      :title="detail?.title || '发票申请'"
+      eyebrow="发票详情"
+      :description="detail?.createdate || '-'"
+      size="md"
+      @close="detail = null"
+    >
+      <div v-if="detail" class="detail-grid">
           <span>发票类型</span><strong>{{ typeLabel(detail.types) }}</strong>
           <span>处理状态</span><strong>{{ statusMeta(detail.status).label }}</strong>
           <span>发票金额</span><strong>{{ formatAmount(detail.amount) }}</strong>
@@ -180,15 +178,15 @@
           <span v-if="detail.bankname">开户行</span><strong v-if="detail.bankname">{{ detail.bankname }}</strong>
           <span v-if="detail.bankaccount">银行账号</span><strong v-if="detail.bankaccount">{{ detail.bankaccount }}</strong>
           <span>备注说明</span><strong>{{ detail.remark || '-' }}</strong>
-        </div>
       </div>
-    </div>
+    </AppModal>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { BadgeCheck, CircleX, Clock3, FileText } from '@lucide/vue'
+import AppModal from '../components/AppModal.vue'
 import { addInvoice, listInvoices } from '../api/invoice'
 import { getUserProfile } from '../api/user'
 import { getUser, setUser } from '../utils/auth'
@@ -337,23 +335,24 @@ onMounted(async () => {
 
 <style scoped>
 .invoice-page {
-  width: min(1480px, 100%);
+  width: min(1360px, 100%);
   margin: 0 auto;
 }
 
 .invoice-hero {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 28px;
-  min-height: 104px;
+  min-height: auto;
   margin-bottom: 16px;
-  padding: 22px 24px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  padding: 0 0 18px;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
   color: #101828;
-  background: #ffffff;
-  box-shadow: var(--shadow-panel);
+  background: transparent;
+  box-shadow: none;
 }
 
 .eyebrow {
@@ -392,8 +391,12 @@ onMounted(async () => {
 .invoice-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 0;
+  overflow: hidden;
   margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .stat-card {
@@ -402,12 +405,15 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 0;
+  border-right: 1px solid #edf1f6;
+  border-radius: 0;
   background: #ffffff;
   box-shadow: none;
   transition: border-color 0.18s ease, background 0.18s ease;
 }
+
+.stat-card:last-child { border-right: 0; }
 
 .stat-card:hover {
   border-color: #cddcf6;
@@ -640,67 +646,6 @@ onMounted(async () => {
   font-size: 16px;
 }
 
-.invoice-modal-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 32px;
-  background: rgba(15, 23, 42, 0.46);
-}
-
-.invoice-modal {
-  position: relative;
-  width: min(760px, 100%);
-  max-height: calc(100vh - 64px);
-  overflow: auto;
-  padding: 28px;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
-}
-
-.detail-modal {
-  width: min(620px, 100%);
-}
-
-.dialog-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 6px;
-  color: #667085;
-  background: #f2f4f7;
-  font-size: 24px;
-  line-height: 1;
-}
-
-.modal-head {
-  margin-bottom: 22px;
-  padding-right: 42px;
-}
-
-.modal-head .eyebrow {
-  color: var(--blue);
-}
-
-.modal-head h3 {
-  margin: 0;
-  color: #101828;
-  font-size: 22px;
-}
-
-.modal-head span {
-  display: block;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .invoice-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -807,8 +752,5 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 
-  .invoice-modal-mask {
-    padding: 16px;
-  }
 }
 </style>

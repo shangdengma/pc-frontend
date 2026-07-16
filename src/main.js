@@ -2,6 +2,7 @@
 import App from './App.vue'
 import router from './router'
 import './styles/main.css'
+import './styles/workspace.css'
 
 function showToastMessage(type, message) {
   if (!message) return
