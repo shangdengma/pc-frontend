@@ -92,7 +92,6 @@ import {
   LayoutDashboard,
   LockKeyhole,
   LogOut,
-  Megaphone,
   ReceiptText,
   ShieldCheck,
   UserRound,
@@ -127,7 +126,6 @@ const rawAccountMenus = [
   { title: '企业认证', path: '/enterprise-cert', icon: Building2 },
   { title: '子账号管理', path: '/sub-accounts', icon: UsersRound, mainOnly: true },
   { title: '代理中心', path: '/agent-center', icon: BadgePercent, agentOnly: true },
-  { title: '公告中心', path: '/announcements', icon: Megaphone },
   { title: '消息通知', path: '/messages', icon: Bell }
 ]
 
