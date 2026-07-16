@@ -66,13 +66,18 @@
         </div>
         <div class="notice-list">
           <div v-if="notices.length === 0" class="empty-inline">暂无公告</div>
-          <div v-for="item in notices" :key="item.id || item.title" class="notice-item">
+          <router-link
+            v-for="item in notices"
+            :key="item.id || item.title"
+            class="notice-item"
+            :to="{ path: '/announcements', query: { noticeId: item.id } }"
+          >
             <span class="notice-tag" :class="item.type">{{ item.tag }}</span>
             <div>
               <strong><span v-if="item.isTop" class="top-flag">置顶</span>{{ item.title }}</strong>
               <p>{{ item.date }}</p>
             </div>
-          </div>
+          </router-link>
         </div>
       </article>
 
@@ -350,6 +355,11 @@ onBeforeUnmount(() => {
 .notice-item,
 .todo-item {
   transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.notice-item {
+  color: inherit;
+  text-decoration: none;
 }
 </style>
 

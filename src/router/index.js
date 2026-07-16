@@ -11,6 +11,7 @@ const ReportFull = () => import('../views/report-full/Index.vue')
 const Recharge = () => import('../views/Recharge.vue')
 const Invoices = () => import('../views/Invoices.vue')
 const Announcements = () => import('../views/Announcements.vue')
+const PublicAnnouncements = () => import('../views/PublicAnnouncements.vue')
 const EnterpriseCert = () => import('../views/EnterpriseCert.vue')
 const SubAccounts = () => import('../views/SubAccounts.vue')
 const AgentCenter = () => import('../views/AgentCenter.vue')
@@ -35,7 +36,8 @@ const routes = [
       { path: 'enterprise-cert', name: 'enterpriseCert', component: EnterpriseCert, meta: { title: '企业认证' } },
       { path: 'sub-accounts', name: 'subAccounts', component: SubAccounts, meta: { title: '子账号管理', mainOnly: true } },
       { path: 'agent-center', name: 'agentCenter', component: AgentCenter, meta: { title: '代理中心', agentOnly: true } },
-      { path: 'announcements', name: 'announcements', component: Announcements, meta: { title: '消息通知' } }
+      { path: 'announcements', name: 'announcements', component: PublicAnnouncements, meta: { title: '公告中心' } },
+      { path: 'messages', name: 'messages', component: Announcements, meta: { title: '消息通知' } }
     ]
   },
   { path: '/:pathMatch(.*)*', component: NotFound }

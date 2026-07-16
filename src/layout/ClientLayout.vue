@@ -65,7 +65,7 @@
               <div class="dropdown-links">
                 <router-link to="/account-profile" @click="menuOpen = false"><UserRound :size="17" />基本信息</router-link>
                 <router-link to="/enterprise-cert" @click="menuOpen = false"><Building2 :size="17" />企业认证</router-link>
-                <router-link to="/announcements" @click="menuOpen = false"><Bell :size="17" />消息通知</router-link>
+                <router-link to="/messages" @click="menuOpen = false"><Bell :size="17" />消息通知</router-link>
               </div>
               <button class="logout-btn" type="button" @click="handleLogout"><LogOut :size="17" />退出登录</button>
             </div>
@@ -92,6 +92,7 @@ import {
   LayoutDashboard,
   LockKeyhole,
   LogOut,
+  Megaphone,
   ReceiptText,
   ShieldCheck,
   UserRound,
@@ -126,7 +127,8 @@ const rawAccountMenus = [
   { title: '企业认证', path: '/enterprise-cert', icon: Building2 },
   { title: '子账号管理', path: '/sub-accounts', icon: UsersRound, mainOnly: true },
   { title: '代理中心', path: '/agent-center', icon: BadgePercent, agentOnly: true },
-  { title: '消息通知', path: '/announcements', icon: Bell }
+  { title: '公告中心', path: '/announcements', icon: Megaphone },
+  { title: '消息通知', path: '/messages', icon: Bell }
 ]
 
 const accountMenus = computed(() => rawAccountMenus.filter(item => !item.agentOnly || isAgent.value))
