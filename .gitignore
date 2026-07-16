@@ -1,0 +1,16 @@
+node_modules/
+dist/
+
+*.log
+*.pid
+*.pid.lock
+
+.DS_Store
+Thumbs.db
+
+.idea/
+.vscode/
+*.iml
+
+.env.local
+.env.*.local

@@ -1,0 +1,187 @@
+﻿<template>
+  <div class="login-page">
+    <section class="login-hero">
+      <div class="brand-row">
+        <div class="brand-mark">钟</div>
+        <div>
+          <div class="brand-title">钟馗背调</div>
+          <div class="brand-sub">企业版客户工作台</div>
+        </div>
+      </div>
+      <h1>背调查询、授权进度、报告交付集中管理。</h1>
+    </section>
+
+    <form class="login-card" @submit.prevent="handleLogin">
+      <h2>登录工作台</h2>
+      <div class="login-mode-tabs" role="tablist" aria-label="登录方式">
+        <button type="button" :class="{ active: loginMode === 'password' }" @click="switchMode('password')">密码登录</button>
+        <button type="button" :class="{ active: loginMode === 'sms' }" @click="switchMode('sms')">验证码登录</button>
+      </div>
+
+      <template v-if="loginMode === 'password'">
+        <label>
+          <span>用户名</span>
+          <input v-model.trim="form.username" placeholder="请输入用户名" autocomplete="username">
+        </label>
+        <label>
+          <span>密码</span>
+          <input v-model="form.password" placeholder="请输入密码" type="password" autocomplete="current-password">
+        </label>
+        <label v-if="captchaEnabled">
+          <span>验证码</span>
+          <div class="captcha-row">
+            <input v-model.trim="form.code" placeholder="请输入验证码">
+            <img :src="codeUrl" alt="验证码" @click="loadCaptcha">
+          </div>
+        </label>
+      </template>
+
+      <template v-else>
+        <label>
+          <span>手机号</span>
+          <input v-model.trim="smsForm.phone" placeholder="请输入注册手机号" autocomplete="tel" maxlength="11" inputmode="numeric">
+        </label>
+        <label>
+          <span>短信验证码</span>
+          <div class="captcha-row sms-row">
+            <input v-model.trim="smsForm.code" placeholder="请输入短信验证码" maxlength="6" inputmode="numeric">
+            <button type="button" :disabled="countdown > 0 || sendingCode" @click="sendCode">
+              {{ countdown > 0 ? `${countdown}s` : (sendingCode ? '发送中' : '获取验证码') }}
+            </button>
+          </div>
+        </label>
+      </template>
+
+      <div v-if="error" class="form-error">{{ error }}</div>
+      <div v-if="notice" class="form-notice">{{ notice }}</div>
+      <button class="primary-btn" type="submit" :disabled="loading">{{ loading ? '登录中...' : '进入工作台' }}</button>
+      <div class="login-register-entry">
+        <span>没有账号？</span>
+        <router-link to="/register">立即注册</router-link>
+      </div>
+    </form>
+  </div>
+</template>
+
+<script setup>
+import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { getCodeImg, getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
+import { setToken, setUser } from '../utils/auth'
+
+const router = useRouter()
+const loading = ref(false)
+const sendingCode = ref(false)
+const countdown = ref(0)
+const error = ref('')
+const notice = ref('')
+const captchaEnabled = ref(false)
+const codeUrl = ref('')
+const loginMode = ref('password')
+const form = reactive({ username: '', password: '', code: '', uuid: '' })
+const smsForm = reactive({ phone: '', code: '' })
+let countdownTimer = null
+
+function switchMode(mode) {
+  loginMode.value = mode
+  error.value = ''
+  notice.value = ''
+  if (mode === 'password') {
+    loadCaptcha()
+  }
+}
+
+async function loadCaptcha() {
+  try {
+    const res = await getCodeImg()
+    captchaEnabled.value = res.captchaEnabled === undefined ? true : !!res.captchaEnabled
+    if (captchaEnabled.value) {
+      codeUrl.value = `data:image/png;base64,${res.img}`
+      form.uuid = res.uuid || ''
+      form.code = ''
+    }
+  } catch (err) {
+    captchaEnabled.value = false
+  }
+}
+
+function startCountdown() {
+  countdown.value = 60
+  clearInterval(countdownTimer)
+  countdownTimer = setInterval(() => {
+    countdown.value -= 1
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer)
+      countdownTimer = null
+    }
+  }, 1000)
+}
+
+async function sendCode() {
+  error.value = ''
+  notice.value = ''
+  if (!smsForm.phone) return (error.value = '请输入手机号')
+  if (!/^1\d{10}$/.test(smsForm.phone)) return (error.value = '请输入正确的手机号')
+  sendingCode.value = true
+  try {
+    const res = await sendLoginCode(smsForm.phone)
+    notice.value = '验证码已发送'
+    if (import.meta.env.DEV && res?.data && !smsForm.code) {
+      smsForm.code = String(res.data)
+    }
+    startCountdown()
+  } catch (err) {
+    error.value = err?.msg || '验证码发送失败'
+  } finally {
+    sendingCode.value = false
+  }
+}
+
+async function finishLogin(res, fallbackName) {
+  setToken(res.token)
+  try {
+    const info = await getInfo()
+    setUser(info.user || {})
+  } catch (err) {
+    setUser({ userName: fallbackName })
+  }
+  router.replace('/dashboard')
+}
+
+async function handlePasswordLogin() {
+  if (!form.username) return (error.value = '请输入用户名')
+  if (!form.password) return (error.value = '请输入密码')
+  if (captchaEnabled.value && !form.code) return (error.value = '请输入验证码')
+  const res = await login(form.username, form.password, form.code, form.uuid, 'uniapp')
+  await finishLogin(res, form.username)
+}
+
+async function handleSmsLogin() {
+  if (!smsForm.phone) return (error.value = '请输入手机号')
+  if (!/^1\d{10}$/.test(smsForm.phone)) return (error.value = '请输入正确的手机号')
+  const res = await smsLogin(smsForm.phone, smsForm.code, 'uniapp')
+  await finishLogin(res, smsForm.phone)
+}
+
+async function handleLogin() {
+  error.value = ''
+  notice.value = ''
+  loading.value = true
+  try {
+    if (loginMode.value === 'sms') {
+      await handleSmsLogin()
+    } else {
+      await handlePasswordLogin()
+    }
+  } catch (err) {
+    error.value = err?.msg || '登录失败，请检查登录信息'
+    if (loginMode.value === 'password') {
+      await loadCaptcha()
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadCaptcha)
+</script>
