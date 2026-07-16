@@ -199,7 +199,7 @@ onMounted(loadAnnouncements)
 
 .eyebrow {
   margin: 0 0 8px;
-  color: #2864dc;
+  color: var(--blue);
   font-size: 13px;
   font-weight: 700;
 }

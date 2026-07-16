@@ -518,7 +518,7 @@ onMounted(async () => {
 }
 
 .cert-status-icon.approved { color: #12b76a; background: #ecfdf3; }
-.cert-status-icon.draft { color: #2f6fe4; background: #eaf1ff; }
+.cert-status-icon.draft { color: var(--blue); background: #eaf1ff; }
 .cert-status-icon.pending,
 .cert-status-icon.reviewing { color: #f79009; background: #fff7ed; }
 .cert-status-icon.rejected { color: #f04438; background: #fef3f2; }
@@ -588,7 +588,7 @@ onMounted(async () => {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #2f6fe4;
+  color: var(--blue);
   background: #eaf1ff;
   font-size: 13px;
   font-weight: 800;
@@ -629,7 +629,7 @@ onMounted(async () => {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  color: #2f6fe4;
+  color: var(--blue);
   background: #eaf1ff;
 }
 
@@ -666,8 +666,8 @@ onMounted(async () => {
 }
 
 .upload-tile:hover {
-  color: #2f6fe4;
-  border-color: #2f6fe4;
+  color: var(--blue);
+  border-color: var(--blue);
   background: #f4f8ff;
 }
 

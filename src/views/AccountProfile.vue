@@ -419,10 +419,10 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .summary-avatar img, .row-logo img { width: 100%; height: 100%; object-fit: cover; }
 .summary-copy { min-width: 0; flex: 1; }
 .summary-copy p, .summary-copy h2 { margin: 0; letter-spacing: 0; }
-.summary-copy p { margin-bottom: 6px; color: #2f6fe4; font-size: 13px; font-weight: 700; }
+.summary-copy p { margin-bottom: 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
 .summary-copy h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 24px; }
 .summary-meta { margin-top: 10px; display: flex; align-items: center; gap: 10px; color: var(--muted); }
-.profile-summary .primary-btn { background: #2f6fe4; color: #fff; box-shadow: none; }
+.profile-summary .primary-btn { background: var(--blue); color: #fff; box-shadow: none; }
 .primary-btn.compact { min-width: 112px; height: 42px; padding: 0 20px; }
 .profile-detail-card { overflow: hidden; background: #fff; border: 1px solid #e4eaf2; border-radius: 8px; box-shadow: var(--shadow-panel); }
 .detail-card-head { min-height: 68px; padding: 14px 24px; display: flex; align-items: center; border-bottom: 1px solid #e7ebf1; }
@@ -460,12 +460,12 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .editor-grid { padding: 26px 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .editor-grid label { display: grid; gap: 8px; color: #344054; font-weight: 600; }
 .editor-grid input, .editor-grid select { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: 6px; background: #fff; color: #17243a; font: inherit; outline: none; }
-.editor-grid input:focus, .editor-grid select:focus { border-color: #2f6fe4; box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
+.editor-grid input:focus, .editor-grid select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
 .password-modal { width: min(540px, 100%); }
 .password-editor { padding: 26px 28px 8px; display: grid; gap: 18px; }
 .password-editor > label:not(.password-visibility) { display: grid; gap: 8px; color: #344054; font-weight: 600; }
 .password-editor input[type="password"], .password-editor input[type="text"] { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: 6px; background: #fff; color: #17243a; font: inherit; outline: none; }
-.password-editor input[type="password"]:focus, .password-editor input[type="text"]:focus { border-color: #2f6fe4; box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
+.password-editor input[type="password"]:focus, .password-editor input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
 .verification-code-row { display: grid; grid-template-columns: minmax(0, 1fr) 124px; gap: 10px; }
 .verification-code-row button { height: 46px; border: 1px solid #bad0f3; border-radius: 6px; background: #eef4ff; color: #1859b8; font: inherit; font-weight: 600; cursor: pointer; }
 .verification-code-row button:disabled { border-color: #e2e7ee; background: #f5f6f8; color: #98a2b3; cursor: not-allowed; }

@@ -333,7 +333,7 @@ onMounted(async () => {
 .sub-quota-view strong { display: block; margin-top: 8px; color: #07162d; font-size: 24px; }
 .sub-quota-view div:last-child strong { color: #0b9f62; }
 .sub-hero { min-height: 104px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 8px; color: #101828; background: #fff; box-shadow: var(--shadow-panel); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.sub-hero p { margin: 0 0 6px; color: #2f6fe4; font-size: 13px; font-weight: 700; }
+.sub-hero p { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
 .sub-hero h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
 .sub-hero span { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
 .primary-btn, .ghost-btn { border: 0; border-radius: 7px; font-weight: 700; cursor: pointer; }

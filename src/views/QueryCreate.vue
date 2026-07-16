@@ -1,7 +1,9 @@
 ﻿<template>
+  <div class="query-layout">
   <section class="work-card">
     <div class="work-card-head">
       <h2>发起背调查询</h2>
+      <p>填写候选人信息并选择查询套餐，候选人完成授权后自动执行查询。</p>
     </div>
 
     <div class="form-grid">
@@ -45,6 +47,40 @@
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
     <button class="primary-btn page-action" :disabled="loading" @click="submitQuery">{{ loading ? '提交中...' : '提交查询' }}</button>
   </section>
+
+  <aside class="query-aside">
+    <div class="cost-card">
+      <h3>本次查询</h3>
+      <div class="cost-row">
+        <span>候选人</span>
+        <strong>{{ form.name || '—' }}</strong>
+      </div>
+      <div class="cost-row">
+        <span>查询套餐</span>
+        <strong>{{ selectedTypeName || '未选择' }}</strong>
+      </div>
+      <div class="cost-row">
+        <span>授权方式</span>
+        <strong>{{ form.authMethod === 'esign' ? '电子签授权' : '上传授权书' }}</strong>
+      </div>
+      <div class="cost-total">
+        <span>预计费用</span>
+        <strong>{{ selectedPrice !== '' ? `¥${selectedPrice}` : '—' }}</strong>
+      </div>
+      <p class="cost-hint">费用在查询任务创建成功后从账户余额中扣除；查询失败的订单将自动退款。</p>
+    </div>
+
+    <div class="flow-card">
+      <h4>查询流程</h4>
+      <ol>
+        <li>提交候选人信息并选择套餐</li>
+        <li>候选人完成电子签授权（或上传授权书待审核）</li>
+        <li>系统执行核验，生成背调报告</li>
+        <li>在「查询记录」中查看与下载报告</li>
+      </ol>
+    </div>
+  </aside>
+  </div>
 </template>
 
 <script setup>
@@ -85,6 +121,17 @@ const reportTypes = computed(() => {
       }
     })
     .filter(item => item.hasPrice || queryTypeConfigs.value.length <= 3)
+})
+
+const selectedTypeName = computed(() => {
+  const cfg = queryTypeConfigs.value.find(item => String(item.id) === String(form.callTypeId))
+  return cfg ? (cfg.callTypeName || cfg.name || `类型${cfg.id}`) : ''
+})
+
+const selectedPrice = computed(() => {
+  const price = priceMap.value[String(form.callTypeId)]
+  if (price === undefined || price === null || price === '' || Number.isNaN(Number(price))) return ''
+  return price
 })
 
 function show(text, type = 'info') {

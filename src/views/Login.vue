@@ -9,10 +9,17 @@
         </div>
       </div>
       <h1>背调查询、授权进度、报告交付集中管理。</h1>
+      <p>面向企业 HR 与风控团队的一站式雇前背景调查平台，合规、高效、可追溯。</p>
+      <ul class="hero-points">
+        <li><Check :size="16" :stroke-width="2.5" />候选人电子签授权，全程合规留痕</li>
+        <li><Check :size="16" :stroke-width="2.5" />多维度数据核验，报告分钟级交付</li>
+        <li><Check :size="16" :stroke-width="2.5" />子账号协作与额度管理，团队共用一个工作台</li>
+      </ul>
     </section>
 
     <form class="login-card" @submit.prevent="handleLogin">
       <h2>登录工作台</h2>
+      <p class="login-subtitle">欢迎回来，请登录您的企业账号</p>
       <div class="login-mode-tabs" role="tablist" aria-label="登录方式">
         <button type="button" :class="{ active: loginMode === 'password' }" @click="switchMode('password')">密码登录</button>
         <button type="button" :class="{ active: loginMode === 'sms' }" @click="switchMode('sms')">验证码登录</button>
@@ -66,6 +73,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Check } from '@lucide/vue'
 import { getCodeImg, getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
 import { setToken, setUser } from '../utils/auth'
 

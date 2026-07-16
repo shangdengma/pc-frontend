@@ -366,12 +366,12 @@ onMounted(loadAll)
 <style scoped>
 .agent-page { max-width: 1480px; margin: 0 auto; color: #0f172a; }
 .agent-hero { min-height: 104px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 24px; color: #101828; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-panel); }
-.hero-copy p { margin: 0 0 6px; color: #2f6fe4; font-size: 13px; font-weight: 700; }
+.hero-copy p { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
 .hero-copy h2 { margin: 0 0 8px; font-size: 24px; line-height: 1.2; }
 .hero-copy span { color: var(--muted); font-size: 14px; }
 .hero-actions { display: flex; gap: 12px; flex-shrink: 0; }
 .primary-btn, .soft-btn, .ghost-btn, .text-btn { height: 40px; padding: 0 16px; border-radius: 7px; font-weight: 700; border: 0; cursor: pointer; }
-.primary-btn { color: #fff; background: #2f6fe4; box-shadow: none; }
+.primary-btn { color: #fff; background: var(--blue); box-shadow: none; }
 .primary-btn:disabled { opacity: .55; cursor: not-allowed; }
 .soft-btn { color: #344054; background: #fff; border: 1px solid #dbe3ee; }
 .ghost-btn { color: #2563d8; background: #fff; border: 1px solid #dbe6f4; box-shadow: none; }
@@ -411,7 +411,7 @@ onMounted(loadAll)
 .customer-layout { display: grid; grid-template-columns: minmax(300px, .72fr) minmax(0, 1.28fr); gap: 14px; }
 .customer-list { display: grid; gap: 10px; max-height: 610px; overflow: auto; padding-right: 4px; }
 .customer-row { width: 100%; display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e7eef8; border-radius: 8px; background: #fff; text-align: left; cursor: pointer; }
-.customer-row.active { border-color: #7aa7ff; background: #f4f8ff; box-shadow: inset 3px 0 0 #2f6fe4; }
+.customer-row.active { border-color: #7aa7ff; background: #f4f8ff; box-shadow: inset 3px 0 0 var(--blue); }
 .customer-avatar { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; color: #1d4ed8; background: #eaf2ff; font-weight: 800; }
 .customer-info, .customer-money { display: grid; gap: 4px; }
 .customer-info strong, .customer-money strong { color: #0f172a; }
@@ -444,7 +444,7 @@ onMounted(loadAll)
 .modal-head h3 { margin: 0 0 6px; font-size: 20px; }
 .modal-head p { margin: 0; color: #64748b; }
 .modal-head button { width: 34px; height: 34px; border: 0; background: #f2f5fa; border-radius: 6px; font-size: 20px; cursor: pointer; }
-.notice-tip { margin-bottom: 18px; padding: 12px 14px; border-left: 3px solid #2f6fe4; background: #f4f8ff; color: #1e40af; line-height: 1.55; }
+.notice-tip { margin-bottom: 18px; padding: 12px 14px; border-left: 3px solid var(--blue); background: #f4f8ff; color: #1e40af; line-height: 1.55; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
 .form-grid label { display: grid; gap: 8px; color: #344054; font-weight: 800; }
 .form-grid input { height: 44px; padding: 0 13px; border: 1px solid #d7e1ee; border-radius: 7px; outline: none; font-weight: 600; }

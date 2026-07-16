@@ -8,8 +8,8 @@
     </div>
 
     <div class="toolbar">
-      <input v-model.trim="filters.keyword" placeholder="搜索姓名 / 身份证号" @keyup.enter="loadRecords">
-      <select v-model="filters.status" @change="loadRecords">
+      <input v-model.trim="filters.keyword" placeholder="搜索姓名 / 身份证号" @keyup.enter="search">
+      <select v-model="filters.status" @change="search">
         <option value="">全部状态</option>
         <option value="5">授权中</option>
         <option value="1">查询中</option>
@@ -18,7 +18,12 @@
         <option value="4">已退款</option>
         <option value="6">背调中止</option>
       </select>
-      <button class="ghost-btn" @click="loadRecords">查询</button>
+      <span class="toolbar-label">提交时间</span>
+      <input v-model="filters.beginTime" type="date" @change="search">
+      <span class="toolbar-sep">—</span>
+      <input v-model="filters.endTime" type="date" @change="search">
+      <button class="ghost-btn" @click="search">查询</button>
+      <button v-if="hasFilters" class="text-btn" @click="resetFilters">重置</button>
     </div>
 
     <div class="records-table-wrap">
@@ -36,8 +41,8 @@
           <tr><th>姓名</th><th>查询类型</th><th>身份证号</th><th>手机号</th><th>提交时间</th><th>状态</th><th>操作</th></tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="7">正在加载...</td></tr>
-          <tr v-else-if="records.length === 0"><td colspan="7">暂无查询记录</td></tr>
+          <tr v-if="loading" class="skeleton-table-row"><td colspan="7"><span></span></td></tr>
+          <tr v-else-if="records.length === 0"><td colspan="7" class="table-empty">暂无符合条件的查询记录</td></tr>
           <tr v-for="item in records" :key="item.id">
             <td class="record-name"><strong>{{ item.name }}</strong></td>
             <td class="record-type">{{ item.type }}</td>
@@ -61,9 +66,14 @@
 
     <div class="pager">
       <span>共 {{ total }} 条</span>
+      <select v-model.number="filters.pageSize" @change="search">
+        <option :value="10">10 条/页</option>
+        <option :value="20">20 条/页</option>
+        <option :value="50">50 条/页</option>
+      </select>
       <button class="ghost-btn" :disabled="filters.pageNum <= 1" @click="changePage(-1)">上一页</button>
-      <span>第 {{ filters.pageNum }} 页</span>
-      <button class="ghost-btn" :disabled="records.length < filters.pageSize" @click="changePage(1)">下一页</button>
+      <span>{{ filters.pageNum }} / {{ totalPages }} 页</span>
+      <button class="ghost-btn" :disabled="filters.pageNum >= totalPages" @click="changePage(1)">下一页</button>
     </div>
 
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
@@ -71,7 +81,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { listData } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
@@ -84,7 +94,23 @@ const total = ref(0)
 const queryTypeMap = ref({})
 const message = ref('')
 const messageType = ref('info')
-const filters = reactive({ pageNum: 1, pageSize: 10, keyword: '', status: '' })
+const filters = reactive({ pageNum: 1, pageSize: 10, keyword: '', status: '', beginTime: '', endTime: '' })
+
+const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / filters.pageSize)))
+const hasFilters = computed(() => !!(filters.keyword || filters.status || filters.beginTime || filters.endTime))
+
+function search() {
+  filters.pageNum = 1
+  loadRecords()
+}
+
+function resetFilters() {
+  filters.keyword = ''
+  filters.status = ''
+  filters.beginTime = ''
+  filters.endTime = ''
+  search()
+}
 
 function show(text, type = 'info') {
   message.value = text
@@ -125,6 +151,8 @@ async function loadRecords() {
     const params = { pageNum: filters.pageNum, pageSize: filters.pageSize }
     if (filters.keyword) params.idCard = filters.keyword
     if (filters.status) params.searchStatus = filters.status
+    if (filters.beginTime) params['params[beginTime]'] = `${filters.beginTime} 00:00:00`
+    if (filters.endTime) params['params[endTime]'] = `${filters.endTime} 23:59:59`
     const res = await listData(params)
     total.value = res.total || 0
     records.value = (res.rows || []).map(item => mapRecord(item, queryTypeMap.value))

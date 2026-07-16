@@ -358,7 +358,7 @@ onMounted(async () => {
 
 .eyebrow {
   margin: 0 0 8px;
-  color: #2f6fe4;
+  color: var(--blue);
   font-size: 13px;
   font-weight: 700;
 }
@@ -377,7 +377,7 @@ onMounted(async () => {
 .invoice-apply-btn {
   flex: none;
   min-width: 138px;
-  background: #2f6fe4;
+  background: var(--blue);
   color: #ffffff;
   box-shadow: none;
 }
@@ -442,7 +442,7 @@ onMounted(async () => {
   height: 20px;
 }
 
-.stat-card.total .stat-icon { color: #2f6fe4; background: #eaf1ff; }
+.stat-card.total .stat-icon { color: var(--blue); background: #eaf1ff; }
 .stat-card.pending .stat-icon { color: #d97706; background: #fff7ed; }
 .stat-card.issued .stat-icon { color: #067647; background: #ecfdf3; }
 .stat-card.rejected .stat-icon { color: #d92d20; background: #fef3f2; }
@@ -685,7 +685,7 @@ onMounted(async () => {
 }
 
 .modal-head .eyebrow {
-  color: #2f6fe4;
+  color: var(--blue);
 }
 
 .modal-head h3 {
@@ -746,7 +746,7 @@ onMounted(async () => {
 .invoice-form input:focus,
 .invoice-form select:focus,
 .invoice-form textarea:focus {
-  border-color: #2f6fe4;
+  border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(47, 111, 228, 0.1);
 }
 

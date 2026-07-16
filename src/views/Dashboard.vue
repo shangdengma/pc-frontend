@@ -246,11 +246,11 @@ async function renderTrendChart() {
       data: trendSeries.value.values,
       smooth: 0.28,
       symbol: 'none',
-      lineStyle: { color: '#2864dc', width: 2.5 },
+      lineStyle: { color: '#2563eb', width: 2.5 },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(40,100,220,0.20)' },
-          { offset: 1, color: 'rgba(40,100,220,0.02)' }
+          { offset: 0, color: 'rgba(37,99,235,0.20)' },
+          { offset: 1, color: 'rgba(37,99,235,0.02)' }
         ])
       }
     }]

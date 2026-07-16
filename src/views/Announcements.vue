@@ -140,7 +140,7 @@ onMounted(loadMessages)
 
 .eyebrow {
   margin: 0 0 8px;
-  color: #2f6fe4;
+  color: var(--blue);
   font-size: 13px;
   font-weight: 700;
 }
@@ -187,7 +187,7 @@ onMounted(loadMessages)
 }
 
 .message-tabs button.active {
-  color: #2f6fe4;
+  color: var(--blue);
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
 }
@@ -239,7 +239,7 @@ onMounted(loadMessages)
 }
 
 .message-card.unread .message-status-dot {
-  background: #2f6fe4;
+  background: var(--blue);
   box-shadow: 0 0 0 4px #eaf1ff;
 }
 
@@ -306,7 +306,7 @@ onMounted(loadMessages)
 
 .text-btn {
   border: 0;
-  color: #2f6fe4;
+  color: var(--blue);
   background: transparent;
   font-weight: 700;
 }
@@ -351,7 +351,7 @@ onMounted(loadMessages)
 }
 
 .modal-head .eyebrow {
-  color: #2f6fe4;
+  color: var(--blue);
 }
 
 .modal-head h3 {
