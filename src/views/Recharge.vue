@@ -102,11 +102,11 @@
         <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="支付二维码" />
         <div v-else class="state-box">正在生成二维码...</div>
       </div>
-      <div class="dialog-actions">
+      <p class="polling-text">{{ pollingText }}</p>
+      <template #footer>
         <a v-if="payInfo" class="ghost-btn" :href="payInfo" target="_blank" rel="noreferrer">打开支付链接</a>
         <button class="primary-action small" type="button" @click="queryPayStatus">我已支付，刷新状态</button>
-      </div>
-      <p class="polling-text">{{ pollingText }}</p>
+      </template>
     </AppModal>
   </section>
 </template>

@@ -76,6 +76,7 @@
       eyebrow="企业认证"
       :description="panelDesc"
       size="lg"
+      :footer-visible="canEdit && !detailLoading"
       @close="closePanel"
     >
       <div v-if="detailLoading" class="state-box">正在加载详情...</div>
@@ -128,10 +129,10 @@
           <p v-if="errorMsg" class="error-line">{{ errorMsg }}</p>
           <p v-if="successMsg" class="form-success">{{ successMsg }}</p>
 
-          <div v-if="canEdit" class="panel-actions">
-            <button type="button" class="ghost-btn" :disabled="saving" @click="saveDraft">保存草稿</button>
-            <button type="button" class="primary-action small" :disabled="saving" @click="submitAudit">提交审核</button>
-          </div>
+      </template>
+      <template #footer>
+        <button type="button" class="ghost-btn" :disabled="saving" @click="saveDraft">保存草稿</button>
+        <button type="button" class="primary-action small" :disabled="saving" @click="submitAudit">提交审核</button>
       </template>
     </AppModal>
   </section>
@@ -675,4 +676,3 @@ onMounted(async () => {
   }
 }
 </style>
-

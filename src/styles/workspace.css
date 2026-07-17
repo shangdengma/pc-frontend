@@ -225,9 +225,9 @@ textarea:focus-visible {
   z-index: 3000;
   display: grid;
   place-items: center;
-  padding: 24px;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(2px);
+  padding: 32px;
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(3px);
 }
 
 .app-modal {
@@ -235,11 +235,11 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   width: min(620px, calc(100vw - 48px));
-  max-height: min(86vh, 860px);
+  max-height: min(calc(100dvh - 64px), 860px);
   overflow: hidden;
   background: #fff;
   border: 1px solid #dce3ec;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 24px 72px rgba(15, 23, 42, 0.24);
 }
 
@@ -255,11 +255,15 @@ textarea:focus-visible {
   justify-content: space-between;
   gap: 20px;
   flex: 0 0 auto;
-  padding: 20px 22px 18px;
+  min-height: 72px;
+  padding: 19px 68px 17px 24px;
   border-bottom: 1px solid #e8edf3;
 }
 
-.app-modal__heading { min-width: 0; }
+.app-modal__heading {
+  min-width: 0;
+  max-width: 100%;
+}
 .app-modal__eyebrow {
   margin: 0 0 4px;
   color: #2563eb;
@@ -278,21 +282,24 @@ textarea:focus-visible {
 .app-modal__description {
   margin: 5px 0 0;
   color: #667085;
+  max-width: 62ch;
   font-size: 13px;
+  line-height: 1.55;
 }
 
 .app-modal__close {
-  position: static;
-  flex: 0 0 34px;
-  width: 34px;
-  height: 34px;
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  width: 36px;
+  height: 36px;
   display: inline-grid;
   place-items: center;
-  margin: -4px -4px 0 0;
+  margin: 0;
   padding: 0;
   color: #667085;
-  background: #f5f7fa;
-  border: 1px solid transparent;
+  background: transparent;
+  border: 1px solid #e4e9f0;
   border-radius: 6px;
 }
 
@@ -304,9 +311,12 @@ textarea:focus-visible {
 
 .app-modal__body {
   min-height: 0;
-  padding: 22px;
+  padding: 24px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
+
+.app-modal__body--flush { padding: 0; }
 
 .app-modal__body > :first-child { margin-top: 0; }
 .app-modal__body > :last-child { margin-bottom: 0; }
@@ -316,25 +326,21 @@ textarea:focus-visible {
   justify-content: flex-end;
   gap: 10px;
   flex: 0 0 auto;
-  padding: 14px 22px;
+  min-height: 64px;
+  padding: 13px 24px;
   background: #fafbfc;
   border-top: 1px solid #e8edf3;
 }
 
 .app-modal-fade-enter-active,
-.app-modal-fade-leave-active { transition: opacity 0.16s ease; }
+.app-modal-fade-leave-active { transition: opacity 0.18s ease; }
 .app-modal-fade-enter-from,
 .app-modal-fade-leave-to { opacity: 0; }
 
-.app-modal .form-actions,
-.app-modal .modal-actions,
-.app-modal .panel-actions,
-.app-modal .detail-actions {
-  margin: 20px -22px -22px;
-  padding: 14px 22px;
-  background: #fafbfc;
-  border-top: 1px solid #e8edf3;
-}
+.app-modal-fade-enter-active .app-modal,
+.app-modal-fade-leave-active .app-modal { transition: transform 0.18s ease, opacity 0.18s ease; }
+.app-modal-fade-enter-from .app-modal,
+.app-modal-fade-leave-to .app-modal { transform: translateY(8px) scale(0.985); opacity: 0; }
 
 .app-modal .detail-content,
 .app-modal .announcement-detail-content {
@@ -351,6 +357,20 @@ textarea:focus-visible {
   box-shadow: none;
 }
 
+.app-modal__footer .pager {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.app-modal__footer > .primary-btn,
+.app-modal__footer > .ghost-btn,
+.app-modal__footer > .primary-action {
+  min-width: 92px;
+}
+
 @media (max-width: 1100px) {
   .page-content,
   .page-content.page-content-wide { padding: 24px 22px 56px; }
@@ -362,16 +382,21 @@ textarea:focus-visible {
 @media (max-width: 760px) {
   .page-content,
   .page-content.page-content-wide { padding: 20px 14px 48px; }
-  .app-modal-mask { padding: 12px; align-items: end; }
+  .app-modal-mask { padding: 12px; }
   .app-modal,
   .app-modal--sm,
   .app-modal--md,
   .app-modal--lg,
   .app-modal--xl {
     width: 100%;
-    max-height: 92dvh;
-    border-radius: 8px 8px 0 0;
+    max-height: calc(100dvh - 24px);
+    border-radius: 8px;
   }
+  .app-modal__header { padding: 17px 62px 15px 18px; }
+  .app-modal__close { top: 15px; right: 16px; }
+  .app-modal__body { padding: 18px; }
+  .app-modal__body--flush { padding: 0; }
+  .app-modal__footer { padding: 12px 18px; }
   .invoice-stats,
   .sub-summary,
   .agent-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }

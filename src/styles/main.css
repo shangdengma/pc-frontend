@@ -2171,12 +2171,6 @@ textarea::placeholder {
   height: 236px;
 }
 
-.dialog-actions {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-}
-
 .polling-text {
   margin-top: 16px !important;
   color: var(--muted) !important;
@@ -2471,13 +2465,6 @@ textarea::placeholder {
 
 .panel-reject {
   margin-top: 20px;
-}
-
-.panel-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
 }
 
 /* ============================================================

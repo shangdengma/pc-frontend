@@ -75,6 +75,7 @@
       eyebrow="子账号详情"
       :description="detailAccount?.userName || ''"
       size="xl"
+      flush
       @close="closeDetail"
     >
         <div class="detail-tabs">
@@ -114,12 +115,14 @@
             </tbody>
           </table>
         </div>
-      <div class="pager">
+      <template #footer>
+        <div class="pager">
           <span>共 {{ detailTotal }} 条</span>
           <button class="ghost-btn" :disabled="detailPage.pageNum <= 1 || detailLoading" @click="changeDetailPage(-1)">上一页</button>
           <span>第 {{ detailPage.pageNum }} 页</span>
           <button class="ghost-btn" :disabled="detailRows.length < detailPage.pageSize || detailLoading" @click="changeDetailPage(1)">下一页</button>
-      </div>
+        </div>
+      </template>
     </AppModal>
   </div>
 </template>
@@ -370,10 +373,10 @@ onMounted(async () => {
 .row-actions .danger { color: #e24a4a; background: #fff7f7; border-color: #ffdada; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .form-grid label { display: grid; gap: 9px; color: #24344d; font-weight: 800; }
-.form-grid input { height: 42px; border: 1px solid #dbe3ef; border-radius: 9px; padding: 0 12px; font-size: 15px; outline: none; }
+.form-grid input { height: 42px; border: 1px solid #dbe3ef; border-radius: 6px; padding: 0 12px; font-size: 14px; outline: none; }
 .form-grid input:focus { border-color: #2168f3; box-shadow: 0 0 0 3px rgba(33,104,243,.12); }
 .form-message { margin: 8px 0 0; color: #e24a4a; }
-.detail-tabs { margin: -4px 0 16px; padding-bottom: 12px; border-bottom: 1px solid #edf1f7; display: flex; gap: 10px; }
+.detail-tabs { margin: 0; padding: 14px 24px 12px; border-bottom: 1px solid #edf1f7; display: flex; gap: 10px; background: #fff; }
 .detail-tabs button { height: 38px; padding: 0 18px; border-radius: 6px; border: 1px solid #dbe6f6; background: #fff; color: #64748b; font-weight: 700; cursor: pointer; }
 .detail-tabs .active { color: #2168f3; border-color: #2168f3; background: #eef5ff; }
 .detail-body { overflow: auto; max-height: 56vh; padding: 0; }
@@ -388,9 +391,7 @@ onMounted(async () => {
 .amount { font-weight: 900; }
 .amount.plus { color: #0b9f62; }
 .amount.minus { color: #df3f3f; }
-.pager { margin: 18px -22px -22px; padding: 14px 22px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-top: 1px solid #edf1f7; border-radius: 0; color: #64748b; }
+.pager { margin: 0; padding: 0; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-radius: 0; color: #64748b; }
 @media (max-width: 1180px) { .account-row { grid-template-columns: 1fr 1fr; } .row-actions { justify-content: flex-start; } .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .sub-quota-view, .sub-summary, .form-grid { grid-template-columns: 1fr; } .sub-hero { align-items: stretch; flex-direction: column; } }
 </style>
-
-

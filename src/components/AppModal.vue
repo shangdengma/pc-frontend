@@ -10,7 +10,7 @@
         <section
           ref="modalRef"
           class="app-modal"
-          :class="`app-modal--${size}`"
+          :class="[`app-modal--${size}`, { 'app-modal--flush': flush }]"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
@@ -26,11 +26,11 @@
             </button>
           </header>
 
-          <div class="app-modal__body">
+          <div class="app-modal__body" :class="{ 'app-modal__body--flush': flush }">
             <slot />
           </div>
 
-          <footer v-if="$slots.footer" class="app-modal__footer">
+          <footer v-if="$slots.footer && footerVisible" class="app-modal__footer">
             <slot name="footer" />
           </footer>
         </section>
@@ -48,7 +48,9 @@ const props = defineProps({
   title: { type: String, required: true },
   eyebrow: { type: String, default: '' },
   description: { type: String, default: '' },
-  size: { type: String, default: 'md' }
+  size: { type: String, default: 'md' },
+  flush: { type: Boolean, default: false },
+  footerVisible: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['close'])

@@ -42,6 +42,7 @@
       eyebrow="消息详情"
       :description="detail ? formatTime(detail.createTime) : ''"
       size="md"
+      :footer-visible="!!detail && (!isRead(detail) || !!detail.link)"
       @close="detail = null"
     >
       <template v-if="detail">
@@ -49,10 +50,12 @@
         <div v-if="imageList(detail).length" class="message-images">
           <img v-for="url in imageList(detail)" :key="url" :src="url" alt="通知图片" />
         </div>
-        <div class="detail-actions">
+      </template>
+      <template #footer>
+        <template v-if="detail">
           <button v-if="!isRead(detail)" class="primary-btn" type="button" @click="markRead(detail)">标记已读</button>
           <a v-if="detail.link" class="ghost-btn" :href="detail.link">查看相关内容</a>
-        </div>
+        </template>
       </template>
     </AppModal>
   </section>
@@ -338,13 +341,6 @@ onMounted(loadMessages)
   border: 1px solid var(--line);
   border-radius: 8px;
   object-fit: cover;
-}
-
-.detail-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
 }
 
 @media (max-width: 760px) {

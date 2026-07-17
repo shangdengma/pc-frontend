@@ -114,7 +114,7 @@
       size="lg"
       @close="closeApplyDialog"
     >
-      <form class="invoice-form" @submit.prevent="submitInvoice">
+      <form id="invoice-apply-form" class="invoice-form" @submit.prevent="submitInvoice">
           <label>
             <span>发票类型 <b>*</b></span>
             <select v-model="form.types">
@@ -152,13 +152,13 @@
           </label>
 
           <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
-          <div class="form-actions">
-            <button class="ghost-btn" type="button" @click="closeApplyDialog">取消</button>
-            <button class="primary-btn" type="submit" :disabled="submitting">
-              {{ submitting ? '提交中...' : '提交申请' }}
-            </button>
-          </div>
       </form>
+      <template #footer>
+        <button class="ghost-btn" type="button" @click="closeApplyDialog">取消</button>
+        <button class="primary-btn" type="submit" form="invoice-apply-form" :disabled="submitting">
+          {{ submitting ? '提交中...' : '提交申请' }}
+        </button>
+      </template>
     </AppModal>
 
     <AppModal
@@ -696,20 +696,12 @@ onMounted(async () => {
 }
 
 .span-2,
-.form-message,
-.form-actions {
+.form-message {
   grid-column: 1 / -1;
 }
 
 .form-message {
   margin: 0;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4px;
 }
 
 .detail-grid {
