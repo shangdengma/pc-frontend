@@ -5,7 +5,8 @@
         v-if="open"
         class="app-modal-mask"
         role="presentation"
-        @click.self="emit('close')"
+        @mousedown.self.prevent
+        @click.self="handleBackdropClick"
       >
         <section
           ref="modalRef"
@@ -50,7 +51,8 @@ const props = defineProps({
   description: { type: String, default: '' },
   size: { type: String, default: 'md' },
   flush: { type: Boolean, default: false },
-  footerVisible: { type: Boolean, default: true }
+  footerVisible: { type: Boolean, default: true },
+  closeOnBackdrop: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close'])
@@ -59,6 +61,10 @@ const modalRef = ref(null)
 const closeButtonRef = ref(null)
 let previousActiveElement = null
 let previousBodyOverflow = ''
+
+function handleBackdropClick() {
+  if (props.closeOnBackdrop) emit('close')
+}
 
 function handleKeydown(event) {
   if (!props.open) return
