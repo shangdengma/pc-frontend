@@ -1,9 +1,15 @@
 ﻿<template>
   <div class="query-layout">
   <section class="work-card">
-    <div class="work-card-head">
-      <h2>发起背调查询</h2>
-      <p>填写候选人信息并选择查询套餐，候选人完成授权后自动执行查询。</p>
+    <div class="work-card-head query-card-head">
+      <div>
+        <h2>{{ canOnlineTest ? '在线测试' : '发起背调查询' }}</h2>
+        <p>{{ canOnlineTest ? '填写候选人信息并选择查询套餐，提交后直接进入查询。' : '填写候选人信息并选择查询套餐，候选人完成授权后自动执行查询。' }}</p>
+      </div>
+      <div class="query-funds" :class="{ 'is-sub-account': isSubAccount }">
+        <span>{{ isSubAccount ? '剩余额度' : '可用余额' }}</span>
+        <strong>{{ availableBalanceText }}</strong>
+      </div>
     </div>
 
     <div class="form-grid">
@@ -19,7 +25,7 @@
       </label>
     </div>
 
-    <div class="auth-method-panel">
+    <div v-if="!canOnlineTest" class="auth-method-panel">
       <span class="auth-method-title">授权方式</span>
       <div class="auth-method-options">
         <button type="button" :class="{ active: form.authMethod === 'esign' }" @click="setAuthMethod('esign')">
@@ -33,7 +39,7 @@
       </div>
     </div>
 
-    <div v-if="form.authMethod === 'upload'" class="authorization-upload">
+    <div v-if="!canOnlineTest && form.authMethod === 'upload'" class="authorization-upload">
       <div>
         <strong>候选人授权书</strong>
         <span>支持 PDF、DOC、DOCX、JPG、PNG，文件不超过 5MB。</span>
@@ -60,8 +66,8 @@
         <strong>{{ selectedTypeName || '未选择' }}</strong>
       </div>
       <div class="cost-row">
-        <span>授权方式</span>
-        <strong>{{ form.authMethod === 'esign' ? '电子签授权' : '上传授权书' }}</strong>
+        <span>{{ canOnlineTest ? '执行方式' : '授权方式' }}</span>
+        <strong>{{ canOnlineTest ? '在线测试' : (form.authMethod === 'esign' ? '电子签授权' : '上传授权书') }}</strong>
       </div>
       <div class="cost-total">
         <span>预计费用</span>
@@ -74,7 +80,7 @@
       <h4>查询流程</h4>
       <ol>
         <li>提交候选人信息并选择套餐</li>
-        <li>候选人完成电子签授权（或上传授权书待审核）</li>
+        <li v-if="!canOnlineTest">候选人完成电子签授权（或上传授权书待审核）</li>
         <li>系统执行核验，生成背调报告</li>
         <li>在「查询记录」中查看与下载报告</li>
       </ol>
@@ -86,9 +92,10 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { createPendingQuery, getAllData, launchEsign, preCheckQuery, uploadAuthorizationFile } from '../api/data'
+import { createPendingQuery, getAllData, launchEsign, launchOnlineTest, preCheckQuery, uploadAuthorizationFile } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
-import { getUserProfile } from '../api/user'
+import { getUserBalance, getUserProfile } from '../api/user'
+import { yuanFromFen } from '../utils/format'
 
 const emit = defineEmits(['balance-updated'])
 const router = useRouter()
@@ -99,6 +106,11 @@ const queryTypeConfigs = ref([])
 const priceMap = ref({})
 const selectedAuthFile = ref(null)
 const authFileName = ref('')
+const profile = ref({})
+const availableBalance = ref(null)
+const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
+const availableBalanceText = computed(() => availableBalance.value == null ? '—' : `¥${yuanFromFen(availableBalance.value)}`)
+const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
 const form = reactive({
   name: '',
   idCard: '',
@@ -141,16 +153,16 @@ function show(text, type = 'info') {
 
 function validate() {
   if (!form.name) return '请填写候选人姓名'
-  if (form.authMethod === 'upload' && !form.idCard) return '上传授权书方式需填写身份证号'
+  if (!canOnlineTest.value && form.authMethod === 'upload' && !form.idCard) return '上传授权书方式需填写身份证号'
   if (!form.mobile && !form.idCard) return '请至少填写手机号或身份证号'
-  if (form.authMethod === 'upload' && !form.mobile) return '上传授权书方式需填写手机号'
+  if (!canOnlineTest.value && form.authMethod === 'upload' && !form.mobile) return '上传授权书方式需填写手机号'
   if (form.mobile && !/^1[3-9]\d{9}$/.test(form.mobile)) return '手机号格式不正确'
   if (form.idCard) {
     form.idCard = form.idCard.replace(/x/g, 'X')
     if (!/^\d{17}[\dX]$/.test(form.idCard)) return '身份证号格式不正确'
   }
   if (!form.callTypeId) return '请选择查询套餐'
-  if (form.authMethod === 'upload' && !selectedAuthFile.value && !form.authorizationFile) return '请上传候选人授权书'
+  if (!canOnlineTest.value && form.authMethod === 'upload' && !selectedAuthFile.value && !form.authorizationFile) return '请上传候选人授权书'
   return ''
 }
 
@@ -237,7 +249,10 @@ async function submitQuery() {
       }
     } catch (err) {}
 
-    if (form.authMethod === 'upload') {
+    if (canOnlineTest.value) {
+      await launchOnlineTest(queryData)
+      show('测试任务已提交，结果生成后可在查询记录中查看。', 'success')
+    } else if (form.authMethod === 'upload') {
       const authorizationFile = await uploadAuthFileIfNeeded()
       await createPendingQuery({ ...queryData, authorizationFile, searchStatus: '5' })
       show('授权书已提交，等待后台审核。审核通过后会自动生成报告。', 'success')
@@ -271,6 +286,16 @@ async function loadPrices() {
   try {
     const res = await getUserProfile()
     const data = res.data || {}
+    profile.value = data
+    const userId = data.userId || data.id
+    if (userId) {
+      try {
+        const balanceRes = await getUserBalance(userId)
+        availableBalance.value = Number(balanceRes?.data || 0)
+      } catch (err) {
+        availableBalance.value = Number(data.money || 0)
+      }
+    }
     let list = []
     if (Array.isArray(data.deductionStandardList)) list = data.deductionStandardList
     else if (data.deductionStandard) {
@@ -283,6 +308,7 @@ async function loadPrices() {
       return acc
     }, {})
   } catch (err) {
+    availableBalance.value = null
     priceMap.value = {}
   }
 }
@@ -294,6 +320,45 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.query-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.query-funds {
+  flex: 0 0 auto;
+  min-width: 150px;
+  padding-left: 20px;
+  border-left: 1px solid #dce5f0;
+  text-align: right;
+}
+
+.query-funds span,
+.query-funds strong {
+  display: block;
+}
+
+.query-funds span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.query-funds strong {
+  margin-top: 5px;
+  color: #172033;
+  font-size: 21px;
+  line-height: 1.2;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.query-funds.is-sub-account strong {
+  color: #157347;
+}
+
 .auth-method-panel,
 .authorization-upload {
   margin-top: 18px;
@@ -386,6 +451,20 @@ onMounted(async () => {
 }
 
 @media (max-width: 900px) {
+  .query-card-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .query-funds {
+    width: 100%;
+    padding: 12px 0 0;
+    border-top: 1px solid #e5edf8;
+    border-left: 0;
+    text-align: left;
+  }
+
   .auth-method-options {
     grid-template-columns: 1fr;
   }

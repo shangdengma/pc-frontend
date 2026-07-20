@@ -103,7 +103,7 @@ import { getUser, removeToken } from '../utils/auth'
 
 const route = useRoute()
 const router = useRouter()
-const pageTitle = computed(() => route.meta.title || '工作台')
+const pageTitle = computed(() => route.name === 'queryCreate' && canOnlineTest.value ? '在线测试' : (route.meta.title || '工作台'))
 const menuOpen = ref(false)
 const menuRef = ref(null)
 const localUser = getUser()
@@ -112,12 +112,13 @@ const userName = ref(localUser.nickName || localUser.userName || '当前用户')
 const userInitial = computed(() => (userName.value || '钟').slice(0, 1))
 const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
 const isAgent = computed(() => profile.value && (profile.value.isAgent === true || profile.value.isAgent === 1 || profile.value.isAgent === '1'))
+const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
 
-const businessMenus = [
+const businessMenus = computed(() => [
   { title: '工作台', path: '/dashboard', icon: LayoutDashboard },
-  { title: '发起背调查询', path: '/query/create', icon: ShieldCheck },
+  { title: canOnlineTest.value ? '在线测试' : '发起背调查询', path: '/query/create', icon: ShieldCheck },
   { title: '查询记录', path: '/records', icon: ClipboardList }
-]
+])
 
 const rawAccountMenus = [
   { title: '基本信息', path: '/account-profile', icon: UserRound },

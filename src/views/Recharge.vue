@@ -5,9 +5,16 @@
         <p class="eyebrow">账户中心</p>
         <h2>账户充值</h2>
       </div>
-      <div class="balance-panel">
-        <span>当前余额</span>
-        <strong>¥{{ balanceText }}</strong>
+      <div class="recharge-hero-actions">
+        <button class="ledger-entry" type="button" @click="router.push('/recharge/ledger')">
+          <ReceiptText :size="17" :stroke-width="1.9" />
+          资金流水
+          <ChevronRight :size="16" :stroke-width="1.9" />
+        </button>
+        <div class="balance-panel">
+          <span>当前余额</span>
+          <strong>¥{{ balanceText }}</strong>
+        </div>
       </div>
     </div>
 
@@ -113,6 +120,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ChevronRight, ReceiptText } from '@lucide/vue'
 import QRCode from 'qrcode'
 import AppModal from '../components/AppModal.vue'
 import { getUserBalance, getUserProfile } from '../api/user'
@@ -121,6 +130,7 @@ import { createEpayOrder, queryOrder } from '../api/pay'
 import { yuanFromFen } from '../utils/format'
 
 const emit = defineEmits(['balance-updated'])
+const router = useRouter()
 
 const loading = ref(false)
 const paying = ref(false)
@@ -327,3 +337,51 @@ function stopPolling() {
 onMounted(loadPage)
 onBeforeUnmount(stopPolling)
 </script>
+
+<style scoped>
+.recharge-hero-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.ledger-entry {
+  min-width: 126px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 16px;
+  border: 1px solid #cbdcf6;
+  border-radius: 7px;
+  color: #2563eb;
+  background: #f5f8ff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+}
+
+.ledger-entry:hover {
+  border-color: #8db2ee;
+  color: #174ea6;
+  background: #eaf2ff;
+}
+
+.ledger-entry:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, .18);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .recharge-hero-actions {
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+
+  .ledger-entry {
+    min-height: 42px;
+  }
+}
+</style>

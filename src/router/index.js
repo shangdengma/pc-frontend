@@ -9,12 +9,14 @@ const QueryCreate = () => import('../views/QueryCreate.vue')
 const Records = () => import('../views/Records.vue')
 const ReportFull = () => import('../views/report-full/Index.vue')
 const Recharge = () => import('../views/Recharge.vue')
+const AccountLedger = () => import('../views/AccountLedger.vue')
 const Invoices = () => import('../views/Invoices.vue')
 const Announcements = () => import('../views/Announcements.vue')
 const PublicAnnouncements = () => import('../views/PublicAnnouncements.vue')
 const EnterpriseCert = () => import('../views/EnterpriseCert.vue')
 const SubAccounts = () => import('../views/SubAccounts.vue')
 const AgentCenter = () => import('../views/AgentCenter.vue')
+const AgentCustomerFinance = () => import('../views/AgentCustomerFinance.vue')
 const AccountProfile = () => import('../views/AccountProfile.vue')
 const NotFound = () => import('../views/NotFound.vue')
 
@@ -32,10 +34,12 @@ const routes = [
       { path: 'records', name: 'records', component: Records, meta: { title: '查询记录' } },
       { path: 'report/:id', name: 'reportDetail', component: ReportFull, meta: { title: '报告详情' } },
       { path: 'recharge', name: 'recharge', component: Recharge, meta: { title: '账户充值' } },
+      { path: 'recharge/ledger', name: 'accountLedger', component: AccountLedger, meta: { title: '资金流水' } },
       { path: 'invoices', name: 'invoices', component: Invoices, meta: { title: '我的发票' } },
       { path: 'enterprise-cert', name: 'enterpriseCert', component: EnterpriseCert, meta: { title: '企业认证' } },
       { path: 'sub-accounts', name: 'subAccounts', component: SubAccounts, meta: { title: '子账号管理', mainOnly: true } },
       { path: 'agent-center', name: 'agentCenter', component: AgentCenter, meta: { title: '代理中心', agentOnly: true } },
+      { path: 'agent-center/customers/:userId/finance', name: 'agentCustomerFinance', component: AgentCustomerFinance, meta: { title: '客户资金明细', agentOnly: true } },
       { path: 'announcements', name: 'announcements', component: PublicAnnouncements, meta: { title: '公告中心' } },
       { path: 'messages', name: 'messages', component: Announcements, meta: { title: '消息通知' } }
     ]
@@ -57,4 +61,3 @@ router.beforeEach((to, from, next) => {
 })
 
 export default router
-

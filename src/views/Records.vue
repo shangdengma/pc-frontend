@@ -4,7 +4,7 @@
       <div>
         <h2>查询记录</h2>
       </div>
-      <router-link class="primary-btn" to="/query/create">发起查询</router-link>
+      <router-link class="primary-btn" to="/query/create">{{ canOnlineTest ? '在线测试' : '发起查询' }}</router-link>
     </div>
 
     <div class="toolbar">
@@ -85,6 +85,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { listData } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
+import { getUserProfile } from '../api/user'
 import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
 
 const router = useRouter()
@@ -94,10 +95,12 @@ const total = ref(0)
 const queryTypeMap = ref({})
 const message = ref('')
 const messageType = ref('info')
+const profile = ref({})
 const filters = reactive({ pageNum: 1, pageSize: 10, keyword: '', status: '', beginTime: '', endTime: '' })
 
 const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / filters.pageSize)))
 const hasFilters = computed(() => !!(filters.keyword || filters.status || filters.beginTime || filters.endTime))
+const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
 
 function search() {
   filters.pageNum = 1
@@ -202,10 +205,10 @@ function downloadPdf(item) {
 }
 
 onMounted(async () => {
-  await loadQueryTypes()
+  const profilePromise = getUserProfile().then(res => { profile.value = res.data || res.user || {} }).catch(() => {})
+  await Promise.all([loadQueryTypes(), profilePromise])
   await loadRecords()
 })
 </script>
-
 
 

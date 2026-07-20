@@ -25,6 +25,16 @@ export function getAllData(data) {
   })
 }
 
+export function launchOnlineTest(data) {
+  return request({
+    url: '/interface/call/getAllDataNoEsign',
+    method: 'post',
+    params: { waitResult: false },
+    data,
+    timeout: 0
+  })
+}
+
 export function preCheckQuery(data) {
   return request({
     url: '/interface/call/preCheckQuery',

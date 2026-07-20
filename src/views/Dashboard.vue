@@ -8,7 +8,7 @@
       </div>
       <router-link class="new-query-btn" to="/query/create">
         <Plus :size="18" :stroke-width="2" />
-        发起背调查询
+        {{ canOnlineTest ? '在线测试' : '发起背调查询' }}
       </router-link>
     </div>
 
@@ -160,6 +160,7 @@ const monthCount = computed(() => records.value.filter(item => isWithinDays(item
 const runningCount = computed(() => records.value.filter(r => ['1', '5'].includes(String(r.status))).length)
 const authCount = computed(() => records.value.filter(r => String(r.status) === '5').length)
 const isSubAccount = computed(() => profile.value && profile.value.parentUserId != null)
+const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
 const subAccountTotalQuota = computed(() => Number(profile.value?.subAccountQuota || 0))
 const subAccountRemainingQuota = computed(() => Number(balance.value || 0))
 const metrics = computed(() => [
@@ -362,5 +363,4 @@ onBeforeUnmount(() => {
   text-decoration: none;
 }
 </style>
-
 

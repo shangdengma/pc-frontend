@@ -8,10 +8,10 @@ export function createEpayOrder(data) {
   })
 }
 
-export function queryOrder(data) {
+export function queryOrder(outTradeNo) {
   return request({
     url: '/remote/pay/return',
     method: 'post',
-    data
+    data: { outTradeNo }
   })
 }

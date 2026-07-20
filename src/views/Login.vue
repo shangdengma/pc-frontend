@@ -27,8 +27,8 @@
 
       <template v-if="loginMode === 'password'">
         <label>
-          <span>用户名</span>
-          <input v-model.trim="form.username" placeholder="请输入用户名" autocomplete="username">
+          <span>账号或手机号</span>
+          <input v-model.trim="form.username" placeholder="请输入账号或手机号" autocomplete="username">
         </label>
         <label>
           <span>密码</span>
@@ -157,7 +157,7 @@ async function finishLogin(res, fallbackName) {
 }
 
 async function handlePasswordLogin() {
-  if (!form.username) return (error.value = '请输入用户名')
+  if (!form.username) return (error.value = '请输入账号或手机号')
   if (!form.password) return (error.value = '请输入密码')
   if (captchaEnabled.value && !form.code) return (error.value = '请输入验证码')
   const res = await login(form.username, form.password, form.code, form.uuid, 'uniapp')
