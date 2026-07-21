@@ -101,7 +101,7 @@
                 <td>{{ getQueryTypeName(row.searchType) }}</td>
                 <td>{{ maskPhone(row.phoneNumber) }}</td>
                 <td>{{ formatDateTime(row.createTime) }}</td>
-                <td><span class="status-pill" :class="statusClass(row.searchStatus, row.displayStatus)">{{ statusText(row.searchStatus, row.displayStatusText) }}</span></td>
+                <td><span class="status-pill" :class="statusClass(row.searchStatus, row.displayStatus, row.billingStatus)">{{ statusText(row.searchStatus, row.displayStatusText, row.billingStatus, row.displayStatus) }}</span></td>
                 <td>{{ row.outTradeNo || '-' }}</td>
               </tr>
             </tbody>
@@ -114,7 +114,7 @@
               <tr v-for="row in detailRows" :key="row.id">
                 <td>{{ formatDateTime(row.createdAt) }}</td>
                 <td>{{ row.outTradeNo || '-' }}</td>
-                <td :class="['amount', Number(row.changeCent) >= 0 ? 'plus' : 'minus']">{{ formatSignedFen(row.changeCent) }}</td>
+                <td :class="['amount', String(row.changeStyle) === '7' ? 'frozen' : Number(row.changeCent) >= 0 ? 'plus' : 'minus']">{{ formatSignedFen(row.changeCent, row.changeStyle) }}</td>
                 <td>{{ logTypeText(row.changeStyle) }}</td>
                 <td>&yen;{{ yuanFromFen(row.beforeMoney) }}</td>
                 <td>&yen;{{ yuanFromFen(row.afterMoney) }}</td>
@@ -248,8 +248,9 @@ function logTypeText(value) {
   if (s === '8') return '释放冻结'
   return s || '-'
 }
-function formatSignedFen(value) {
+function formatSignedFen(value, changeStyle) {
   const n = Number(value || 0)
+  if (String(changeStyle) === '7') return `¥${yuanFromFen(Math.abs(n))}`
   const prefix = n > 0 ? '+' : n < 0 ? '-' : ''
   return `${prefix}¥${yuanFromFen(Math.abs(n))}`
 }
@@ -430,6 +431,7 @@ onMounted(async () => {
 .amount { font-weight: 900; }
 .amount.plus { color: #0b9f62; }
 .amount.minus { color: #df3f3f; }
+.amount.frozen { color: #b35c00; }
 .pager { margin: 0; padding: 0; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-radius: 0; color: #64748b; }
 @media (max-width: 1180px) { .account-row { grid-template-columns: 1fr 1fr; } .row-actions { justify-content: flex-start; } .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .sub-quota-view, .sub-summary, .form-grid { grid-template-columns: 1fr; } .sub-hero { align-items: stretch; flex-direction: column; } }

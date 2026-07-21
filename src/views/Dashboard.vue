@@ -50,7 +50,7 @@
               <td><strong>{{ row.name }}</strong></td>
               <td>{{ row.type }}</td>
               <td>{{ formatDateTime(row.time) }}</td>
-              <td><span class="status-pill" :class="statusClass(row.status, row.displayStatus)"><i></i>{{ statusText(row.status, row.displayStatusText) }}</span></td>
+              <td><span class="status-pill" :class="statusClass(row.status, row.displayStatus, row.billingStatus)"><i></i>{{ statusText(row.status, row.displayStatusText, row.billingStatus, row.displayStatus) }}</span></td>
             </tr>
           </tbody>
         </table>
@@ -363,4 +363,3 @@ onBeforeUnmount(() => {
   text-decoration: none;
 }
 </style>
-

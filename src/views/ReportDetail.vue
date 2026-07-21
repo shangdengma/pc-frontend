@@ -14,7 +14,7 @@
         <div><span>姓名</span><strong>{{ detail.name || '-' }}</strong></div>
         <div><span>身份证号</span><strong>{{ detail.idCard || '-' }}</strong></div>
         <div><span>手机号</span><strong>{{ detail.phoneNumber || detail.mobile || '-' }}</strong></div>
-        <div><span>状态</span><strong>{{ statusText(detail.searchStatus, detail.displayStatusText) }}</strong></div>
+        <div><span>状态</span><strong>{{ statusText(detail.searchStatus, detail.displayStatusText, detail.billingStatus, detail.displayStatus) }}</strong></div>
       </div>
 
       <div class="json-panel">

@@ -11,7 +11,14 @@ export function formatDateTime(value) {
   return text
 }
 
-export function statusText(status, displayStatusText = '') {
+function isRefundedStatus(status, billingStatus = '', displayStatus = '') {
+  return String(status ?? '') === '4'
+    || String(billingStatus ?? '').toUpperCase() === 'REFUNDED'
+    || String(displayStatus ?? '').toLowerCase() === 'refunded'
+}
+
+export function statusText(status, displayStatusText = '', billingStatus = '', displayStatus = '') {
+  if (isRefundedStatus(status, billingStatus, displayStatus)) return '已退款'
   if (displayStatusText) return String(displayStatusText)
   const s = String(status ?? '')
   if (s === '2' || s === 'success') return '查询成功'
@@ -23,7 +30,8 @@ export function statusText(status, displayStatusText = '') {
   return s || '未知'
 }
 
-export function statusClass(status, displayStatus = '') {
+export function statusClass(status, displayStatus = '', billingStatus = '') {
+  if (isRefundedStatus(status, billingStatus, displayStatus)) return 'danger'
   const display = String(displayStatus ?? '')
   if (display === 'success') return 'success'
   if (['failed', 'refunded', 'expired_released', 'auth_rejected', 'no_result', 'completed_no_data'].includes(display)) return 'danger'
@@ -46,9 +54,10 @@ function isPlainStatusMessage(value) {
 
 function getStatusReason(item) {
   const status = String(item.searchStatus ?? '')
+  const refunded = isRefundedStatus(status, item.billingStatus, item.displayStatus)
   const codeMsg = item.codeMsg || item.code_msg || ''
 
-  if (status === '4') {
+  if (refunded) {
     return item.reasonForRefund || item.reason_for_refund || ''
   }
 
@@ -83,6 +92,5 @@ export function mapRecord(item, queryTypeMap = {}) {
     statusReason: getStatusReason(item)
   }
 }
-
 
 

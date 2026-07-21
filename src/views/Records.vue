@@ -51,7 +51,7 @@
             <td class="record-time">{{ formatDateTime(item.time) }}</td>
             <td>
               <div class="record-status-cell">
-                <span class="status-pill" :class="statusClass(item.status, item.displayStatus)">{{ statusText(item.status, item.displayStatusText) }}</span>
+                <span class="status-pill" :class="statusClass(item.status, item.displayStatus, item.billingStatus)">{{ statusText(item.status, item.displayStatusText, item.billingStatus, item.displayStatus) }}</span>
                 <div v-if="item.statusReason" class="record-status-reason">{{ item.statusReason }}</div>
               </div>
             </td>
@@ -210,5 +210,4 @@ onMounted(async () => {
   await loadRecords()
 })
 </script>
-
 

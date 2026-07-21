@@ -161,13 +161,15 @@ function typeMeta(row) {
 }
 
 function amountTone(row) {
-  if (['7', '8'].includes(String(row.changeStyle))) return 'neutral'
+  if (String(row.changeStyle) === '7') return 'frozen'
+  if (String(row.changeStyle) === '8') return 'neutral'
   return Number(row.changeCent || 0) < 0 ? 'expense' : 'income'
 }
 
 function amountText(row) {
   const value = Number(row.changeCent || 0)
-  const prefix = ['7', '8'].includes(String(row.changeStyle)) ? '' : value > 0 ? '+' : value < 0 ? '-' : ''
+  if (String(row.changeStyle) === '7') return `¥${yuanFromFen(Math.abs(value))}`
+  const prefix = String(row.changeStyle) === '8' ? '' : value > 0 ? '+' : value < 0 ? '-' : ''
   return `${prefix}¥${yuanFromFen(Math.abs(value))}`
 }
 
@@ -300,6 +302,7 @@ onMounted(refreshPage)
 .amount-cell { font-weight: 800; }
 .amount-cell.income { color: #16875d; }
 .amount-cell.expense { color: #c2413b; }
+.amount-cell.frozen { color: #b35c00; }
 .amount-cell.neutral { color: #2f6fe4; }
 .type-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border-radius: 5px; font-size: 12px; font-weight: 700; }
 .type-badge.income { color: #137a54; background: #e9f8f0; }
