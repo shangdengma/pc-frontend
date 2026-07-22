@@ -31,14 +31,14 @@
           <div>
             <span>可分配余额</span>
             <strong>&yen;{{ money(agentAvailableBalance) }}</strong>
-            <small>账户余额扣除冻结额度后可用</small>
+            <small>当前分成比例 {{ rateText(commissionRate) }}%</small>
           </div>
         </div>
         <dl class="overview-metrics">
           <div><dt>下级客户</dt><dd>{{ customerPage.total }}<span>人</span></dd></div>
-          <div><dt>有效邀请码</dt><dd>{{ enabledCodes }}<span>个</span></dd></div>
           <div><dt>客户累计充值</dt><dd>&yen;{{ money(totalRecharge) }}</dd></div>
-          <div><dt>客户累计消费</dt><dd>&yen;{{ money(totalConsume) }}</dd></div>
+          <div><dt>已分成金额</dt><dd>&yen;{{ money(settledCommission) }}</dd></div>
+          <div><dt>未分成金额</dt><dd>&yen;{{ money(unsettledCommission) }}</dd></div>
         </dl>
       </section>
 
@@ -271,10 +271,12 @@ const workspaceTab = ref('customers')
 const customerPage = reactive({ pageNum: 1, pageSize: 20, total: 0 })
 const totalRecharge = ref(0)
 const totalConsume = ref(0)
+const commissionRate = ref(0)
+const settledCommission = ref(0)
+const unsettledCommission = ref(0)
 const codeForm = reactive({ giftAmount: '', maxUses: 0, expireTime: '', remark: '' })
 const allocationForm = reactive({ amount: '', remark: '', requestId: '' })
 
-const enabledCodes = computed(() => inviteCodes.value.filter(item => item.status === 0).length)
 const filteredCustomers = computed(() => customers.value)
 const customerPageCount = computed(() => Math.max(1, Math.ceil(customerPage.total / customerPage.pageSize)))
 
@@ -289,6 +291,9 @@ watch(customerKeyword, () => {
 
 function money(value) {
   return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+function rateText(value) {
+  return Number(value || 0).toFixed(2)
 }
 function formatTime(value) {
   if (!value) return '-'
@@ -320,6 +325,10 @@ async function loadAll() {
   try {
     const overviewRes = await getAgentOverview()
     agentAvailableBalance.value = Number(overviewRes.data?.availableBalanceAmount || 0)
+    commissionRate.value = Number(overviewRes.data?.commissionRate || 0)
+    settledCommission.value = Number(overviewRes.data?.settledCommissionAmount || 0)
+    unsettledCommission.value = Number(overviewRes.data?.unsettledCommissionAmount || 0)
+    totalRecharge.value = Number(overviewRes.data?.totalRechargeAmount || 0)
     const [codeRes, customerRes] = await Promise.all([
       listAgentInviteCodes(),
       listAgentCustomers({ pageNum: customerPage.pageNum, pageSize: customerPage.pageSize, keyword: customerKeyword.value || undefined })

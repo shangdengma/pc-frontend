@@ -16,7 +16,6 @@
       <div class="sub-quota-view">
         <div><span>主账号分配总额度</span><strong>&yen;{{ formatMoney(subTotalQuotaYuan) }}</strong></div>
         <div><span>已消费额度</span><strong>&yen;{{ formatMoney(subUsedQuotaYuan) }}</strong></div>
-        <div><span>冻结占用额度</span><strong>&yen;{{ formatMoney(subFrozenQuotaYuan) }}</strong></div>
         <div><span>剩余可用额度</span><strong>&yen;{{ formatMoney(subRemainingQuotaYuan) }}</strong></div>
       </div>
     </section>
@@ -26,7 +25,6 @@
       <div><span>{{ labels.subCount }}</span><strong>{{ accounts.length }}</strong></div>
       <div><span>{{ labels.totalQuota }}</span><strong>&yen;{{ formatMoney(totalQuota) }}</strong></div>
       <div><span>{{ labels.totalUsed }}</span><strong>&yen;{{ formatMoney(totalUsed) }}</strong></div>
-      <div><span>{{ labels.totalFrozen }}</span><strong>&yen;{{ formatMoney(totalFrozen) }}</strong></div>
     </section>
 
     <section v-if="!isSubAccount" class="sub-card">
@@ -44,7 +42,6 @@
           </div>
           <div class="quota-block"><span>{{ labels.quota }}</span><strong>&yen;{{ formatMoney(item.subAccountQuota) }}</strong></div>
           <div class="quota-block"><span>{{ labels.used }}</span><strong>&yen;{{ formatMoney(item.subAccountUsed) }}</strong></div>
-          <div class="quota-block frozen"><span>{{ labels.frozen }}</span><strong>&yen;{{ formatMoney(item.subAccountFrozen) }}</strong></div>
           <div class="quota-block remain"><span>{{ labels.remaining }}</span><strong>&yen;{{ formatMoney(remaining(item)) }}</strong></div>
           <div class="row-actions"><button type="button" @click="openRecords(item)">查询记录</button><button type="button" @click="openLogs(item)">流水</button><button type="button" @click="openQuota(item)">{{ labels.adjust }}</button><button class="danger" type="button" @click="remove(item)">{{ labels.delete }}</button></div>
         </article>
@@ -154,7 +151,6 @@ const labels = {
   subCount: '\u5b50\u8d26\u53f7\u6570',
   totalQuota: '\u5df2\u5206\u914d\u989d\u5ea6',
   totalUsed: '\u5df2\u6d88\u8d39\u989d\u5ea6',
-  totalFrozen: '\u51bb\u7ed3\u5360\u7528\u989d\u5ea6',
   subList: '\u5b50\u8d26\u53f7\u5217\u8868',
   listDesc: '\u67e5\u770b\u5b50\u8d26\u53f7\u989d\u5ea6\u3001\u67e5\u8be2\u8bb0\u5f55\u548c\u8d26\u6237\u6d41\u6c34\u3002',
   refresh: '\u5237\u65b0',
@@ -162,7 +158,6 @@ const labels = {
   empty: '\u6682\u65e0\u5b50\u8d26\u53f7',
   quota: '\u5206\u914d\u603b\u989d\u5ea6',
   used: '\u5df2\u6d88\u8d39',
-  frozen: '\u51bb\u7ed3\u5360\u7528',
   remaining: '\u5269\u4f59\u989d\u5ea6',
   adjust: '\u8c03\u989d\u5ea6',
   delete: '\u5220\u9664',
@@ -208,18 +203,15 @@ const detailLoading = ref(false)
 const detailPage = reactive({ pageNum: 1, pageSize: 8 })
 const subTotalQuotaYuan = computed(() => Number(profile.value?.subAccountQuota || 0) / 100)
 const subUsedQuotaYuan = computed(() => Number(profile.value?.subAccountUsed || 0) / 100)
-const subFrozenQuotaYuan = computed(() => Number(profile.value?.subAccountFrozen || 0) / 100)
-const subRemainingQuotaYuan = computed(() => Math.max(0, (Number(profile.value?.subAccountQuota || 0) - Number(profile.value?.subAccountUsed || 0) - Number(profile.value?.subAccountFrozen || 0)) / 100))
+const subRemainingQuotaYuan = computed(() => Math.max(0, (Number(profile.value?.subAccountQuota || 0) - Number(profile.value?.subAccountUsed || 0)) / 100))
 const totalQuota = computed(() => accounts.value.reduce((sum, item) => sum + Number(item.subAccountQuota || 0), 0))
 const totalUsed = computed(() => accounts.value.reduce((sum, item) => sum + Number(item.subAccountUsed || 0), 0))
-const totalFrozen = computed(() => accounts.value.reduce((sum, item) => sum + Number(item.subAccountFrozen || 0), 0))
 const totalRemaining = computed(() => accounts.value.reduce((sum, item) => sum + remaining(item), 0))
 const maxQuotaForForm = computed(() => {
   const available = Number(mainBalance.value || 0)
   if (!editing.value) return Math.max(0, available - totalRemaining.value)
   const currentUsed = Number(editing.value.subAccountUsed || 0)
-  const currentFrozen = Number(editing.value.subAccountFrozen || 0)
-  const currentOccupied = currentUsed + currentFrozen
+  const currentOccupied = currentUsed
   const otherRemaining = Math.max(0, totalRemaining.value - remaining(editing.value))
   return Math.max(currentOccupied, currentOccupied + available - otherRemaining)
 })
@@ -227,7 +219,7 @@ const maxQuotaForForm = computed(() => {
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-function remaining(item) { return Math.max(0, Number(item.subAccountQuota || 0) - Number(item.subAccountUsed || 0) - Number(item.subAccountFrozen || 0)) }
+function remaining(item) { return Math.max(0, Number(item.subAccountQuota || 0) - Number(item.subAccountUsed || 0)) }
 function initial(item) { return String(item.nickName || item.userName || labels.defaultInitial).slice(0, 1) }
 
 function maskPhone(value) {
@@ -374,7 +366,7 @@ onMounted(async () => {
 .no-permission-card h3 { margin: 14px 0 8px; color: #07162d; font-size: 24px; }
 .no-permission-card p { margin: 0 auto; max-width: 560px; line-height: 1.8; }
 .no-permission-icon { width: 52px; height: 52px; margin: 0 auto; border-radius: 8px; display: grid; place-items: center; color: #2168f3; background: #eaf2ff; font-size: 24px; font-weight: 900; }
-.sub-quota-view { margin: 26px auto 0; max-width: 760px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; text-align: left; }
+.sub-quota-view { margin: 26px auto 0; max-width: 760px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; text-align: left; }
 .sub-quota-view div { padding: 18px 20px; border: 1px solid #e4ebf5; border-radius: 8px; background: #f8fbff; }
 .sub-quota-view span { display: block; color: #66758c; font-size: 14px; }
 .sub-quota-view strong { display: block; margin-top: 8px; color: #07162d; font-size: 24px; }
@@ -387,7 +379,7 @@ onMounted(async () => {
 .primary-btn { min-height: 42px; background: #2168f3; color: #fff; padding: 0 18px; box-shadow: none; }
 .primary-btn:disabled { opacity: .55; cursor: not-allowed; }
 .ghost-btn { background: #f4f7fb; color: #2168f3; padding: 10px 16px; border: 1px solid #dce6f5; }
-.sub-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
+.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
 .sub-summary > div, .sub-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
 .sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
 .sub-summary > div:last-child { border-right: 0; }
@@ -398,14 +390,13 @@ onMounted(async () => {
 .card-head h3 { margin: 0; font-size: 18px; }
 .card-head p { margin: 8px 0 0; color: #66758c; }
 .empty-state { padding: 70px 20px; text-align: center; color: #7b8aa0; }
-.account-row { min-height: 88px; padding: 16px 20px; border-bottom: 1px solid #edf1f7; display: grid; grid-template-columns: minmax(200px, 1.25fr) repeat(4, 118px) minmax(280px, auto); gap: 14px; align-items: center; }
+.account-row { min-height: 88px; padding: 16px 20px; border-bottom: 1px solid #edf1f7; display: grid; grid-template-columns: minmax(200px, 1.25fr) repeat(3, 118px) minmax(280px, auto); gap: 14px; align-items: center; }
 .account-row:last-child { border-bottom: 0; }
 .account-main { display: flex; align-items: center; gap: 14px; }
 .account-avatar { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: #eaf2ff; color: #2168f3; font-size: 18px; font-weight: 800; }
 .account-main h4 { margin: 0 0 6px; font-size: 18px; }
 .account-main p { margin: 0; color: #6c7a91; }
 .quota-block strong { display: block; margin-top: 6px; color: #07162d; font-size: 20px; }
-.quota-block.frozen strong { color: #d67a00; }
 .quota-block.remain strong { color: #0b9f62; }
 .row-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .row-actions button { min-height: 34px; border: 1px solid #dbe6f6; background: #fff; color: #2168f3; border-radius: 6px; padding: 0 11px; font-weight: 700; cursor: pointer; }

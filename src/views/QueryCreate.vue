@@ -27,27 +27,10 @@
 
     <div v-if="!canOnlineTest" class="auth-method-panel">
       <span class="auth-method-title">授权方式</span>
-      <div class="auth-method-options">
-        <button type="button" :class="{ active: form.authMethod === 'esign' }" @click="setAuthMethod('esign')">
-          <strong>电子签</strong>
-          <small>候选人在线签署授权</small>
-        </button>
-        <button type="button" :class="{ active: form.authMethod === 'upload' }" @click="setAuthMethod('upload')">
-          <strong>上传授权书</strong>
-          <small>提交授权文件审核</small>
-        </button>
+      <div class="auth-method-current">
+        <strong>电子签授权</strong>
+        <small>候选人在线签署授权后自动执行查询</small>
       </div>
-    </div>
-
-    <div v-if="!canOnlineTest && form.authMethod === 'upload'" class="authorization-upload">
-      <div>
-        <strong>候选人授权书</strong>
-        <span>支持 PDF、DOC、DOCX、JPG、PNG，文件不超过 5MB。</span>
-      </div>
-      <label class="upload-box">
-        <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="handleAuthFileChange">
-        <span>{{ authFileName || '选择授权书文件' }}</span>
-      </label>
     </div>
 
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
@@ -67,20 +50,20 @@
       </div>
       <div class="cost-row">
         <span>{{ canOnlineTest ? '执行方式' : '授权方式' }}</span>
-        <strong>{{ canOnlineTest ? '在线测试' : (form.authMethod === 'esign' ? '电子签授权' : '上传授权书') }}</strong>
+        <strong>{{ canOnlineTest ? '在线测试' : '电子签授权' }}</strong>
       </div>
       <div class="cost-total">
         <span>预计费用</span>
         <strong>{{ selectedPrice !== '' ? `¥${selectedPrice}` : '—' }}</strong>
       </div>
-      <p class="cost-hint">提交后将预占本次查询额度；任务成功后完成结算，失败或终止时自动释放。</p>
+      <p class="cost-hint">提交后将扣除本次查询费用；任务失败或终止时按规则自动退款。</p>
     </div>
 
     <div class="flow-card">
       <h4>查询流程</h4>
       <ol>
         <li>提交候选人信息并选择套餐</li>
-        <li v-if="!canOnlineTest">候选人完成电子签授权（或上传授权书待审核）</li>
+        <li v-if="!canOnlineTest">候选人完成电子签授权</li>
         <li>系统执行核验，生成背调报告</li>
         <li>在「查询记录」中查看与下载报告</li>
       </ol>
@@ -92,7 +75,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { createPendingQuery, getAllData, launchEsign, launchOnlineTest, preCheckQuery, uploadAuthorizationFile } from '../api/data'
+import { getAllData, launchEsign, launchOnlineTest, preCheckQuery } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserBalance, getUserProfile } from '../api/user'
 import { yuanFromFen } from '../utils/format'
@@ -104,8 +87,6 @@ const message = ref('')
 const messageType = ref('info')
 const queryTypeConfigs = ref([])
 const priceMap = ref({})
-const selectedAuthFile = ref(null)
-const authFileName = ref('')
 const profile = ref({})
 const availableBalance = ref(null)
 const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
@@ -115,9 +96,7 @@ const form = reactive({
   name: '',
   idCard: '',
   mobile: '',
-  callTypeId: '',
-  authMethod: 'esign',
-  authorizationFile: ''
+  callTypeId: ''
 })
 
 const reportTypes = computed(() => {
@@ -153,16 +132,13 @@ function show(text, type = 'info') {
 
 function validate() {
   if (!form.name) return '请填写候选人姓名'
-  if (!canOnlineTest.value && form.authMethod === 'upload' && !form.idCard) return '上传授权书方式需填写身份证号'
   if (!form.mobile && !form.idCard) return '请至少填写手机号或身份证号'
-  if (!canOnlineTest.value && form.authMethod === 'upload' && !form.mobile) return '上传授权书方式需填写手机号'
   if (form.mobile && !/^1[3-9]\d{9}$/.test(form.mobile)) return '手机号格式不正确'
   if (form.idCard) {
     form.idCard = form.idCard.replace(/x/g, 'X')
     if (!/^\d{17}[\dX]$/.test(form.idCard)) return '身份证号格式不正确'
   }
   if (!form.callTypeId) return '请选择查询套餐'
-  if (!canOnlineTest.value && form.authMethod === 'upload' && !selectedAuthFile.value && !form.authorizationFile) return '请上传候选人授权书'
   return ''
 }
 
@@ -187,51 +163,8 @@ function buildQueryData() {
     data: '',
     lackStatus,
     searchStatus,
-    authorizationFile: form.authorizationFile,
     isBackground: 0
   }
-}
-
-function setAuthMethod(method) {
-  form.authMethod = method
-  show('', 'info')
-}
-
-function handleAuthFileChange(event) {
-  const file = event.target.files && event.target.files[0]
-  if (!file) {
-    selectedAuthFile.value = null
-    authFileName.value = ''
-    return
-  }
-  const ext = (file.name || '').toLowerCase().split('.').pop()
-  if (!['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'].includes(ext)) {
-    selectedAuthFile.value = null
-    authFileName.value = ''
-    event.target.value = ''
-    show('授权书仅支持 PDF、DOC、DOCX、JPG、PNG 格式', 'error')
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    selectedAuthFile.value = null
-    authFileName.value = ''
-    event.target.value = ''
-    show('授权书文件大小不能超过 5MB', 'error')
-    return
-  }
-  selectedAuthFile.value = file
-  authFileName.value = file.name
-  form.authorizationFile = ''
-}
-
-async function uploadAuthFileIfNeeded() {
-  if (form.authorizationFile) return form.authorizationFile
-  if (!selectedAuthFile.value) return ''
-  const res = await uploadAuthorizationFile(selectedAuthFile.value)
-  const filePath = res?.filePath || res?.data?.filePath || ''
-  if (!filePath) throw new Error('授权书上传失败，请重新选择文件')
-  form.authorizationFile = filePath
-  return filePath
 }
 
 async function submitQuery() {
@@ -252,10 +185,6 @@ async function submitQuery() {
     if (canOnlineTest.value) {
       await launchOnlineTest(queryData)
       show('测试任务已提交，结果生成后可在查询记录中查看。', 'success')
-    } else if (form.authMethod === 'upload') {
-      const authorizationFile = await uploadAuthFileIfNeeded()
-      await createPendingQuery({ ...queryData, authorizationFile, searchStatus: '5' })
-      show('授权书已提交，等待后台审核。审核通过后会自动生成报告。', 'success')
     } else {
       const res = await getAllData(queryData)
       if (res?.data?.formDataId != null) {
@@ -359,8 +288,7 @@ onMounted(async () => {
   color: #157347;
 }
 
-.auth-method-panel,
-.authorization-upload {
+.auth-method-panel {
   margin-top: 18px;
   padding: 16px;
   border: 1px solid #e5edf8;
@@ -376,78 +304,29 @@ onMounted(async () => {
   color: #172033;
 }
 
-.auth-method-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.auth-method-options button {
+.auth-method-current {
   min-height: 72px;
   padding: 13px 15px;
-  border: 1px solid #d8e3f2;
+  border: 1px solid #2563eb;
   border-radius: 7px;
-  background: #fff;
-  text-align: left;
-  cursor: pointer;
-}
-
-.auth-method-options button.active {
-  border-color: #2563eb;
   background: #f4f8ff;
   box-shadow: inset 3px 0 0 #2563eb;
+  text-align: left;
 }
 
-.auth-method-options strong,
-.auth-method-options small {
+.auth-method-current strong,
+.auth-method-current small {
   display: block;
 }
 
-.auth-method-options strong {
+.auth-method-current strong {
   color: #111827;
   font-size: 15px;
 }
 
-.auth-method-options small {
+.auth-method-current small {
   margin-top: 6px;
   color: #667085;
-}
-
-.authorization-upload {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.authorization-upload strong,
-.authorization-upload span {
-  display: block;
-}
-
-.authorization-upload strong {
-  color: #111827;
-}
-
-.authorization-upload span {
-  margin-top: 6px;
-  color: #667085;
-}
-
-.upload-box {
-  min-width: 260px;
-  padding: 12px 16px;
-  border: 1px dashed #9bb8e8;
-  border-radius: 7px;
-  background: #fff;
-  color: #2563eb;
-  font-weight: 700;
-  text-align: center;
-  cursor: pointer;
-}
-
-.upload-box input {
-  display: none;
 }
 
 @media (max-width: 900px) {
@@ -465,17 +344,5 @@ onMounted(async () => {
     text-align: left;
   }
 
-  .auth-method-options {
-    grid-template-columns: 1fr;
-  }
-
-  .authorization-upload {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .upload-box {
-    min-width: 0;
-  }
 }
 </style>

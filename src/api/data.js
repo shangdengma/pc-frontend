@@ -45,25 +45,6 @@ export function preCheckQuery(data) {
 }
 
 
-export function createPendingQuery(data) {
-  return request({
-    url: '/interface/call/createPendingQuery',
-    method: 'post',
-    data
-  })
-}
-
-export function uploadAuthorizationFile(file) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request({
-    url: '/interface/authorization/upload',
-    method: 'post',
-    data: formData,
-    headers: { 'Content-Type': undefined }
-  })
-}
-
 export function launchEsign(data) {
   return request({
     url: '/interface/call/launchEsign',

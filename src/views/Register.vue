@@ -34,8 +34,8 @@
       </label>
 
       <label>
-        <span>企业名称 <em>选填</em></span>
-        <input v-model.trim="form.enterpriseName" placeholder="请输入企业名称">
+        <span>企业名称</span>
+        <input v-model.trim="form.enterpriseName" placeholder="请输入企业名称" maxlength="200" required>
       </label>
 
       <label>
@@ -73,12 +73,20 @@
         已有账号？<router-link to="/login">返回登录</router-link>
       </p>
     </form>
+
+    <SmsSliderVerify
+      v-model="sliderOpen"
+      :phone="form.phone"
+      scene="register"
+      @verified="sendCodeWithTicket"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import SmsSliderVerify from '../components/SmsSliderVerify.vue'
 import { register, sendRegisterCode } from '../api/auth'
 
 const route = useRoute()
@@ -89,6 +97,7 @@ const showPassword = ref(false)
 const error = ref('')
 const message = ref('')
 const countdown = ref(0)
+const sliderOpen = ref(false)
 const inviteCodeLocked = ref(false)
 let timer = null
 
@@ -128,6 +137,8 @@ function validateForm() {
   if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(form.password)) {
     return '密码需8位以上，且同时包含数字和字母'
   }
+  if (!form.enterpriseName) return '请输入企业名称'
+  if (form.enterpriseName.length > 200) return '企业名称长度不能超过200个字符'
   const phoneError = validatePhone()
   if (phoneError) return phoneError
   return ''
@@ -151,7 +162,7 @@ function clearTimer() {
   }
 }
 
-async function sendCode() {
+function sendCode() {
   error.value = ''
   message.value = ''
   if (countdown.value > 0 || sendingCode.value) return
@@ -161,9 +172,13 @@ async function sendCode() {
     return
   }
 
+  sliderOpen.value = true
+}
+
+async function sendCodeWithTicket(sliderTicket) {
   sendingCode.value = true
   try {
-    await sendRegisterCode(form.phone)
+    await sendRegisterCode(form.phone, sliderTicket)
     message.value = '验证码已发送，请注意查收'
     startCountdown()
   } catch (err) {

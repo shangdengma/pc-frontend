@@ -10,7 +10,7 @@ export function login(username, password, code = '', uuid = '', clientType = 'we
 }
 
 
-export function smsLogin(phone, code = '', clientType = 'uniapp') {
+export function smsLogin(phone, code = '', clientType = 'web') {
   return request({
     url: '/smsLogin',
     method: 'post',
@@ -19,12 +19,30 @@ export function smsLogin(phone, code = '', clientType = 'uniapp') {
   })
 }
 
-export function sendLoginCode(phone) {
+export function sendLoginCode(phone, sliderTicket) {
   return request({
     url: '/system/sms/sendLoginCode',
     method: 'post',
     headers: { isToken: false },
-    data: { phone }
+    data: { phone, sliderTicket }
+  })
+}
+
+export function createSmsSliderChallenge(phone, scene) {
+  return request({
+    url: '/system/sms/slider/challenge',
+    method: 'post',
+    headers: { isToken: false },
+    data: { phone, scene }
+  })
+}
+
+export function verifySmsSliderChallenge(data) {
+  return request({
+    url: '/system/sms/slider/verify',
+    method: 'post',
+    headers: { isToken: false },
+    data
   })
 }
 export function register(data) {
@@ -36,12 +54,12 @@ export function register(data) {
   })
 }
 
-export function sendRegisterCode(phone) {
+export function sendRegisterCode(phone, sliderTicket) {
   return request({
     url: '/system/sms/sendCodeToPhoneWithTemplate',
     method: 'post',
     headers: { isToken: false },
-    data: { phone }
+    data: { phone, sliderTicket }
   })
 }
 

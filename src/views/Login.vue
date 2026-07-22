@@ -34,13 +34,6 @@
           <span>密码</span>
           <input v-model="form.password" placeholder="请输入密码" type="password" autocomplete="current-password">
         </label>
-        <label v-if="captchaEnabled">
-          <span>验证码</span>
-          <div class="captcha-row">
-            <input v-model.trim="form.code" placeholder="请输入验证码">
-            <img :src="codeUrl" alt="验证码" @click="loadCaptcha">
-          </div>
-        </label>
       </template>
 
       <template v-else>
@@ -67,14 +60,22 @@
         <router-link to="/register">立即注册</router-link>
       </div>
     </form>
+
+    <SmsSliderVerify
+      v-model="sliderOpen"
+      :phone="smsForm.phone"
+      scene="login"
+      @verified="sendCodeWithTicket"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check } from '@lucide/vue'
-import { getCodeImg, getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
+import SmsSliderVerify from '../components/SmsSliderVerify.vue'
+import { getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
 import { setToken, setUser } from '../utils/auth'
 
 const router = useRouter()
@@ -83,10 +84,9 @@ const sendingCode = ref(false)
 const countdown = ref(0)
 const error = ref('')
 const notice = ref('')
-const captchaEnabled = ref(false)
-const codeUrl = ref('')
+const sliderOpen = ref(false)
 const loginMode = ref('password')
-const form = reactive({ username: '', password: '', code: '', uuid: '' })
+const form = reactive({ username: '', password: '' })
 const smsForm = reactive({ phone: '', code: '' })
 let countdownTimer = null
 
@@ -94,23 +94,6 @@ function switchMode(mode) {
   loginMode.value = mode
   error.value = ''
   notice.value = ''
-  if (mode === 'password') {
-    loadCaptcha()
-  }
-}
-
-async function loadCaptcha() {
-  try {
-    const res = await getCodeImg()
-    captchaEnabled.value = res.captchaEnabled === undefined ? true : !!res.captchaEnabled
-    if (captchaEnabled.value) {
-      codeUrl.value = `data:image/png;base64,${res.img}`
-      form.uuid = res.uuid || ''
-      form.code = ''
-    }
-  } catch (err) {
-    captchaEnabled.value = false
-  }
 }
 
 function startCountdown() {
@@ -125,14 +108,18 @@ function startCountdown() {
   }, 1000)
 }
 
-async function sendCode() {
+function sendCode() {
   error.value = ''
   notice.value = ''
   if (!smsForm.phone) return (error.value = '请输入手机号')
-  if (!/^1\d{10}$/.test(smsForm.phone)) return (error.value = '请输入正确的手机号')
+  if (!/^1[3-9]\d{9}$/.test(smsForm.phone)) return (error.value = '请输入正确的手机号')
+  sliderOpen.value = true
+}
+
+async function sendCodeWithTicket(sliderTicket) {
   sendingCode.value = true
   try {
-    const res = await sendLoginCode(smsForm.phone)
+    const res = await sendLoginCode(smsForm.phone, sliderTicket)
     notice.value = '验证码已发送'
     if (import.meta.env.DEV && res?.data && !smsForm.code) {
       smsForm.code = String(res.data)
@@ -159,15 +146,14 @@ async function finishLogin(res, fallbackName) {
 async function handlePasswordLogin() {
   if (!form.username) return (error.value = '请输入账号或手机号')
   if (!form.password) return (error.value = '请输入密码')
-  if (captchaEnabled.value && !form.code) return (error.value = '请输入验证码')
-  const res = await login(form.username, form.password, form.code, form.uuid, 'uniapp')
+  const res = await login(form.username, form.password, '', '', 'pc-web')
   await finishLogin(res, form.username)
 }
 
 async function handleSmsLogin() {
   if (!smsForm.phone) return (error.value = '请输入手机号')
-  if (!/^1\d{10}$/.test(smsForm.phone)) return (error.value = '请输入正确的手机号')
-  const res = await smsLogin(smsForm.phone, smsForm.code, 'uniapp')
+  if (!/^1[3-9]\d{9}$/.test(smsForm.phone)) return (error.value = '请输入正确的手机号')
+  const res = await smsLogin(smsForm.phone, smsForm.code, 'web')
   await finishLogin(res, smsForm.phone)
 }
 
@@ -183,13 +169,8 @@ async function handleLogin() {
     }
   } catch (err) {
     error.value = err?.msg || '登录失败，请检查登录信息'
-    if (loginMode.value === 'password') {
-      await loadCaptcha()
-    }
   } finally {
     loading.value = false
   }
 }
-
-onMounted(loadCaptcha)
 </script>
