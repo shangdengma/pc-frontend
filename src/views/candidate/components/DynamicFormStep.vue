@@ -16,7 +16,7 @@
         <UserRound :size="20" />
         <div>
           <h2>个人信息</h2>
-          <p>以下信息来自调查发起方，请确认无误。</p>
+          <p>姓名、手机号来自调查发起方，请填写您本人的身份证号用于实名核验。</p>
         </div>
       </div>
       <div class="candidate-grid candidate-grid-two">
@@ -25,12 +25,16 @@
           <input v-model.trim="model.candidate.name" disabled />
         </label>
         <label class="candidate-field">
-          <span>身份证号</span>
-          <input v-model.trim="model.candidate.idCard" disabled />
-        </label>
-        <label class="candidate-field">
           <span>手机号码</span>
           <input v-model.trim="model.candidate.phone" disabled />
+        </label>
+        <label class="candidate-field">
+          <span>身份证号 *</span>
+          <input
+            v-model.trim="model.candidate.idCard"
+            maxlength="18"
+            placeholder="请输入本人18位身份证号"
+          />
         </label>
         <label class="candidate-field">
           <span>邮箱地址（选填）</span>

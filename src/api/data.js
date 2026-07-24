@@ -44,16 +44,6 @@ export function preCheckQuery(data) {
   })
 }
 
-
-export function launchEsign(data) {
-  return request({
-    url: '/interface/call/launchEsign',
-    method: 'post',
-    data,
-    timeout: 0
-  })
-}
-
 export function markDataRead(id) {
   return request({
     url: `/system/data/${id}/read`,
