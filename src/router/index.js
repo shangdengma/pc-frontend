@@ -5,6 +5,7 @@ import { getToken } from '../utils/auth'
 const Dashboard = () => import('../views/Dashboard.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
+const CandidateAuthorization = () => import('../views/candidate/CandidateAuthorization.vue')
 const QueryCreate = () => import('../views/QueryCreate.vue')
 const Records = () => import('../views/Records.vue')
 const ReportFull = () => import('../views/report-full/Index.vue')
@@ -23,6 +24,12 @@ const NotFound = () => import('../views/NotFound.vue')
 const routes = [
   { path: '/login', name: 'login', component: Login },
   { path: '/register', name: 'register', component: Register },
+  {
+    path: '/candidate/authorization/:token?',
+    name: 'candidateAuthorization',
+    component: CandidateAuthorization,
+    meta: { public: true, title: '候选人信息授权' }
+  },
   {
     path: '/',
     component: ClientLayout,
@@ -53,7 +60,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.path === '/login' || to.path === '/register') return next()
+  if (to.path === '/login' || to.path === '/register' || to.meta.public) return next()
   if (!getToken()) return next('/login')
 
 
