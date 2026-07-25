@@ -58,7 +58,6 @@
           v-else-if="currentStep === 1"
           v-model:accepted="consentAccepted"
           :company-name="task.companyName"
-          :module-labels="moduleLabels"
           @continue="confirmConsent"
           @show-agreement="showDocument('agreement')"
           @show-privacy="showDocument('privacy')"
@@ -170,7 +169,6 @@ const demoMode = computed(() => task.token === 'demo' || route.query.demo === '1
 const maskedExpectedPhone = computed(() => demoMode.value
   ? task.expectedPhone.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
   : task.maskedPhone)
-const moduleLabels = computed(() => task.modules.map(key => moduleDefinitions[key]?.shortName).filter(Boolean))
 
 const terminalCopy = {
   SIGNED: {

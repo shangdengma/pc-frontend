@@ -1090,6 +1090,8 @@ textarea:focus-visible {
   padding-bottom: 13px;
   font-size: 13px;
   line-height: 1.45;
+  /* 身份证号等长串不含空格，默认不会换行会溢出压到相邻列，这里强制在必要时断行 */
+  overflow-wrap: anywhere;
 }
 
 .data-table td strong {

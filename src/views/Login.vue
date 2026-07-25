@@ -34,6 +34,20 @@
           <span>密码</span>
           <input v-model="form.password" placeholder="请输入密码" type="password" autocomplete="current-password">
         </label>
+        <label v-if="captcha.need">
+          <span>图形验证码</span>
+          <div class="captcha-row">
+            <input v-model.trim="captcha.code" placeholder="请输入图中字符" maxlength="6" autocomplete="off">
+            <img
+              v-if="captcha.img"
+              class="captcha-image"
+              :src="captcha.img"
+              alt="点击刷新验证码"
+              title="点击刷新"
+              @click="loadCaptcha"
+            />
+          </div>
+        </label>
       </template>
 
       <template v-else>
@@ -75,7 +89,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Check } from '@lucide/vue'
 import SmsSliderVerify from '../components/SmsSliderVerify.vue'
-import { getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
+import { getCodeImg, getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
 import { setToken, setUser } from '../utils/auth'
 
 const router = useRouter()
@@ -143,11 +157,44 @@ async function finishLogin(res, fallbackName) {
   router.replace('/dashboard')
 }
 
+// 图形验证码：密码连续输错达阈值后由后端要求，前端据 needCaptcha 展示
+const captcha = reactive({ need: false, img: '', uuid: '', code: '' })
+
+async function loadCaptcha() {
+  try {
+    const res = await getCodeImg()
+    const data = res?.data || res || {}
+    captcha.img = data.img ? `data:image/gif;base64,${data.img}` : ''
+    captcha.uuid = data.uuid || ''
+    captcha.code = ''
+  } catch (e) {
+    captcha.img = ''
+    captcha.uuid = ''
+  }
+}
+
 async function handlePasswordLogin() {
   if (!form.username) return (error.value = '请输入账号或手机号')
   if (!form.password) return (error.value = '请输入密码')
-  const res = await login(form.username, form.password, '', '', 'pc-web')
-  await finishLogin(res, form.username)
+  if (captcha.need && !captcha.code) return (error.value = '请输入图形验证码')
+  try {
+    const res = await login(
+      form.username, form.password,
+      captcha.need ? captcha.code : '',
+      captcha.need ? captcha.uuid : '',
+      'pc-web'
+    )
+    await finishLogin(res, form.username)
+  } catch (err) {
+    // 后端在失败响应中回传 needCaptcha，据此决定是否展示/刷新验证码
+    if (err?.needCaptcha) {
+      captcha.need = true
+      await loadCaptcha()
+    } else if (captcha.need) {
+      await loadCaptcha()
+    }
+    throw err
+  }
 }
 
 async function handleSmsLogin() {
