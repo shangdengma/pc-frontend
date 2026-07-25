@@ -98,7 +98,7 @@
                 <td>{{ getQueryTypeName(row.searchType) }}</td>
                 <td>{{ maskPhone(row.phoneNumber) }}</td>
                 <td>{{ formatDateTime(row.createTime) }}</td>
-                <td><span class="status-pill" :class="statusClass(row.searchStatus, row.displayStatus, row.billingStatus)">{{ statusText(row.searchStatus, row.displayStatusText, row.billingStatus, row.displayStatus) }}</span></td>
+                <td><span class="status-pill" :class="statusClass(row.displayStatus)">{{ statusText(row.displayStatus, row.displayStatusText) }}</span></td>
                 <td>{{ row.outTradeNo || '-' }}</td>
               </tr>
             </tbody>

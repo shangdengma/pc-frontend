@@ -160,11 +160,10 @@ function validate() {
 
 function buildQueryData() {
   // 身份证号改由候选人在中间页填写，此处不再按缺身份证推断 lackStatus，避免误判为人工补充单。
+  // 订单状态一律由后端状态服务决定，前端不再传旧的数字状态。
   let lackStatus
-  let searchStatus
   if (String(form.callTypeId) === '5') {
     lackStatus = '3'
-    searchStatus = '1'
   }
   return {
     name: form.name,
@@ -172,7 +171,6 @@ function buildQueryData() {
     callTypeId: form.callTypeId,
     data: '',
     lackStatus,
-    searchStatus,
     isBackground: 0
   }
 }

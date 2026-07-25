@@ -11,12 +11,7 @@
       <input v-model.trim="filters.keyword" placeholder="搜索姓名 / 身份证号" @keyup.enter="search">
       <select v-model="filters.status" @change="search">
         <option value="">全部状态</option>
-        <option value="5">授权中</option>
-        <option value="1">查询中</option>
-        <option value="2">查询成功</option>
-        <option value="3">查询失败</option>
-        <option value="4">已退款</option>
-        <option value="6">背调中止</option>
+        <option v-for="opt in DISPLAY_STATUS_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
       </select>
       <span class="toolbar-label">提交时间</span>
       <input v-model="filters.beginTime" type="date" @change="search">
@@ -51,13 +46,13 @@
             <td class="record-time">{{ formatDateTime(item.time) }}</td>
             <td>
               <div class="record-status-cell">
-                <span class="status-pill" :class="statusClass(item.status, item.displayStatus, item.billingStatus)">{{ statusText(item.status, item.displayStatusText, item.billingStatus, item.displayStatus) }}</span>
+                <span class="status-pill" :class="statusClass(item.displayStatus)">{{ statusText(item.displayStatus, item.displayStatusText) }}</span>
                 <div v-if="item.statusReason" class="record-status-reason">{{ item.statusReason }}</div>
               </div>
             </td>
             <td class="actions-cell">
-              <button class="text-btn" :disabled="String(item.status) !== '2'" @click="openReport(item)">查看报告</button>
-              <button class="text-btn" :disabled="String(item.status) !== '2'" @click="downloadPdf(item)">下载PDF</button>
+              <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="openReport(item)">查看报告</button>
+              <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="downloadPdf(item)">下载PDF</button>
             </td>
           </tr>
         </tbody>
@@ -86,7 +81,7 @@ import { useRouter } from 'vue-router'
 import { listData } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserProfile } from '../api/user'
-import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
+import { DISPLAY_STATUS_OPTIONS, formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
 
 const router = useRouter()
 const loading = ref(false)
@@ -153,7 +148,7 @@ async function loadRecords() {
   try {
     const params = { pageNum: filters.pageNum, pageSize: filters.pageSize }
     if (filters.keyword) params.idCard = filters.keyword
-    if (filters.status) params.searchStatus = filters.status
+    if (filters.status) params.displayStatusFilter = filters.status
     if (filters.beginTime) params['params[beginTime]'] = `${filters.beginTime} 00:00:00`
     if (filters.endTime) params['params[endTime]'] = `${filters.endTime} 23:59:59`
     const res = await listData(params)
@@ -172,12 +167,12 @@ function changePage(delta) {
 }
 
 function openReport(item) {
-  if (String(item.status) !== '2') return show('当前状态不能查看报告', 'error')
+  if (String(item.displayStatus) !== 'success') return show('当前状态不能查看报告', 'error')
   router.push(`/report/${item.id}`)
 }
 
 function downloadPdf(item) {
-  if (String(item.status) !== '2') return show('报告尚未生成，暂时无法下载', 'error')
+  if (String(item.displayStatus) !== 'success') return show('报告尚未生成，暂时无法下载', 'error')
   try {
     if (item.pdfFilePath) {
       const path = String(item.pdfFilePath).trim()

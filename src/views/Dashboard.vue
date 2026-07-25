@@ -50,7 +50,7 @@
               <td><strong>{{ row.name }}</strong></td>
               <td>{{ row.type }}</td>
               <td>{{ formatDateTime(row.time) }}</td>
-              <td><span class="status-pill" :class="statusClass(row.status, row.displayStatus, row.billingStatus)"><i></i>{{ statusText(row.status, row.displayStatusText, row.billingStatus, row.displayStatus) }}</span></td>
+              <td><span class="status-pill" :class="statusClass(row.displayStatus)"><i></i>{{ statusText(row.displayStatus, row.displayStatusText) }}</span></td>
             </tr>
           </tbody>
         </table>
@@ -157,8 +157,8 @@ const greeting = computed(() => new Date().getHours() < 12 ? '上午好' : '下�
 const todayText = computed(() => new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }))
 const recentRecords = computed(() => records.value.slice(0, 5))
 const monthCount = computed(() => records.value.filter(item => isWithinDays(item.time, 30)).length)
-const runningCount = computed(() => records.value.filter(r => ['1', '5'].includes(String(r.status))).length)
-const authCount = computed(() => records.value.filter(r => String(r.status) === '5').length)
+const runningCount = computed(() => records.value.filter(r => ['processing', 'waiting_auth'].includes(String(r.displayStatus))).length)
+const authCount = computed(() => records.value.filter(r => String(r.displayStatus) === 'waiting_auth').length)
 const isSubAccount = computed(() => profile.value && profile.value.parentUserId != null)
 const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
 const subAccountTotalQuota = computed(() => Number(profile.value?.subAccountQuota || 0))
@@ -176,7 +176,7 @@ const metrics = computed(() => [
 ])
 const reminders = computed(() => [
   { title: '授权待签署', desc: `${authCount.value} 份电子授权等待被查询人确认`, count: authCount.value, tone: 'warn', icon: PenLine },
-  { title: '查询失败可重试', desc: '失败记录建议重新发起或联系客服', count: records.value.filter(r => String(r.status) === '3').length, tone: 'danger', icon: CircleAlert },
+  { title: '查询失败可重试', desc: '失败记录建议重新发起或联系客服', count: records.value.filter(r => String(r.displayStatus) === 'failed').length, tone: 'danger', icon: CircleAlert },
   { title: isSubAccount.value ? '额度状态' : '余额状态', desc: isSubAccount.value ? '分配总额度 ¥' + yuanFromFen(subAccountTotalQuota.value) + '，剩余可用 ¥' + yuanFromFen(subAccountRemainingQuota.value) : '当前可用余额 ¥' + yuanFromFen(balance.value), count: balance.value > 0 ? '正常' : '不足', tone: 'info', icon: WalletCards }
 ])
 

@@ -11,36 +11,31 @@ export function formatDateTime(value) {
   return text
 }
 
-function isRefundedStatus(status, billingStatus = '', displayStatus = '') {
-  return String(status ?? '') === '4'
-    || String(billingStatus ?? '').toUpperCase() === 'REFUNDED'
-    || String(displayStatus ?? '').toLowerCase() === 'refunded'
-}
+// 订单状态以后端聚合出的 displayStatus 为唯一来源，前端不再依据旧的 search_status 自行判断。
+export const DISPLAY_STATUS_OPTIONS = [
+  { value: 'waiting_auth', label: '待授权' },
+  { value: 'processing', label: '处理中' },
+  { value: 'success', label: '已完成' },
+  { value: 'no_data', label: '无结果' },
+  { value: 'failed', label: '查询失败' },
+  { value: 'refunded', label: '已退款' }
+]
 
-export function statusText(status, displayStatusText = '', billingStatus = '', displayStatus = '') {
-  if (isRefundedStatus(status, billingStatus, displayStatus)) return '已退款'
+const DISPLAY_STATUS_TEXT = DISPLAY_STATUS_OPTIONS.reduce((map, item) => {
+  map[item.value] = item.label
+  return map
+}, {})
+
+export function statusText(displayStatus = '', displayStatusText = '') {
   if (displayStatusText) return String(displayStatusText)
-  const s = String(status ?? '')
-  if (s === '2' || s === 'success') return '查询成功'
-  if (s === '1' || s === 'pending') return '查询中'
-  if (s === '5') return '授权中'
-  if (s === '3' || s === 'fail') return '查询失败'
-  if (s === '4') return '已退款'
-  if (s === '6') return '背调中止'
-  return s || '未知'
+  return DISPLAY_STATUS_TEXT[String(displayStatus ?? '')] || '未知'
 }
 
-export function statusClass(status, displayStatus = '', billingStatus = '') {
-  if (isRefundedStatus(status, billingStatus, displayStatus)) return 'danger'
+export function statusClass(displayStatus = '') {
   const display = String(displayStatus ?? '')
   if (display === 'success') return 'success'
-  if (['failed', 'refunded', 'expired_released', 'auth_rejected', 'no_result', 'completed_no_data'].includes(display)) return 'danger'
-  if (['querying', 'manual_pending'].includes(display)) return 'warning'
-  if (['waiting_esign', 'waiting_auth_review'].includes(display)) return 'pending'
-  const s = String(status ?? '')
-  if (s === '2' || s === 'success') return 'success'
-  if (s === '3' || s === 'fail' || s === '4' || s === '6') return 'danger'
-  if (s === '1' || s === 'pending') return 'warning'
+  if (['failed', 'refunded', 'no_data'].includes(display)) return 'danger'
+  if (display === 'processing') return 'warning'
   return 'pending'
 }
 
@@ -53,20 +48,18 @@ function isPlainStatusMessage(value) {
 }
 
 function getStatusReason(item) {
-  const status = String(item.searchStatus ?? '')
-  const refunded = isRefundedStatus(status, item.billingStatus, item.displayStatus)
+  const display = String(item.displayStatus ?? '')
   const codeMsg = item.codeMsg || item.code_msg || ''
 
-  if (refunded) {
-    return item.reasonForRefund || item.reason_for_refund || ''
+  // 终止原因（48小时未授权自动退款 / 授权驳回 / 后台手动退款）统一由退款原因承载
+  if (display === 'refunded') {
+    return item.reasonForRefund || item.reason_for_refund
+      || (String(codeMsg).startsWith('授权书审核不通过') ? codeMsg : '')
   }
 
-  if (status === '6') {
-    return String(codeMsg).startsWith('授权书审核不通过') ? codeMsg : ''
-  }
-
-  if (status === '3') {
-    return isPlainStatusMessage(codeMsg) ? codeMsg : ''
+  if (display === 'failed') {
+    return item.reasonForRefund || item.reason_for_refund
+      || (isPlainStatusMessage(codeMsg) ? codeMsg : '')
   }
 
   return ''
@@ -82,7 +75,6 @@ export function mapRecord(item, queryTypeMap = {}) {
     type: queryTypeMap[String(typeId)] || item.callTypeName || item.searchTypeName || '未知类型',
     typeId,
     time: item.createTime || item.queryTime || item.submitTime || '',
-    status: item.searchStatus,
     displayStatus: item.displayStatus || '',
     displayStatusText: item.displayStatusText || '',
     authorizationStatus: item.authorizationStatus || '',

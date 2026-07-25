@@ -1774,6 +1774,86 @@
       <div v-else class="history-work-empty">{{ historyWorkWithMoney ? '无社保关联公司记录' : '未查询到社保缴纳单位记录' }}</div>
     </div>
 
+    <!-- 工作履历核实：人工核验结果，按公司分段 -->
+    <div
+      v-for="(seg, si) in employmentVerifyList"
+      :key="'ev-' + si"
+      class="module-container employment-verify-module"
+      :id="si === 0 ? 'employment-verify' : ('employment-verify-' + si)"
+    >
+      <div class="module-title">工作履历核实{{ seg.employerName ? '（' + seg.employerName + '）' : '' }}</div>
+      <div class="manual-table-wrap">
+        <table class="manual-report-table">
+          <thead>
+            <tr>
+              <th style="width: 22%;">调查项目</th>
+              <th style="width: 30%;">候选人提供</th>
+              <th style="width: 10%;">真实性</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, ii) in (seg.items || [])" :key="'evi-' + si + '-' + ii">
+              <td class="manual-cell-label">{{ item.label }}</td>
+              <td>{{ item.candidateValue || '' }}</td>
+              <td class="manual-cell-truth">
+                <span :class="truthIconClass(item.truth)">{{ truthIconText(item.truth) }}</span>
+              </td>
+              <td>{{ item.note || '' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 工作表现访谈：人工访谈结果，按证明人分段 -->
+    <div
+      v-for="(seg, si) in interviewList"
+      :key="'iv-' + si"
+      class="module-container interview-module"
+      :id="si === 0 ? 'work-interview' : ('work-interview-' + si)"
+    >
+      <div class="module-title">{{ seg.companyName ? seg.companyName + '-' : '' }}工作表现访谈</div>
+
+      <div class="manual-sub-header">访谈对象基本信息</div>
+      <div class="manual-table-wrap">
+        <table class="manual-report-table">
+          <tbody>
+            <tr>
+              <td class="manual-cell-label" style="width: 18%;">证明人</td>
+              <td style="width: 32%;">{{ seg.refName || '' }}</td>
+              <td class="manual-cell-label" style="width: 18%;">证明人来源</td>
+              <td>{{ seg.refSource || '' }}</td>
+            </tr>
+            <tr>
+              <td class="manual-cell-label">证明人联系方式</td>
+              <td>{{ seg.refPhone || '' }}</td>
+              <td class="manual-cell-label">证明人职位</td>
+              <td>{{ seg.refPosition || '' }}</td>
+            </tr>
+            <tr>
+              <td class="manual-cell-label">共事关系</td>
+              <td>{{ seg.relation || '' }}</td>
+              <td class="manual-cell-label">共事时长</td>
+              <td>{{ seg.duration || '' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="manual-sub-header">工作表现鉴定</div>
+      <div class="manual-table-wrap">
+        <table class="manual-report-table">
+          <tbody>
+            <tr v-for="row in assessmentRows(seg)" :key="'as-' + si + '-' + row.key">
+              <td class="manual-cell-label" style="width: 18%;">{{ row.label }}</td>
+              <td class="manual-cell-multiline">{{ row.value }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!--【新增】额外信息模块：无内容则隐藏 -->
     <div class="module-container" id="extra" v-if="hasExtraInfo">
       <div class="module-title">综合补充信息</div>
@@ -1833,6 +1913,21 @@ export default {
   data() {
     return {
       extraInfo: '',
+      employmentVerifyList: [], // 工作履历核实（人工核验），空数组=不显示
+      interviewList: [], // 工作表现访谈（人工核验），空数组=不显示
+      assessmentLabels: {
+        leaveReason: '离职原因',
+        jobDuty: '工作职责',
+        professionalism: '职业素养',
+        selfManagement: '自我管理',
+        kpiStandard: '绩效考核标准',
+        performance: '工作业绩结果',
+        personality: '性格特征',
+        teamwork: '团队合作',
+        stressResistance: '抗压能力',
+        improvement: '改进建议',
+        overallScore: '整体评分'
+      },
       historyWorkValue: null, // 过往工作履历数据，null=未传
       historyWorkWithMoney: false, // 字段名含 withmoney 时为 true，显示缴纳基数列
       data_for_fan_du_fan_zha: [],
@@ -1993,6 +2088,12 @@ export default {
           this.historyWorkValue = Array.isArray(hw) ? hw : [hw];
           this.historyWorkWithMoney = (hwWith !== undefined);
         }
+        // 人工核验结果：工作履历核实、工作表现访谈（后端无结果时不返回该字段）
+        this.employmentVerifyList = Array.isArray(res.data?.employmentVerifyValue)
+          ? res.data.employmentVerifyValue : [];
+        this.interviewList = Array.isArray(res.data?.interviewValue)
+          ? res.data.interviewValue : [];
+
         // 报告编号、查询时间、基础身份字段（与页面数据同级）
         if (res && res.data) {
           this.reportNo = res.data.outTradeNo || '';
@@ -4936,6 +5037,26 @@ normalbadtext(){
       if (status === '未命中') return 'risk-safe';
       return '';
     },
+    // 人工核验-真实性图标：一致/不一致/无法核实
+    truthIconText(truth) {
+      if (truth === 'MATCH') return '✓';
+      if (truth === 'MISMATCH') return '!';
+      if (truth === 'NA') return '−';
+      return '';
+    },
+    truthIconClass(truth) {
+      if (truth === 'MATCH') return 'truth-icon truth-match';
+      if (truth === 'MISMATCH') return 'truth-icon truth-mismatch';
+      if (truth === 'NA') return 'truth-icon truth-na';
+      return '';
+    },
+    // 工作表现鉴定：按固定顺序输出已填写的项目
+    assessmentRows(segment) {
+      const assessments = (segment && segment.assessments) || {};
+      return Object.keys(this.assessmentLabels)
+        .map(key => ({ key, label: this.assessmentLabels[key], value: assessments[key] || '' }))
+        .filter(row => String(row.value).trim() !== '');
+    },
     // 缴纳时间格式化：202001 -> 2020年01月
     formatHistoryWorkTime(time) {
       if (!time) return '—';
@@ -5299,6 +5420,83 @@ normalbadtext(){
 .module-container[id="history-work"] {
   border-left-color: #0e7490;
   background: linear-gradient(to right, rgba(14, 116, 144, 0.04) 0%, #fff 8%);
+}
+.employment-verify-module {
+  border-left-color: #1d4ed8;
+  background: linear-gradient(to right, rgba(29, 78, 216, 0.04) 0%, #fff 8%);
+}
+.interview-module {
+  border-left-color: #7c3aed;
+  background: linear-gradient(to right, rgba(124, 58, 237, 0.04) 0%, #fff 8%);
+}
+
+/* 人工核验模块表格（工作履历核实 / 工作表现访谈） */
+.manual-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+.manual-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.7;
+  table-layout: fixed;
+}
+.manual-report-table th,
+.manual-report-table td {
+  border: 1px solid #d6dee8;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+}
+.manual-report-table th {
+  background: #eef3fb;
+  color: #1f2d4d;
+  font-weight: 600;
+  text-align: center;
+}
+.manual-cell-label {
+  background: #f5f8fc;
+  color: #2b3a55;
+  font-weight: 600;
+}
+.manual-cell-truth {
+  text-align: center;
+  vertical-align: middle;
+}
+.manual-cell-multiline {
+  white-space: pre-wrap;
+}
+.manual-sub-header {
+  margin: 14px 0 8px;
+  padding: 6px 10px;
+  background: #eef3fb;
+  border-radius: 3px;
+  font-weight: 600;
+  color: #1f2d4d;
+  font-size: 13px;
+}
+.truth-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.truth-match {
+  background: #2563eb;
+}
+.truth-mismatch {
+  background: #f59e0b;
+}
+.truth-na {
+  background: #9ca3af;
 }
 
 .module-title {
