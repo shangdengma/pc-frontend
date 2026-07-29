@@ -306,8 +306,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .metric-card,
-.notice-item,
-.todo-item {
+.notice-item {
   transition: border-color 0.16s ease, background-color 0.16s ease;
 }
 

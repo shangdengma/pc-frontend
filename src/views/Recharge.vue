@@ -329,44 +329,12 @@ onBeforeUnmount(stopPolling)
   gap: 12px;
 }
 
-.ledger-entry {
-  min-width: 126px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0 16px;
-  border: 1px solid #cbdcf6;
-  border-radius: 7px;
-  color: #2563eb;
-  background: #f5f8ff;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
-}
-
-.ledger-entry:hover {
-  border-color: #8db2ee;
-  color: #174ea6;
-  background: #eaf2ff;
-}
-
-.ledger-entry:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, .18);
-  outline-offset: 2px;
-}
-
 @media (max-width: 760px) {
   .recharge-hero-actions {
     width: 100%;
     flex-direction: column-reverse;
   }
 
-  .ledger-entry {
-    min-height: 42px;
-  }
 }
 
 @media (max-width: 900px) {
