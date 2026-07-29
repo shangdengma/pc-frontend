@@ -58,6 +58,14 @@
         </label>
       </template>
 
+      <div class="login-consent">
+        <input id="login-consent" v-model="agreementAccepted" type="checkbox">
+        <label for="login-consent">我已阅读并同意</label>
+        <router-link to="/user-agreement" target="_blank">《用户协议》</router-link>
+        <span>和</span>
+        <router-link to="/privacy-policy" target="_blank">《隐私政策》</router-link>
+      </div>
+
       <div v-if="error" class="form-error">{{ error }}</div>
       <div v-if="notice" class="form-notice">{{ notice }}</div>
       <button class="primary-btn" type="submit" :disabled="loading">{{ loading ? '登录中...' : '进入工作台' }}</button>
@@ -93,6 +101,7 @@ const error = ref('')
 const notice = ref('')
 const sliderOpen = ref(false)
 const loginMode = ref('password')
+const agreementAccepted = ref(false)
 const form = reactive({ username: '', password: '' })
 const smsForm = reactive({ phone: '', code: '' })
 let countdownTimer = null
@@ -200,6 +209,10 @@ async function handleSmsLogin() {
 async function handleLogin() {
   error.value = ''
   notice.value = ''
+  if (!agreementAccepted.value) {
+    error.value = '请先阅读并同意《用户协议》和《隐私政策》'
+    return
+  }
   loading.value = true
   try {
     if (loginMode.value === 'sms') {

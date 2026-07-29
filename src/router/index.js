@@ -5,6 +5,7 @@ import { getToken, getUser } from '../utils/auth'
 const Dashboard = () => import('../views/Dashboard.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
+const LegalDocument = () => import('../views/LegalDocument.vue')
 const CandidateAuthorization = () => import('../views/candidate/CandidateAuthorization.vue')
 const QueryCreate = () => import('../views/QueryCreate.vue')
 const Records = () => import('../views/Records.vue')
@@ -24,6 +25,20 @@ const NotFound = () => import('../views/NotFound.vue')
 const routes = [
   { path: '/login', name: 'login', component: Login },
   { path: '/register', name: 'register', component: Register },
+  {
+    path: '/user-agreement',
+    name: 'userAgreement',
+    component: LegalDocument,
+    props: { type: 'agreement' },
+    meta: { public: true, title: '用户协议' }
+  },
+  {
+    path: '/privacy-policy',
+    name: 'privacyPolicy',
+    component: LegalDocument,
+    props: { type: 'privacy' },
+    meta: { public: true, title: '隐私政策' }
+  },
   {
     path: '/candidate/authorization/:token?',
     name: 'candidateAuthorization',

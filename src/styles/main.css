@@ -1657,6 +1657,42 @@ textarea::placeholder {
 
 .login-register-entry a { color: var(--cinnabar); font-weight: 500; }
 
+.login-consent {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 2px 0 12px;
+  color: #81796e;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.login-card .login-consent input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  margin: 0 4px 0 0;
+  accent-color: var(--cinnabar);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.login-card .login-consent label {
+  display: inline;
+  margin: 0;
+  cursor: pointer;
+}
+
+.login-consent a {
+  color: var(--cinnabar);
+  font-weight: 500;
+}
+
+.login-consent a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .login-foot {
   margin-top: 34px;
   font-size: 11px;
