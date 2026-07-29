@@ -127,6 +127,7 @@ import DynamicFormStep from './components/DynamicFormStep.vue'
 import PhoneVerifyStep from './components/PhoneVerifyStep.vue'
 import ReviewStep from './components/ReviewStep.vue'
 import {
+  MAX_EDUCATION_ITEMS,
   MODULE_KEYS,
   createEducation,
   createEmployment,
@@ -377,7 +378,13 @@ function validateForm() {
   if (!/^\d{17}[\dX]$/.test(formModel.candidate.idCard)) return '身份证号格式不正确'
 
   if (task.modules.includes(MODULE_KEYS.EDUCATION)) {
-    if (formModel.educations.some(item => !item.credentialNo)) return '请完整填写学历证书编号'
+    if (formModel.educations.length > MAX_EDUCATION_ITEMS) {
+      return `每份订单最多填写 ${MAX_EDUCATION_ITEMS} 个学历证书编号`
+    }
+    const credentialNumbers = formModel.educations
+      .map(item => item.credentialNo.trim().toUpperCase())
+      .filter(Boolean)
+    if (new Set(credentialNumbers).size !== credentialNumbers.length) return '学历证书编号不能重复'
   }
 
   if (task.modules.includes(MODULE_KEYS.EMPLOYMENT)) {

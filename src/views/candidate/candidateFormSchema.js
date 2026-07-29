@@ -4,11 +4,13 @@ export const MODULE_KEYS = {
   REFERENCE: 'reference'
 }
 
+export const MAX_EDUCATION_ITEMS = 3
+
 export const moduleDefinitions = {
   [MODULE_KEYS.EDUCATION]: {
     key: MODULE_KEYS.EDUCATION,
     title: '学历信息',
-    description: '请填写需要核验的学历证书编号，可添加多段学历。',
+    description: `请填写需要核验的学历证书编号，最多添加 ${MAX_EDUCATION_ITEMS} 条；暂无法提供时可留空。`,
     shortName: '学历核验'
   },
   [MODULE_KEYS.EMPLOYMENT]: {

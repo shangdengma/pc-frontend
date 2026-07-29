@@ -117,97 +117,73 @@
      
     </div>
 
-    <!-- 高等教育信息模块 -->
-    <!-- ====================================================== -->
-    <!-- ==     高等教育信息模块 (带"无数据"提示的版本)        == -->
-    <!--
-         说明：按 hasEducationData 控制整个模块是否展示
-         - 后端存在 dataList_of_xue_li 标签 -> 显示模块（即使列表为空，也会走 v-else 提示）
-         - 后端完全不返回该标签       -> 隐藏整个模块
-       -->
-    <!-- ====================================================== -->
+    <!-- 学历证书核验：仅渲染后端标准结构 -->
     <div class="module-container" id="education" v-if="hasEducationData">
-      <div class="module-title">高等教育学历</div>
-      
-      <!-- 
-           将 v-if/v-else 应用在内容区域，而不是最外层容器。
-           我们创建一个新的 <div> 来包裹列表，并将 v-if 移到这里。
-         -->
-      <div v-if="educationData && educationData.length > 0" class="education-list">
-        <div class="education-record" v-for="(edu, index) in educationData" :key="'edu-' + index">
+      <div class="module-title">学历证书核验</div>
+
+      <div class="education-list">
+        <div
+          class="education-record"
+          v-for="(edu, index) in educationData"
+          :key="`education-${edu.sequence || index + 1}-${edu.certificateNo || 'empty'}`"
+        >
           <div class="education-record-header">
             <div class="education-record-icon">
               <i class="fas fa-graduation-cap"></i>
             </div>
             <div class="education-record-title-wrap">
-              <span class="education-record-badge">学历记录 {{ index + 1 }}</span>
-              <span class="education-record-level">{{ edu.xl || '--' }}</span>
+              <span class="education-record-badge">学历记录 {{ edu.sequence || index + 1 }}</span>
+              <span class="education-certificate-no">
+                证书编号：{{ edu.certificateNo || '候选人未提供' }}
+              </span>
+            </div>
+            <span class="education-status" :class="`education-status--${edu.statusClass}`">
+              {{ edu.statusLabel }}
+            </span>
+          </div>
+
+          <div
+            v-if="edu.queryStatus !== 'MATCHED'"
+            class="education-result-message"
+            :class="`education-result-message--${edu.statusClass}`"
+          >
+            {{ edu.message }}
+          </div>
+
+          <div v-else class="education-info-grid">
+            <div class="education-info-item">
+              <span class="label">院校名称</span>
+              <span class="value">{{ edu.school || '-' }}</span>
+            </div>
+            <div class="education-info-item">
+              <span class="label">专业名称</span>
+              <span class="value">{{ edu.major || '-' }}</span>
+            </div>
+            <div class="education-info-item">
+              <span class="label">学历层次</span>
+              <span class="value">{{ edu.educationLevel || '-' }}</span>
+            </div>
+            <div class="education-info-item">
+              <span class="label">入学日期</span>
+              <span class="value">{{ edu.enrollmentDate || '-' }}</span>
+            </div>
+            <div class="education-info-item">
+              <span class="label">毕业日期</span>
+              <span class="value">{{ edu.graduationDate || '-' }}</span>
+            </div>
+            <div class="education-info-item">
+              <span class="label">学习形式</span>
+              <span class="value">{{ edu.learningForm || '-' }}</span>
+            </div>
+            <div class="education-info-item">
+              <span class="label">学制</span>
+              <span class="value">{{ edu.duration || '-' }}</span>
+            </div>
+            <div class="education-info-item">
+              <span class="label">学籍状态</span>
+              <span class="value">{{ edu.studyStatus || '-' }}</span>
             </div>
           </div>
-          <div class="education-info-grid" :class="{ 'education-info-grid--verify-v9': edu.isVerifyV9 }">
-            <template v-if="edu.isVerifyV9">
-              <div class="education-info-item">
-                <span class="label">学历层次</span>
-                <span class="value">{{ edu.xl || '-' }}</span>
-              </div>
-              <div class="education-info-item">
-                <span class="label">毕业时间</span>
-                <span class="value">{{ edu.jsrq || '-' }}</span>
-              </div>
-              <div class="education-info-item">
-                <span class="label">学习方式</span>
-                <span class="value">{{ edu.xxxs || '-' }}</span>
-              </div>
-            </template>
-            <template v-else>
-              <div class="education-info-item">
-                <span class="label">院校名称</span>
-                <span class="value">{{ edu.yxmc || '-' }}{{ (edu.abilityCompetitiveName || edu.abilityCompetitive) ? '(' + (edu.abilityCompetitiveName || edu.abilityCompetitive) + ')' : '' }}</span>
-              </div>
-              <div class="education-info-item">
-                <span class="label">专业名称</span>
-                <span class="value">{{ edu.zymc || '-' }}</span>
-              </div>
-              <div class="education-info-item">
-                <span class="label">学历层次</span>
-                <span class="value">{{ edu.xl || '-' }}</span>
-              </div>
-              <div class="education-info-item">
-                <span class="label">入学时间</span>
-                <span class="value">{{ edu.ksrq || '-' }}</span>
-              </div>
-              <div class="education-info-item">
-                <span class="label">毕业时间</span>
-                <span class="value">{{ edu.jsrq || '-' }}</span>
-              </div>
-              <div class="education-info-item">
-                <span class="label">学习方式</span>
-                <span class="value">{{ edu.xxxs || '-' }}</span>
-              </div>
-            </template>
-          </div>
-        </div>
-      </div>
-
-      <!--
-           这里是关键！v-else 块。
-           当前面的 v-if 条件不满足时（即 jyxx 数组为空或不存在），
-           Vue 会自动渲染这个 <div>。
-         -->
-      <div v-else class="education-empty">
-        <div class="education-empty-icon">
-          <i class="fas fa-graduation-cap"></i>
-        </div>
-        <div class="education-empty-text">
-          <div class="education-empty-title">未查询到高等教育学历信息</div>
-          <div class="education-empty-desc">说明：以下情况可能导致暂无记录</div>
-          <ul class="education-empty-reasons">
-            <li>·学历为高中及以下</li>
-            <li>·在读未毕业</li>
-            <li>·毕业较早，系统未录入</li>
-            <li>.海外院校毕业</li>
-            <li>·其学历尚未统计到全国信息库</li>
-          </ul>
         </div>
       </div>
     </div>
@@ -1897,8 +1873,6 @@
 <script>
 	import { jsPDF } from "jspdf";
 import { getData } from "../../api/data.js";
-import schoolCodeMap from "../../assets/school-code-map.json";
-import majorCodeMap from "../../assets/major-code-map.json";
 import { getDicts } from "../../api/dict.js";
 import {
   largeVariable,
@@ -2015,10 +1989,6 @@ export default {
         call_time: "2025-07-14T16:31:47.123456+00:00",
       },
       dataForComponents: largeVariable,
-      dataForComponents1: {
-        api_name: "学历信息查询",
-        data: { data: { education_background: { data: [] } } },
-      },
       dataForComponents2: {
         api_name: "个人司法涉诉",
         data: { data: { entout: [] } },
@@ -2115,10 +2085,6 @@ export default {
 
           // 性能优化：使用 nextTick 延迟非关键数据转换
           this.$nextTick(() => {
-          // 转换学历数据
-          const transformedEducationData = this.transformEducationData();
-          this.dataForComponents1 = transformedEducationData;
-
           // 转换人企关联数据
           const transformedCompanyData = this.transformCompanyRelationData();
           this.dataForComponents3 = transformedCompanyData;
@@ -2164,10 +2130,6 @@ export default {
 
         // 性能优化：使用 nextTick 将非关键数据转换延迟到下一帧，避免阻塞渲染
         this.$nextTick(async () => {
-        // 转换学历数据
-        const transformedEducationData = this.transformEducationData();
-        this.dataForComponents1 = transformedEducationData;
-
         // 转换人企关联数据
         const transformedCompanyData = this.transformCompanyRelationData();
         this.dataForComponents3 = transformedCompanyData;
@@ -2470,56 +2432,9 @@ export default {
       return !!this.judicialData?.data?.data?.dishonesty;
     },
     // 系统字典 if_edu_exist：dictLabel=报告类型 id，dictValue=1 显示学历模块、0 隐藏；字典未加载或无匹配行时默认显示（兼容）
-    educationVisibleByIfEduExist() {
-      const st = this.searchType;
-      const dictKey = "if_edu_exist";
-      const list = this.dictData && this.dictData[dictKey];
-      if (!Array.isArray(list) || list.length === 0) return true;
-      const strSt = String(st == null ? "" : st).trim();
-      const item = list.find((d) => {
-        if (!d) return false;
-        const lbl = (d.dictLabel ?? d.label ?? "").toString().trim();
-        return lbl === strSt;
-      });
-      if (!item) return true;
-      const n = String(item.dictValue ?? item.value ?? "").trim().toLowerCase();
-      if (n === "1" || n === "true" || n === "是" || n === "yes") return true;
-      if (n === "0" || n === "false" || n === "否" || n === "no") return false;
-      return true;
-    },
-    // if_edu_exist 已为当前报告类型明确配置为 1：无 abilityInfo / dataList / verifyV9 等也展示学历模块，走「查空」空态
-    educationDictExplicitShow() {
-      const st = this.searchType;
-      const dictKey = "if_edu_exist";
-      const list = this.dictData && this.dictData[dictKey];
-      if (!Array.isArray(list) || list.length === 0) return false;
-      const strSt = String(st == null ? "" : st).trim();
-      const item = list.find((d) => {
-        if (!d) return false;
-        const lbl = (d.dictLabel ?? d.label ?? "").toString().trim();
-        return lbl === strSt;
-      });
-      if (!item) return false;
-      const n = String(item.dictValue ?? item.value ?? "").trim().toLowerCase();
-      return n === "1" || n === "true" || n === "是" || n === "yes";
-    },
-    // 判断是否存在高等教育信息数据（后端不传才隐藏；传了但查空仍显示）
+    // 仅在后端返回新的学历证书核验标准结构时展示。
     hasEducationData() {
-      if (!this.educationVisibleByIfEduExist) return false;
-      // 首项 { abilityInfo: [] } 表示学历槽位已返回但无记录 -> 仍展示模块，走下方「无数据」提示
-      if (
-        Array.isArray(this.dataAll) &&
-        this.dataAll.length > 0 &&
-        Array.isArray(this.dataAll[0]?.abilityInfo)
-      ) {
-        return true;
-      }
-      if (this.getItemByFiledName(this.dataAll, "dataList_of_xue_li")) return true;
-      if (this.getItemByFiledName(this.dataAll, "abilityInfo_list")) return true;
-      if (this.getItemByFiledName(this.dataAll, "abilityInfo")) return true;
-      if (this.hasVerifyV9EducationBlock()) return true;
-      if (this.educationDictExplicitShow) return true;
-      return false;
+      return this.educationData.length > 0;
     },
     // 额外信息：有内容才展示模块
     hasExtraInfo() {
@@ -2952,411 +2867,78 @@ export default {
       return "";
     },
 
-    // 递归从任意结构中查找：学历块（point_index 21/22）的 list_result，首条含 abilityName
-    _findAbilityListResult(node, depth) {
-      if (!node || (depth && depth > 25)) return null;
-      const d = (depth || 0) + 1;
-      const isEduNode = String(node?.point_index) === "21" || String(node?.point_index) === "22";
-      if (isEduNode && node.list_result && Array.isArray(node.list_result) && node.list_result.length > 0) {
-        const first = node.list_result[0];
-        if (Array.isArray(first) && first.some(f => f?.filed_name === "abilityName")) {
-          return node.list_result;
-        }
+    // 只查找新的学历证书核验标准块，不再兼容旧学历字段。
+    findEducationVerificationBlock(node, depth = 0) {
+      if (!node || depth > 20) return null;
+      if (
+        node &&
+        typeof node === "object" &&
+        node.filed_name === "education_certificate_verification"
+      ) {
+        return node;
       }
       if (Array.isArray(node)) {
         for (const child of node) {
-          const found = this._findAbilityListResult(child, d);
+          const found = this.findEducationVerificationBlock(child, depth + 1);
           if (found) return found;
         }
-      } else if (node && typeof node === "object") {
-        for (const key of Object.keys(node)) {
-          const found = this._findAbilityListResult(node[key], d);
+        return null;
+      }
+      if (typeof node === "object") {
+        for (const value of Object.values(node)) {
+          const found = this.findEducationVerificationBlock(value, depth + 1);
           if (found) return found;
         }
       }
       return null;
     },
 
-    // verifyV9 学历块：list 内含 verifyV9-data，list_result 为 [[verifyV9-* 字段行], ...]
-    hasVerifyV9EducationBlock() {
-      if (!this.dataAll || !Array.isArray(this.dataAll)) return false;
-      return this.dataAll.some((root) => {
-        if (root?.list?.some((li) => li && li.filed_name === "verifyV9-data")) return true;
-        if (
-          Array.isArray(root?.list_result) &&
-          root.list_result.some(
-            (rec) =>
-              Array.isArray(rec) &&
-              rec.some((f) => f && String(f.filed_name || "").indexOf("verifyV9-") === 0)
-          )
-        ) {
-          return true;
-        }
-        return false;
-      });
-    },
-    collectVerifyV9EducationRows(dataAll) {
-      const rows = [];
-      if (!Array.isArray(dataAll)) return rows;
-      const seen = new Set();
-      const isRowAllEmpty = (recordArray) => {
-        if (!Array.isArray(recordArray)) return true;
-        return recordArray.every((f) => {
-          if (!f) return true;
-          const v = f.value;
-          return v === null || v === undefined || String(v).trim() === "";
-        });
-      };
-      const rowToTriple = (recordArray) => {
-        if (!Array.isArray(recordArray)) return null;
-        const get = (suffix) => {
-          const fn = `verifyV9-${suffix}`;
-          const field = recordArray.find((x) => x && x.filed_name === fn);
-          return field && field.value != null ? String(field.value).trim() : "";
-        };
-        const educationLevel = get("educationLevel");
-        const endDate = get("endDate");
-        const learningForm = get("learningForm");
-        if (!educationLevel && !endDate && !learningForm) return null;
-        return { educationLevel, endDate, learningForm };
-      };
-      const pushDedup = (obj) => {
-        if (!obj) return;
-        const key = `${obj.endDate}\t${obj.educationLevel}\t${obj.learningForm}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        rows.push(obj);
-      };
-      for (const root of dataAll) {
-        if (root?.list && Array.isArray(root.list)) {
-          for (const li of root.list) {
-            if (li && li.filed_name === "verifyV9-data" && Array.isArray(li.list_result)) {
-              for (const rec of li.list_result) {
-                if (Array.isArray(rec) && !isRowAllEmpty(rec)) {
-                  pushDedup(rowToTriple(rec));
-                }
-              }
-            }
-          }
-        }
-        if (Array.isArray(root?.list_result)) {
-          for (const rec of root.list_result) {
-            if (!Array.isArray(rec) || isRowAllEmpty(rec)) continue;
-            const hasV9 = rec.some(
-              (f) => f && String(f.filed_name || "").indexOf("verifyV9-") === 0
-            );
-            if (hasV9) pushDedup(rowToTriple(rec));
-          }
-        }
-      }
-      return rows;
-    },
-    formatVerifyV9EndDate(raw) {
-      if (raw == null || raw === "") return "-";
-      const s = String(raw).replace(/\D/g, "");
-      if (s.length === 6) return `${s.slice(0, 4)}-${s.slice(4, 6)}`;
-      if (s.length === 8) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
-      return String(raw).trim() || "-";
-    },
-
-    // 接口把学历新结构放在整段 JSON 列表的第一项：{ abilityInfo: [ { abilityStartDate, ... }, ... ] }
-    _educationListFromHeadAbilityInfo(abilityInfo) {
-      const list = [];
-      if (!Array.isArray(abilityInfo)) return list;
-      for (const raw of abilityInfo) {
-        if (!raw || typeof raw !== "object") continue;
-        const get = (k) =>
-          raw[k] != null && raw[k] !== "" ? String(raw[k]).trim() : "";
-        const abilityName = get("abilityName");
-        const abilityField = get("abilityField");
-        const yxmc = schoolCodeMap[String(abilityName)] || abilityName || "";
-        const zymc = majorCodeMap[String(abilityField)] || abilityField || "";
-        const cc = get("abilityCompetitiveDegree") || "";
-        const byrq = get("abilityEndDate") || "";
-        const xxxsRaw = get("abilityType") || "";
-        const zsbh = "";
-        if (!yxmc && !zymc && !cc && !byrq && !xxxsRaw) continue;
-        const xl = this.mapEducationLevel(cc);
-        const ksrq = get("abilityStartDate") || "";
-        const abilityCompetitive = get("abilityCompetitive") || "";
-        list.push({
-          jsrq: byrq,
-          xl,
-          xxlx: yxmc,
-          xxxs: this.mapStudyForm(xxxsRaw),
-          zymc,
-          yxmc,
-          zsbh,
-          ksrq,
-          abilityName,
-          abilityCompetitive,
-          abilityCompetitiveName: this.mapSchoolLevel(abilityCompetitive),
-          abilityField,
-          abilityCompetitiveDegree: cc,
-          abilityStartDate: ksrq,
-          abilityEndDate: byrq,
-          abilityType: xxxsRaw,
-        });
-      }
-      return list;
-    },
-
-    // 转换学历数据为目标格式
     transformEducationData() {
-      if (Array.isArray(this.dataAll) && this.dataAll.length > 0) {
-        const head = this.dataAll[0];
-        if (head && typeof head === "object" && Array.isArray(head.abilityInfo)) {
-          return this._educationListFromHeadAbilityInfo(head.abilityInfo);
-        }
-      }
-      const v9Rows = this.collectVerifyV9EducationRows(this.dataAll);
-      if (v9Rows.length > 0) {
-        return v9Rows.map((r) => ({
-          isVerifyV9: true,
-          xl: r.educationLevel || "--",
-          jsrq: this.formatVerifyV9EndDate(r.endDate),
-          xxxs: r.learningForm || "-",
-          yxmc: "",
-          zymc: "",
-          ksrq: "",
-          zsbh: "",
-        }));
-      }
+      const block = this.findEducationVerificationBlock(this.dataAll);
+      const rows = Array.isArray(block?.list_result) ? block.list_result : [];
+      const statusMeta = {
+        MATCHED: { label: "核验一致", className: "matched", message: "学历证书信息核验成功" },
+        NOT_FOUND: { label: "未查询到记录", className: "not-found", message: "未查询到与该证书编号匹配的学历记录" },
+        ERROR: { label: "核验失败", className: "error", message: "学历核验服务暂时不可用" },
+        NO_INPUT: { label: "未提供编号", className: "no-input", message: "候选人未提供学历证书编号，未执行自动核验" },
+      };
 
-      const educationList = [];
-      let listResult = null;
-      let isNewFormat = false;
-
-      // 1) 遍历顶层数组，只认学历块（point_index 21/22）的 list_result，首条含 abilityName
-      if (Array.isArray(this.dataAll) && this.dataAll.length > 0) {
-        for (let i = 0; i < this.dataAll.length; i++) {
-          const item = this.dataAll[i];
-          const isEduBlock = String(item?.point_index) === "21" || String(item?.point_index) === "22";
-          if (!isEduBlock) continue;
-          if (item?.list_result && Array.isArray(item.list_result) && item.list_result.length > 0) {
-            const firstRecord = item.list_result[0];
-            if (Array.isArray(firstRecord) && firstRecord.length > 0) {
-              const hasAbilityFields = firstRecord.some(f => f?.filed_name === "abilityName");
-              if (hasAbilityFields) {
-                listResult = item.list_result;
-                isNewFormat = "ability"; // abilityInfo 新格式
-                break;
-              }
-              const hasTyFields = firstRecord.some(f => f?.filed_name?.startsWith('ty_'));
-              if (hasTyFields) {
-                listResult = item.list_result;
-                isNewFormat = "ty"; // ty_ 格式
-                break;
-              }
+      return rows
+        .filter((row) => Array.isArray(row))
+        .map((row, index) => {
+          const values = {};
+          row.forEach((field) => {
+            const name = String(field?.filed_name || "");
+            if (name.startsWith("educationVerify-")) {
+              values[name.slice("educationVerify-".length)] =
+                field?.value == null ? "" : String(field.value).trim();
             }
-          }
-        }
-      }
-
-      // 2) 兜底：通过 abilityInfo_list 取 pointed_object.list_result
-      if (!listResult && !isNewFormat) {
-        const abilityRef = this.getItemByFiledName(this.dataAll, "abilityInfo_list");
-        const branch = abilityRef?.pointed_object;
-        if (branch?.list_result && Array.isArray(branch.list_result) && branch.list_result.length > 0) {
-          const first = branch.list_result[0];
-          if (Array.isArray(first) && first.some(f => f?.filed_name === "abilityName")) {
-            listResult = branch.list_result;
-            isNewFormat = "ability";
-          }
-        }
-      }
-
-      // 3) 递归深搜：从 this.dataAll 整棵结构里找 list_result（首条含 abilityName）
-      if (!listResult && !isNewFormat) {
-        const found = this._findAbilityListResult(this.dataAll, 0);
-        if (found) {
-          listResult = found;
-          isNewFormat = "ability";
-        }
-      }
-
-      // 4) 旧格式：dataList_of_xue_li
-      if (!listResult && !isNewFormat) {
-        const educationData = this.getItemByFiledName(
-          this.dataAll,
-          "dataList_of_xue_li"
-        );
-
-        if (
-          educationData &&
-          educationData.pointed_object &&
-          educationData.pointed_object.list_result
-        ) {
-          listResult = educationData.pointed_object.list_result;
-        }
-      }
-
-      // 如果没有找到数据，返回空数组
-      if (!listResult || !Array.isArray(listResult)) {
-        if (!this.educationDictExplicitShow) {
-          console.warn("未找到学历相关数据或数据结构不正确");
-        }
-        return [];
-      }
-
-      // 处理每条学历记录
-      listResult.forEach((educationRecord) => {
-        if (Array.isArray(educationRecord)) {
-          // 从每条记录中提取字段值
-          const getFieldFromRecord = (fieldName) => {
-            const field = educationRecord.find(
-              (item) => item.filed_name === fieldName
-            );
-            return field ? field.value : "";
+          });
+          const queryStatus = statusMeta[values.queryStatus]
+            ? values.queryStatus
+            : "ERROR";
+          const meta = statusMeta[queryStatus];
+          const sequence = Number.parseInt(values.sequence, 10);
+          return {
+            sequence: Number.isFinite(sequence) ? sequence : index + 1,
+            certificateNo: values.certificateNo || "",
+            queryStatus,
+            statusLabel: meta.label,
+            statusClass: meta.className,
+            message: values.message || meta.message,
+            school: values.school || "",
+            major: values.major || "",
+            majorCategory: values.majorCategory || "",
+            educationLevel: values.educationLevel || "",
+            enrollmentDate: values.enrollmentDate || "",
+            graduationDate: values.graduationDate || "",
+            learningForm: values.learningForm || "",
+            duration: values.duration || "",
+            studyStatus: values.studyStatus || "",
+            certificateType: values.certificateType || "",
           };
-
-          let yxmc, zymc, cc, byrq, xxxs, zsbh;
-
-          if (isNewFormat === "ability") {
-            // abilityInfo 新格式：院校代码、专业代码按对照表映射为名称
-            const abilityName = getFieldFromRecord("abilityName") || "";
-            yxmc = schoolCodeMap[String(abilityName)] || abilityName || "";
-            const abilityField = getFieldFromRecord("abilityField") || "";
-            zymc = majorCodeMap[String(abilityField)] || abilityField || "";
-            cc = getFieldFromRecord("abilityCompetitiveDegree") || ""; // 学历层次（代码，待映射）
-            byrq = getFieldFromRecord("abilityEndDate") || ""; // 毕业时间
-            xxxs = getFieldFromRecord("abilityType") || ""; // 学习方式
-            zsbh = ""; // 暂无证书编号
-          } else if (isNewFormat === "ty") {
-            // ty_ 格式：使用 ty_ 开头的字段名
-            yxmc = getFieldFromRecord("ty_schoolName") || ""; // 学校名称
-            zymc = getFieldFromRecord("ty_specialtyName") || ""; // 专业名称
-            cc = getFieldFromRecord("ty_educationLevel") || ""; // 学历层次
-            byrq = getFieldFromRecord("ty_graduationDate") || ""; // 毕业时间
-            xxxs = getFieldFromRecord("ty_learningForm") || ""; // 学习形式
-            zsbh = ""; // 新格式暂无证书编号
-          } else {
-            // 旧格式：使用原有字段名
-            yxmc = getFieldFromRecord("yxmc") || ""; // 院校名称
-            zymc = getFieldFromRecord("zymc") || ""; // 专业名称
-            cc = getFieldFromRecord("cc") || ""; // 层次
-            byrq = getFieldFromRecord("byrq") || ""; // 毕业日期
-            xxxs = getFieldFromRecord("xxxs") || ""; // 学习形式
-            zsbh = getFieldFromRecord("zsbh") || ""; // 证书编号
-          }
-
-          // 只有当有实际数据时才添加记录
-          if (yxmc || zymc || cc || byrq || xxxs) {
-            const xl = this.mapEducationLevel(cc); // 学历层次转换
-            // ability 格式有接口返回的入学时间，其他格式根据毕业日期推算
-            const ksrq = isNewFormat === "ability"
-              ? (getFieldFromRecord("abilityStartDate") || "")
-              : this.calculateStartDate(byrq, xl);
-
-            const record = {
-              jsrq: byrq,
-              xl: xl,
-              xxlx: yxmc,
-              xxxs: this.mapStudyForm(xxxs),
-              zymc: zymc,
-              yxmc: yxmc,
-              zsbh: zsbh,
-              ksrq: ksrq,
-            };
-            // abilityInfo 格式：保留原始字段供后续代码映射
-            if (isNewFormat === "ability") {
-              record.abilityName = getFieldFromRecord("abilityName") || "";
-              const abilityCompetitive = getFieldFromRecord("abilityCompetitive") || "";
-              record.abilityCompetitive = abilityCompetitive;
-              record.abilityCompetitiveName = this.mapSchoolLevel(abilityCompetitive);
-              record.abilityField = getFieldFromRecord("abilityField") || "";
-              record.abilityCompetitiveDegree = getFieldFromRecord("abilityCompetitiveDegree") || "";
-              record.abilityStartDate = getFieldFromRecord("abilityStartDate") || "";
-              record.abilityEndDate = getFieldFromRecord("abilityEndDate") || "";
-              record.abilityType = getFieldFromRecord("abilityType") || "";
-            }
-            educationList.push(record);
-          }
-        }
-      });
-
-      return educationList;
-    },
-
-    // 院校水平映射（abilityCompetitive：A~G）
-    mapSchoolLevel(code) {
-      const mapping = {
-        A: "985院校",
-        B: "双一流",
-        C: "211院校",
-        D: "一本院校",
-        E: "二本院校",
-        F: "大专院校",
-        G: "其他",
-      };
-      return mapping[String(code).toUpperCase()] || code || "";
-    },
-
-    // 学历层次映射（含 abilityCompetitiveDegree 数字代码：9 博士、8 硕士、7 本科、6 大专、5 其他）
-    mapEducationLevel(cc) {
-      const mapping = {
-        "9": "博士研究生",
-        "8": "硕士研究生",
-        "7": "大学本科",
-        "6": "大学专科",
-        "5": "其他",
-        本科: "大学本科",
-        硕士研究生: "硕士研究生",
-        博士研究生: "博士研究生",
-        专科: "大学专科",
-        大专: "大学专科",
-      };
-      return mapping[cc] || mapping[String(cc)] || cc || "其他";
-    },
-
-    // 学习形式映射
-    mapStudyForm(xxxs) {
-      const mapping = {
-        普通全日制: "全日制",
-        非全日制: "非全日制",
-        全日制: "全日制",
-      };
-      return mapping[xxxs] || xxxs || "其他";
-    },
-
-    // 日期格式化 (YYYYMMDD -> MMDD)
-    formatDate(dateStr, type = "end") {
-      if (!dateStr || dateStr.length < 8) return "";
-      // 从YYYYMMDD格式提取月日
-      const month = dateStr.substring(4, 6);
-      const day = dateStr.substring(6, 8);
-      return month + day;
-    },
-
-    // 计算开始日期（根据毕业日期和学历层次推算）
-    calculateStartDate(byrq, xl) {
-      if (!byrq || byrq.length < 8) return "";
-
-      const year = parseInt(byrq.substring(0, 4));
-      const month = byrq.substring(4, 6);
-      const day = byrq.substring(6, 8);
-
-      // 根据学历层次推算学制年限
-      let duration = 4; // 默认4年
-      switch (xl) {
-        case "大学专科":
-          duration = 3;
-          break;
-        case "大学本科":
-          duration = 4;
-          break;
-        case "硕士研究生":
-          duration = 3;
-          break;
-        case "博士研究生":
-          duration = 3;
-          break;
-      }
-
-      const startYear = year - duration;
-      const startDate = startYear.toString() + month + day;
-
-      return this.formatDate(startDate, "start");
+        })
+        .sort((left, right) => left.sequence - right.sequence);
     },
     //-------------------------------------------------
     //-------------------------------------------------
@@ -6129,7 +5711,7 @@ summary::-webkit-details-marker {
   transform: rotate(0deg);
 }
 
-/* 高等教育信息模块 - 有数据时的样式 */
+/* 学历证书核验 */
 .education-list {
   display: flex;
   flex-direction: column;
@@ -6137,11 +5719,11 @@ summary::-webkit-details-marker {
 }
 
 .education-record {
-  background: linear-gradient(to right, #faf5ff 0%, #ffffff 12%);
-  border: 1px solid #e9d5ff;
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
 .education-record-header {
@@ -6149,15 +5731,15 @@ summary::-webkit-details-marker {
   align-items: center;
   gap: 14px;
   padding: 16px 20px;
-  background: rgba(124, 58, 237, 0.04);
-  border-bottom: 1px solid #e9d5ff;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5eaf0;
 }
 
 .education-record-icon {
   width: 42px;
   height: 42px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  border-radius: 8px;
+  background: #255d85;
   color: #fff;
   display: flex;
   align-items: center;
@@ -6169,18 +5751,54 @@ summary::-webkit-details-marker {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .education-record-badge {
   font-size: 12px;
-  color: #7c3aed;
-  font-weight: 500;
+  color: #52606d;
+  font-weight: 600;
 }
 
-.education-record-level {
-  font-size: 16px;
+.education-certificate-no {
+  font-size: 14px;
   font-weight: 600;
   color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.education-status {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.education-status--matched {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.education-status--not-found {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.education-status--error {
+  color: #b42318;
+  background: #fef3f2;
+  border-color: #fecdca;
+}
+
+.education-status--no-input {
+  color: #475467;
+  background: #f2f4f7;
+  border-color: #d0d5dd;
 }
 
 .education-info-grid {
@@ -6188,16 +5806,6 @@ summary::-webkit-details-marker {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px 32px;
-}
-
-.education-info-grid--verify-v9 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-@media (max-width: 640px) {
-  .education-info-grid--verify-v9 {
-    grid-template-columns: 1fr;
-  }
 }
 
 .education-info-item {
@@ -6217,66 +5825,31 @@ summary::-webkit-details-marker {
   color: #1e293b;
 }
 
-.education-empty {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 14px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-}
-
-.education-empty-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
-}
-
-.education-empty-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-  line-height: 1.3;
-  margin-bottom: 6px;
-}
-
-.education-empty-desc {
-  font-size: 12px;
-  color: #6b7280;
+.education-result-message {
+  margin: 18px 20px;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 13px;
   line-height: 1.6;
-  margin-bottom: 8px;
 }
 
-.education-empty-reasons {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 12px;
-  color: #6b7280;
-  line-height: 1.8;
+.education-result-message--not-found {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
 }
 
-.education-empty-reasons li {
-  margin-bottom: 4px;
+.education-result-message--error {
+  color: #b42318;
+  background: #fef3f2;
+  border-color: #fecdca;
 }
 
-.education-empty-reasons li:last-child {
-  margin-bottom: 0;
-}
-
-@media (max-width: 767px) {
-  .education-empty {
-    padding: 14px 12px;
-  }
+.education-result-message--no-input {
+  color: #475467;
+  background: #f8fafc;
+  border-color: #d0d5dd;
 }
 
 

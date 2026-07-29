@@ -44,12 +44,18 @@
     </section>
 
     <section v-if="hasModule(MODULE_KEYS.EDUCATION)" class="candidate-form-section">
-      <div class="candidate-section-title">
-        <GraduationCap :size="21" />
-        <div>
-          <h2>学历信息</h2>
-          <p>{{ moduleDefinitions.education.description }}</p>
+      <div class="candidate-section-heading-row">
+        <div class="candidate-section-title">
+          <GraduationCap :size="21" />
+          <div>
+            <h2>学历信息</h2>
+            <p>{{ moduleDefinitions.education.description }}</p>
+          </div>
         </div>
+        <button type="button" class="candidate-guide-trigger" aria-haspopup="dialog" @click="educationGuideOpen = true">
+          <BookOpenCheck :size="17" />
+          证书编号填写指引
+        </button>
       </div>
 
       <div
@@ -70,15 +76,74 @@
           </button>
         </div>
         <label class="candidate-field">
-          <span>学历证书编号 *</span>
-          <input v-model.trim="item.credentialNo" placeholder="请输入毕业证书或学历证书编号" />
+          <span>学历证书编号（选填）</span>
+          <input v-model.trim="item.credentialNo" placeholder="暂无法提供时可留空" />
         </label>
       </div>
-      <button type="button" class="candidate-add-button" @click="model.educations.push(createEducation())">
+      <button
+        v-if="model.educations.length < MAX_EDUCATION_ITEMS"
+        type="button"
+        class="candidate-add-button"
+        @click="model.educations.push(createEducation())"
+      >
         <Plus :size="17" />
         添加学历
       </button>
     </section>
+
+    <Teleport to="body">
+      <div v-if="educationGuideOpen" class="candidate-document-overlay" @click.self="educationGuideOpen = false">
+        <section
+          class="candidate-document-dialog candidate-education-guide"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="education-guide-title"
+        >
+          <button
+            type="button"
+            class="candidate-dialog-close"
+            title="关闭"
+            aria-label="关闭学历证书编号填写指引"
+            @click="educationGuideOpen = false"
+          >
+            <X :size="20" />
+          </button>
+
+          <div class="candidate-guide-heading">
+            <BookOpenCheck :size="23" />
+            <div>
+              <h2 id="education-guide-title">学历证书编号填写指引</h2>
+              <p>登录本人学信档案，按照以下步骤找到证书编号，并按原样完整填写。</p>
+            </div>
+          </div>
+
+          <div class="candidate-guide-steps">
+            <figure v-for="(step, index) in educationGuideSteps" :key="step.title" class="candidate-guide-step">
+              <div class="candidate-guide-step-index">步骤 {{ index + 1 }}</div>
+              <div class="candidate-guide-image-frame">
+                <img :src="step.image" :alt="step.title" loading="lazy" />
+              </div>
+              <figcaption>
+                <strong>{{ step.title }}</strong>
+                <span>{{ step.description }}</span>
+              </figcaption>
+            </figure>
+          </div>
+
+          <div class="candidate-guide-warning">
+            <strong>不要填写：</strong>
+            <span>学号、学位证书编号、在线验证码或学历认证报告编号。</span>
+          </div>
+          <p class="candidate-guide-fallback">
+            如暂时无法找到，可以留空继续提交。报告中会标记“候选人未提供编号”，不会误判为核验通过。
+          </p>
+
+          <button type="button" class="candidate-primary-button candidate-guide-confirm" @click="educationGuideOpen = false">
+            我知道了
+          </button>
+        </section>
+      </div>
+    </Teleport>
 
     <section v-if="hasModule(MODULE_KEYS.EMPLOYMENT)" class="candidate-form-section">
       <div class="candidate-section-title">
@@ -222,15 +287,23 @@
 <script setup>
 import {
   ArrowRight,
+  BookOpenCheck,
   BriefcaseBusiness,
   ClipboardPenLine,
   ContactRound,
   GraduationCap,
   Plus,
   Trash2,
-  UserRound
+  UserRound,
+  X
 } from '@lucide/vue'
+import { ref } from 'vue'
+import educationGuideStep1 from '../../../assets/candidate/education-guide/step-1-login.png'
+import educationGuideStep2 from '../../../assets/candidate/education-guide/step-2-education-entry.png'
+import educationGuideStep3 from '../../../assets/candidate/education-guide/step-3-education-record.png'
+import educationGuideStep4 from '../../../assets/candidate/education-guide/step-4-certificate-number.png'
 import {
+  MAX_EDUCATION_ITEMS,
   MODULE_KEYS,
   createEducation,
   createEmployment,
@@ -244,6 +317,30 @@ const props = defineProps({
   modules: { type: Array, default: () => [] },
   error: { type: String, default: '' }
 })
+
+const educationGuideOpen = ref(false)
+const educationGuideSteps = [
+  {
+    image: educationGuideStep1,
+    title: '登录学信档案',
+    description: '进入学信档案并登录本人账号。'
+  },
+  {
+    image: educationGuideStep2,
+    title: '进入高等教育信息',
+    description: '在首页选择“高等教育信息”。'
+  },
+  {
+    image: educationGuideStep3,
+    title: '选择学历记录',
+    description: '找到需要核验的学历并打开详情。'
+  },
+  {
+    image: educationGuideStep4,
+    title: '复制证书编号',
+    description: '在学历详情底部找到“证书编号”，完整复制到表单。'
+  }
+]
 
 defineEmits(['back', 'continue'])
 

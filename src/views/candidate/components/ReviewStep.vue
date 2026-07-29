@@ -29,7 +29,7 @@
       <h2>学历信息</h2>
       <article v-for="(item, index) in model.educations" :key="item.id" class="candidate-review-entry">
         <span>学历 {{ index + 1 }}</span>
-        <strong>{{ item.credentialNo }}</strong>
+        <strong>{{ item.credentialNo || '未提供' }}</strong>
       </article>
     </section>
 
@@ -103,4 +103,3 @@ function displayPeriod(item) {
   return `${item.startMonth || '-'} 至 ${item.isCurrent ? '至今' : item.endMonth || '-'}`
 }
 </script>
-

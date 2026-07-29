@@ -294,16 +294,11 @@ function buildQueryData() {
   //           否则会把正常单误判成人工补充单。
   // 在线测试：不走中间页，身份证由发起方填，缺项交给后端 resolveLackStatus 标记转人工。
   // 订单状态一律由后端状态服务决定，前端不再传旧的数字状态。
-  let lackStatus
-  if (String(form.callTypeId) === '5') {
-    lackStatus = '3'
-  }
   const payload = {
     name: form.name,
     mobile: form.mobile,
     callTypeId: form.callTypeId,
     data: '',
-    lackStatus,
     isBackground: 0
   }
   if (canOnlineTest.value && form.idCard) {
