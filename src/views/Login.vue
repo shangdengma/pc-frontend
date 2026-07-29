@@ -1,21 +1,13 @@
 ﻿<template>
   <div class="login-page">
-    <section class="login-hero">
-      <div class="brand-row">
-        <div class="brand-mark">钟</div>
-        <div>
-          <div class="brand-title">钟馗背调</div>
-          <div class="brand-sub">企业版客户工作台</div>
-        </div>
+    <!-- 单列居中，不做左右分栏：登录页不承担营销职能，紧凑即专业 -->
+    <div class="login-brand">
+      <div class="brand-seal" aria-hidden="true"><span>钟馗</span></div>
+      <div class="brand-names">
+        <span class="brand-title">钟馗背调</span>
+        <span class="brand-sub">企业版工作台</span>
       </div>
-      <h1>背调查询、授权进度、报告交付集中管理。</h1>
-      <p>面向企业 HR 与风控团队的一站式雇前背景调查平台，合规、高效、可追溯。</p>
-      <ul class="hero-points">
-        <li><Check :size="16" :stroke-width="2.5" />候选人电子签授权，全程合规留痕</li>
-        <li><Check :size="16" :stroke-width="2.5" />多维度数据核验，报告分钟级交付</li>
-        <li><Check :size="16" :stroke-width="2.5" />子账号协作与额度管理，团队共用一个工作台</li>
-      </ul>
-    </section>
+    </div>
 
     <form class="login-card" @submit.prevent="handleLogin">
       <h2>登录工作台</h2>
@@ -75,6 +67,8 @@
       </div>
     </form>
 
+    <footer class="login-foot">河南钟馗科技有限公司 · 豫ICP备2025138155号</footer>
+
     <SmsSliderVerify
       v-model="sliderOpen"
       :phone="smsForm.phone"
@@ -87,7 +81,6 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Check } from '@lucide/vue'
 import SmsSliderVerify from '../components/SmsSliderVerify.vue'
 import { getCodeImg, getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
 import { setToken, setUser } from '../utils/auth'

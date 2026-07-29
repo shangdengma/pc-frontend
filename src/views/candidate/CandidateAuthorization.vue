@@ -29,7 +29,9 @@
 
     <div class="candidate-content">
       <section v-if="terminalState" class="candidate-step candidate-complete-step">
-        <span class="candidate-complete-icon"><CheckCircle2 :size="38" /></span>
+        <span class="candidate-complete-icon" :class="terminalTone">
+          <component :is="terminalIcon" :size="38" />
+        </span>
         <h1>{{ terminalTitle }}</h1>
         <p>{{ terminalMessage }}</p>
       </section>
@@ -119,7 +121,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { CheckCircle2, ChevronLeft, CircleHelp, ShieldCheck, X } from '@lucide/vue'
+import { CheckCircle2, ChevronLeft, CircleHelp, CircleSlash, Clock3, ShieldCheck, TriangleAlert, X } from '@lucide/vue'
 import ConsentStep from './components/ConsentStep.vue'
 import DynamicFormStep from './components/DynamicFormStep.vue'
 import PhoneVerifyStep from './components/PhoneVerifyStep.vue'
@@ -188,6 +190,17 @@ const terminalCopy = {
     message: '链接无效或任务已失效。请确认短信中的链接是否完整，或联系发起方重新发起。'
   }
 }
+// 图标必须与语义一致：原先所有终态共用绿色对勾，
+// "链接已过期""任务不存在"也顶着一个成功图标，指向完全相反的含义。
+const terminalVisual = {
+  SIGNED:    { icon: CheckCircle2, tone: 'is-success' },
+  EXPIRED:   { icon: Clock3,       tone: 'is-warn' },
+  CANCELLED: { icon: CircleSlash,  tone: 'is-neutral' },
+  INVALID:   { icon: TriangleAlert, tone: 'is-danger' }
+}
+const terminalIcon = computed(() => terminalVisual[terminalState.value]?.icon || TriangleAlert)
+const terminalTone = computed(() => terminalVisual[terminalState.value]?.tone || 'is-neutral')
+
 const terminalTitle = computed(() => terminalCopy[terminalState.value]?.title || '任务已结束')
 const terminalMessage = computed(() => terminalCopy[terminalState.value]?.message || '')
 

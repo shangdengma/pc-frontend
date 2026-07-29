@@ -5,17 +5,6 @@
         <p class="eyebrow">账户中心</p>
         <h2>账户充值</h2>
       </div>
-      <div class="recharge-hero-actions">
-        <button class="ledger-entry" type="button" @click="router.push('/recharge/ledger')">
-          <ReceiptText :size="17" :stroke-width="1.9" />
-          资金流水
-          <ChevronRight :size="16" :stroke-width="1.9" />
-        </button>
-        <div class="balance-panel">
-          <span>当前余额</span>
-          <strong>¥{{ balanceText }}</strong>
-        </div>
-      </div>
     </div>
 
     <div class="recharge-grid">
@@ -23,8 +12,8 @@
         <div class="work-card-head compact-head">
           <div>
             <h3>选择充值套餐</h3>
+            <p>套餐由平台配置，选择后在右侧扫码支付。</p>
           </div>
-          <button class="ghost-btn" :disabled="loading" @click="loadPage">刷新</button>
         </div>
 
         <div v-if="loading" class="state-box">正在加载充值套餐...</div>
@@ -120,17 +109,13 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ChevronRight, ReceiptText } from '@lucide/vue'
 import QRCode from 'qrcode'
 import AppModal from '../components/AppModal.vue'
 import { getUserBalance, getUserProfile } from '../api/user'
 import { getUserPackageList } from '../api/comboMeal'
 import { createEpayOrder, queryOrder } from '../api/pay'
-import { yuanFromFen } from '../utils/format'
 
 const emit = defineEmits(['balance-updated'])
-const router = useRouter()
 
 const loading = ref(false)
 const paying = ref(false)
@@ -155,7 +140,6 @@ const payMethods = [
   { id: 'bank', name: '对公银行转账', tag: '人工入账' }
 ]
 
-const balanceText = computed(() => yuanFromFen(balance.value || 0))
 const submitText = computed(() => {
   if (payType.value === 'bank') return '查看对公转账说明'
   if (paying.value) return '正在下单...'
@@ -383,5 +367,9 @@ onBeforeUnmount(stopPolling)
   .ledger-entry {
     min-height: 42px;
   }
+}
+
+@media (max-width: 900px) {
+  .recharge-grid { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

@@ -1,15 +1,13 @@
 <template>
   <div class="login-page register-page">
-    <section class="login-hero register-hero">
-      <div class="brand-row">
-        <div class="brand-mark">钟</div>
-        <div>
-          <div class="brand-title">钟馗背调</div>
-          <div class="brand-sub">企业版客户工作台</div>
-        </div>
+    <!-- 与登录页一致：单列居中，品牌收成一行 -->
+    <div class="login-brand">
+      <div class="brand-seal" aria-hidden="true"><span>钟馗</span></div>
+      <div class="brand-names">
+        <span class="brand-title">钟馗背调</span>
+        <span class="brand-sub">企业版工作台</span>
       </div>
-      <h1>开通企业账号，开始集中管理背调查询。</h1>
-    </section>
+    </div>
 
     <form class="login-card register-card" @submit.prevent="handleRegister">
       <h2>注册账号</h2>

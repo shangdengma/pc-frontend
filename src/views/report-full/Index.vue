@@ -1896,7 +1896,6 @@
 
 <script>
 	import { jsPDF } from "jspdf";
-import * as echarts from "echarts";
 import { getData } from "../../api/data.js";
 import schoolCodeMap from "../../assets/school-code-map.json";
 import majorCodeMap from "../../assets/major-code-map.json";
@@ -1937,7 +1936,6 @@ export default {
       queryTime: '',
       searchType: null, // 与报告编号同级，1=基础通用 15=基层员工 16=高管
       activeNames: ["1"],
-      chart: null,
 	  exporting: false,
 	  autoDownloadStarted: false,
       Fan_du_fan_zha_list: [],
@@ -2683,10 +2681,6 @@ export default {
 
   },
   beforeUnmount() {
-    // 组件销毁前销毁图表实例
-    if (this.chart) {
-      this.chart.dispose();
-    }
     // 清理缓存
     this._cachedJudicialData = null;
     this._judicialDataCacheKey = null;
@@ -2696,138 +2690,132 @@ export default {
    async exportPdf() {
      if (this.exporting) return;
      this.exporting = true;
+     // 在 try 外声明：恢复动作要放进 finally，否则导出中途抛错，
+     // 报告页宽度就被永久固定在 900px，用户看到的页面直接变形
+     let widthPatchTarget = null;
+     let prevWidth = '';
+     let prevMaxWidth = '';
      try {
-   	  uni.showLoading({title: '导出中'});
+       uni.showLoading({ title: '导出中' });
        // 动态加载依赖，避免首屏体积增大
        const { default: html2canvas } = await import(/* webpackChunkName: 'html2canvas' */ 'html2canvas');
-       // 兼容：优先使用 ref，找不到再用 querySelector
-       const el = this.$refs.pdfdom || (this.$el && this.$el.querySelector && this.$el.querySelector('.module-container'));
-       if (!el) {
+       const root = this.$refs.pdfdom || (this.$el && this.$el.querySelector && this.$el.querySelector('.module-container'));
+       if (!root) {
          this.$message.error('未找到需要导出的容器');
          return;
        }
-   
-       // 强制等待下一次渲染，确保 class 已经加上
        await this.$nextTick();
-   
-       const targetWidth = Math.max(1, el.scrollWidth || el.offsetWidth || 1);
-       const targetHeight = Math.max(1, el.scrollHeight || el.offsetHeight || 1);
-       const scale = this._getSafeCanvasScale(targetWidth, targetHeight);
-       const canvas = await html2canvas(el, {
-         scale,
-         useCORS: true,
-         allowTaint: false,
-         backgroundColor: '#FFFFFF',
-         logging: false,
-         width: targetWidth,
-         height: targetHeight,
-         windowWidth: targetWidth,
-         windowHeight: targetHeight,
-         x: 0,
-         y: 0,
-         scrollX: 0,
-         scrollY: 0
-       });
-   	 // ==========================
-   	    // 开始 PDF 分页逻辑
-   	    // ==========================
-   	
-   	    const pdf = new jsPDF('p', 'mm', 'a4');
-   	
-   	    const pageWidth = 210;
-   	    const pageHeight = 297;
-   	
-   	    const imgWidth = canvas.width;
-   	    const imgHeight = canvas.height;
-   	
-   	    // 宽度铺满 A4
-   	    const ratio = pageWidth / imgWidth;
-   	
-   	    // 每页在原 canvas 中对应的像素高度
-   	    const pageCanvasHeight = pageHeight / ratio;
-   	
-   	    let renderedHeight = 0;
-   	    let pageIndex = 0;
-   	
-   	    while (renderedHeight < imgHeight) {
-   	
-   	      const currentHeight = Math.min(
-   	        pageCanvasHeight,
-   	        imgHeight - renderedHeight
-   	      );
-   	
-   	      // 创建分页 canvas
-   	      const pageCanvas = document.createElement('canvas');
-   	      const ctx = pageCanvas.getContext('2d');
-   	
-          const pageHeightPx = Math.ceil(currentHeight);
-   	      pageCanvas.width = imgWidth;
-          pageCanvas.height = pageHeightPx;
-   	
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-   	      // 真裁剪
-   	      ctx.drawImage(
-   	        canvas,
-   	        0,
-   	        renderedHeight,
-   	        imgWidth,
-   	        currentHeight,
-   	        0,
-   	        0,
-   	        imgWidth,
-   	        currentHeight
-   	      );
-   	
-   	      const pageImg = pageCanvas.toDataURL('image/jpeg', 0.95);
-   	
-   	      if (pageIndex > 0) {
-   	        pdf.addPage();
-   	      }
-   	
-   	      pdf.addImage(
-   	        pageImg,
-   	        'JPEG',
-   	        0,
-   	        0,
-   	        pageWidth,
-   	        currentHeight * ratio
-   	      );
-   	
-   	      renderedHeight += currentHeight;
-   	      pageIndex++;
-   	    }
-   		
-   
-		const fileName = `综合评估报告_${this.currentId}.pdf`;
-		pdf.save(fileName);
-		this.$message.success('PDF 下载完成');
-   		uni.hideLoading();
-   	// pdf.save(`综合评估报告_${new Date().toISOString().slice(0, 10)}.pdf`); //这种方式可以直接下载为pdf，但是有些浏览器只能预览
-   	// this.$message.success('PDF 导出完成');
 
-       // // 将 canvas 转换为 PNG 图片数据
-       // const imgData = canvas.toDataURL('image/png', 1.0);
+       // 逐模块渲染，而不是整页拍一张大图。
+       // 原实现把整个报告渲成单张 canvas，一旦超过浏览器的 canvas 边长上限
+       // （Chrome 约 16384px），拿到的就是被截断的图，且 html2canvas 不报错——
+       // 表现就是「导出的 PDF 少了后半截」。报告通常远超这个高度。
+       // 分模块后每张图都很小，既不会触顶，也能稳定用 scale=2 保住清晰度；
+       // 附带好处是分页落在模块之间，表格不会再被从中间腰斩。
+       const all = Array.from(root.querySelectorAll('.module-container[id]'));
+       // 模块可能嵌套，只保留最外层，避免同一块被渲染两次
+       const blocks = all.filter(el => !all.some(other => other !== el && other.contains(el)));
+       const targets = blocks.length ? blocks : [root];
 
-       // // 创建下载链接
-       // const link = document.createElement('a');
-       // link.download = `综合评估报告_${new Date().toISOString().slice(0, 10)}.png`;
-       // link.href = imgData;
+       // 导出前把容器固定到统一的打印宽度。三个原因：
+       // 1) 模块是 max-width:900px 居中，窗口窄时会被压缩，导出结果随窗口大小而变；
+       // 2) 报告里的表格有 min-width:800px，容器一窄表格就溢出，
+       //    此时 scrollWidth 会大于模块实际渲染宽度——之前按它取 canvas 宽度，
+       //    右边就多出一大条空白，高度同理不准，底部整行被切掉；
+       // 3) 固定宽度后每次导出的版式一致，不会因人而异。
+       widthPatchTarget = root;
+       prevWidth = root.style.width;
+       prevMaxWidth = root.style.maxWidth;
+       root.style.width = '900px';
+       root.style.maxWidth = '900px';
+       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-       // // 触发下载
-       // document.body.appendChild(link);
-       // link.click();
-       // document.body.removeChild(link);
+       const pdf = new jsPDF('p', 'mm', 'a4');
+       const pageWidth = 210;
+       const pageHeight = 297;
+       const margin = 8;
+       const gap = 4;
+       const contentWidth = pageWidth - margin * 2;
+       const contentBottom = pageHeight - margin;
 
-       // this.$message.success('图片导出完成');
+       let cursorY = margin;
+       let hasContent = false;
 
+       for (const block of targets) {
+         const rect = block.getBoundingClientRect();
+         const width = Math.max(1, Math.round(rect.width));
+         const height = Math.max(1, Math.round(rect.height));
+         // 空模块只剩边框（实测有高度 10px 上下的），单独占一张图纯属浪费
+         if (height < 40) continue;
 
+         const scale = this._getSafeCanvasScale(width, height);
+         // 不传 width/height/windowWidth：传了会改变渲染视口触发重排，
+         // 让 html2canvas 按元素自身的实际渲染尺寸截取
+         const canvas = await html2canvas(block, {
+           scale,
+           useCORS: true,
+           allowTaint: false,
+           backgroundColor: '#FFFFFF',
+           logging: false
+         });
+         if (!canvas.width || !canvas.height) continue;
+
+         const blockHeightMm = (canvas.height / canvas.width) * contentWidth;
+
+         if (blockHeightMm <= contentBottom - margin) {
+           // 整块放得下：当前页塞不下就换页，保证模块不被拆开
+           if (hasContent && cursorY + blockHeightMm > contentBottom) {
+             pdf.addPage();
+             cursorY = margin;
+           }
+           pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, cursorY, contentWidth, blockHeightMm);
+           cursorY += blockHeightMm + gap;
+           hasContent = true;
+         } else {
+           // 单个模块本身就超过一页（例如司法涉诉记录条目很多），只能内部切割
+           if (hasContent) {
+             pdf.addPage();
+             cursorY = margin;
+           }
+           const pxPerMm = canvas.width / contentWidth;
+           const sliceHeightPx = Math.floor((contentBottom - margin) * pxPerMm);
+           let offset = 0;
+           while (offset < canvas.height) {
+             const currentPx = Math.min(sliceHeightPx, canvas.height - offset);
+             const slice = document.createElement('canvas');
+             slice.width = canvas.width;
+             slice.height = currentPx;
+             const ctx = slice.getContext('2d');
+             ctx.fillStyle = '#FFFFFF';
+             ctx.fillRect(0, 0, slice.width, slice.height);
+             ctx.drawImage(canvas, 0, offset, canvas.width, currentPx, 0, 0, canvas.width, currentPx);
+
+             if (offset > 0) pdf.addPage();
+             pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, contentWidth, currentPx / pxPerMm);
+             offset += currentPx;
+           }
+           cursorY = margin + (canvas.height % sliceHeightPx || sliceHeightPx) / pxPerMm + gap;
+           hasContent = true;
+         }
+       }
+
+       if (!hasContent) {
+         this.$message.error('报告内容为空，无法导出');
+         return;
+       }
+
+       pdf.save(`综合评估报告_${this.currentId}.pdf`);
+       this.$message.success('PDF 下载完成');
      } catch (e) {
        console.error('导出失败', e);
        this.$message.error('导出失败，请稍后重试');
      } finally {
+       if (widthPatchTarget) {
+         widthPatchTarget.style.width = prevWidth;
+         widthPatchTarget.style.maxWidth = prevMaxWidth;
+       }
        this.exporting = false;
-   	uni.hideLoading();
+       uni.hideLoading();
      }
    },
     async startAutoDownloadIfNeeded() {
@@ -2841,7 +2829,11 @@ export default {
     },
     _getSafeCanvasScale(width, height) {
       const preferredScale = 2;
-      const maxCanvasSide = 22000;
+      // 浏览器对单个 canvas 的边长有硬上限，Chrome 实测超过约 16384px 就会
+      // 返回空白或截断的位图，而 html2canvas 不会报错——表现就是「导出的 PDF 少了后半截」。
+      // 原值 22000 高于这个上限，报告只要超过约 8200px 高就开始丢内容。
+      // 这里留出余量取 15000，长报告会自动降 scale 换取完整性。
+      const maxCanvasSide = 15000;
       const maxCanvasArea = 65000000;
       const safeWidth = Math.max(1, Number(width) || 1);
       const safeHeight = Math.max(1, Number(height) || 1);

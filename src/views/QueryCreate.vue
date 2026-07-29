@@ -1,20 +1,37 @@
 ﻿<template>
   <div class="query-layout">
   <section class="work-card">
+    <!-- 余额已常驻顶栏。原先摆在卡片头右上角，和下面的输入字段挤在同一块区域里，
+         看着像表单的一部分而不是账户信息；余额不足时提交按钮下方本来就有明确提示。 -->
     <div class="work-card-head query-card-head">
       <div>
-        <h2>{{ canOnlineTest ? '在线测试' : '发起背调查询' }}</h2>
-        <p>{{ canOnlineTest ? '填写候选人信息并选择查询套餐，提交后直接进入查询。' : '填写候选人信息并选择查询套餐，候选人完成授权后自动执行查询。' }}</p>
-      </div>
-      <div class="query-funds" :class="{ 'is-sub-account': isSubAccount }">
-        <span>{{ isSubAccount ? '剩余额度' : '可用余额' }}</span>
-        <strong>{{ availableBalanceText }}</strong>
+        <h2>{{ canOnlineTest ? '在线测试' : '发起背调' }}</h2>
       </div>
     </div>
 
     <div class="form-grid">
-      <label><span>候选人姓名</span><input v-model.trim="form.name" placeholder="请输入姓名"></label>
-      <label><span>手机号</span><input v-model.trim="form.mobile" placeholder="请输入手机号" maxlength="11"></label>
+      <label :class="{ 'has-error': touched.name && !form.name }">
+        <span>候选人姓名</span>
+        <input v-model.trim="form.name" placeholder="请输入姓名" @blur="touched.name = true">
+        <em v-if="touched.name && !form.name" class="field-error">请填写姓名</em>
+      </label>
+      <label :class="{ 'has-error': touched.mobile && form.mobile && !mobileValid }">
+        <span>手机号</span>
+        <input v-model.trim="form.mobile" :placeholder="canOnlineTest ? '选填，与身份证号至少填一项' : '请输入手机号'" maxlength="11"
+               inputmode="numeric" @blur="touched.mobile = true">
+        <em v-if="touched.mobile && form.mobile && !mobileValid" class="field-error">手机号格式不正确</em>
+        <em v-else-if="mobileValid && !canOnlineTest" class="field-ok">候选人将在此号码收到授权短信</em>
+        <em v-else-if="canOnlineTest" class="field-ok">选填，与身份证号至少填一项</em>
+      </label>
+      <!-- 身份证仅在线测试模式出现：正常查询由候选人在中间页填写并做二要素核验，
+           在线测试不走中间页，只能由发起方填 -->
+      <label v-if="canOnlineTest" :class="{ 'has-error': touched.idCard && form.idCard && !idCardValid }">
+        <span>身份证号</span>
+        <input v-model.trim="form.idCard" placeholder="选填，与手机号至少填一项" maxlength="18"
+               @blur="touched.idCard = true">
+        <em v-if="touched.idCard && form.idCard && !idCardValid" class="field-error">身份证号格式不正确</em>
+        <em v-else class="field-ok">缺项将转入后台人工处理</em>
+      </label>
       <label>
         <span>查询套餐</span>
         <select v-model="form.callTypeId">
@@ -24,27 +41,54 @@
       </label>
     </div>
 
-    <div v-if="!canOnlineTest" class="auth-method-panel">
-      <span class="auth-method-title">授权方式</span>
-      <div class="auth-method-current">
-        <strong>电子签授权</strong>
-        <small>候选人在线签署授权后自动执行查询</small>
-      </div>
+    <!-- 通知偏好设置一次即长期生效，压成一行，详情走 title 提示 -->
+    <div class="notify-pref-bar">
+      <span class="notify-pref-label" title="需人工处理的报告出结果后的通知方式，设置一次长期生效">报告完成通知</span>
+      <label class="notify-chip" :class="{ on: notifyChannels.includes('inbox') }"
+             title="登录后在「消息通知」查看">
+        <input type="checkbox" :checked="notifyChannels.includes('inbox')" @change="toggleNotify('inbox')">
+        站内信
+      </label>
+      <label class="notify-chip" :class="{ on: notifyChannels.includes('sms') }"
+             :title="profile.phonenumber ? `发送至 ${maskPhone(profile.phonenumber)}` : '当前账号未绑定手机号'">
+        <input type="checkbox" :checked="notifyChannels.includes('sms')" @change="toggleNotify('sms')">
+        短信
+      </label>
+      <label class="notify-chip" :class="{ on: notifyChannels.includes('email'), off: !profile.email }"
+             :title="profile.email ? `发送至 ${profile.email}` : '尚未配置邮箱，点击前往个人信息设置'">
+        <input type="checkbox" :checked="notifyChannels.includes('email')" @change="toggleNotify('email')">
+        邮箱
+      </label>
+      <router-link v-if="!profile.email" class="notify-pref-link" to="/account-profile">配置邮箱</router-link>
+      <small v-if="notifySaving" class="notify-pref-state">保存中…</small>
+      <small v-else-if="notifySaved" class="notify-pref-state ok">已保存</small>
     </div>
 
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
 
     <div v-if="candidateLink" class="candidate-link-panel">
-      <span class="candidate-link-title">候选人填写链接（测试用）</span>
+      <span class="candidate-link-title">✓ 提交成功 · 候选人授权链接</span>
       <a class="candidate-link-url" :href="candidateLink" target="_blank" rel="noopener">{{ candidateLink }}</a>
       <div class="candidate-link-actions">
         <button type="button" class="ghost-btn" @click="copyCandidateLink">复制链接</button>
-        <a class="ghost-btn" :href="candidateLink" target="_blank" rel="noopener">打开中间页</a>
+        <a class="ghost-btn" :href="candidateLink" target="_blank" rel="noopener">预览中间页</a>
       </div>
-      <p class="candidate-link-hint">短信模板上线前，可将此链接发给候选人测试；候选人需用本单手机号接收验证码进入。</p>
+      <p class="candidate-link-hint">
+        短信模板审核通过前，请手动把链接发给候选人。候选人需用本单手机号 {{ form.mobile ? maskPhone(form.mobile) : '' }} 接收验证码进入，链接 48 小时内有效。
+      </p>
     </div>
 
-    <button class="primary-btn page-action" :disabled="loading" @click="submitQuery">{{ loading ? '提交中...' : '提交查询' }}</button>
+    <div class="submit-area">
+      <button class="primary-btn page-action"
+              :disabled="loading || !formValid || insufficientBalance"
+              @click="submitQuery">
+        {{ loading ? '提交中...' : '提交查询' }}
+      </button>
+      <!-- 按钮为什么不可点，直接说明白，不用等用户点了才报错 -->
+      <small v-if="!loading && blockReason" class="submit-hint" :class="{ warn: insufficientBalance }">
+        {{ blockReason }}
+      </small>
+    </div>
   </section>
 
   <aside class="query-aside">
@@ -58,9 +102,10 @@
         <span>查询套餐</span>
         <strong>{{ selectedTypeName || '未选择' }}</strong>
       </div>
-      <div class="cost-row">
-        <span>{{ canOnlineTest ? '执行方式' : '授权方式' }}</span>
-        <strong>{{ canOnlineTest ? '在线测试' : '电子签授权' }}</strong>
+      <!-- 非在线测试只有电子签一种授权方式，写出来是废话；在线测试则值得标出来 -->
+      <div v-if="canOnlineTest" class="cost-row">
+        <span>执行方式</span>
+        <strong>在线测试</strong>
       </div>
       <div class="cost-total">
         <span>预计费用</span>
@@ -87,8 +132,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAllData, launchOnlineTest, preCheckQuery } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
-import { getUserBalance, getUserProfile } from '../api/user'
-import { yuanFromFen } from '../utils/format'
+import { getUserBalance, getUserProfile, updateNotifyChannels } from '../api/user'
 
 const emit = defineEmits(['balance-updated'])
 const router = useRouter()
@@ -101,11 +145,11 @@ const priceMap = ref({})
 const profile = ref({})
 const availableBalance = ref(null)
 const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
-const availableBalanceText = computed(() => availableBalance.value == null ? '—' : `¥${yuanFromFen(availableBalance.value)}`)
 const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
 const form = reactive({
   name: '',
   mobile: '',
+  idCard: '',
   callTypeId: ''
 })
 
@@ -135,6 +179,93 @@ const selectedPrice = computed(() => {
   return price
 })
 
+// 表单即时校验：失焦后才提示，避免一进页面就飘红
+const touched = reactive({ name: false, mobile: false, idCard: false })
+const mobileValid = computed(() => /^1[3-9]\d{9}$/.test(form.mobile))
+const idCardValid = computed(() => /^\d{17}[\dXx]$/.test(form.idCard))
+
+// 两条路的必填规则不同：
+//   在线测试 —— 不走中间页，身份信息只能由发起方给，姓名必填 + 手机/身份证至少一项，
+//               缺项由后端 resolveLackStatus 标记后转人工处理
+//   正常查询 —— 身份证由候选人在中间页填并做二要素核验，这里只需姓名 + 手机号
+const formValid = computed(() => {
+  if (!form.name || !form.callTypeId) return false
+  if (canOnlineTest.value) {
+    const okMobile = form.mobile ? mobileValid.value : false
+    const okIdCard = form.idCard ? idCardValid.value : false
+    // 至少一项填了且格式正确；填了但格式错则不放行
+    if (form.mobile && !mobileValid.value) return false
+    if (form.idCard && !idCardValid.value) return false
+    return okMobile || okIdCard
+  }
+  return mobileValid.value
+})
+
+// 余额是分，套餐价是元，比较前先统一单位
+const insufficientBalance = computed(() => {
+  if (selectedPrice.value === '' || availableBalance.value == null) return false
+  return Number(availableBalance.value) < Number(selectedPrice.value) * 100
+})
+
+// 按钮为什么不能点，提前讲清楚，省得用户点了才知道
+const blockReason = computed(() => {
+  if (insufficientBalance.value) {
+    return isSubAccount.value
+      ? '剩余额度不足，请联系主账号增加额度'
+      : '可用余额不足，请先充值'
+  }
+  if (!form.name) return '请填写候选人姓名'
+  if (canOnlineTest.value) {
+    if (form.mobile && !mobileValid.value) return '手机号格式不正确'
+    if (form.idCard && !idCardValid.value) return '身份证号格式不正确'
+    if (!form.mobile && !form.idCard) return '手机号与身份证号至少填写一项'
+  } else {
+    if (!form.mobile) return '请填写候选人手机号'
+    if (!mobileValid.value) return '手机号格式不正确'
+  }
+  if (!form.callTypeId) return '请选择查询套餐'
+  return ''
+})
+
+// 报告完成通知偏好：一次设置长期生效，勾选即保存
+const notifyChannels = ref([])
+const notifySaving = ref(false)
+const notifySaved = ref(false)
+
+function maskPhone(value) {
+  const s = String(value || '')
+  return s.length === 11 ? `${s.slice(0, 3)}****${s.slice(-4)}` : s
+}
+
+async function toggleNotify(channel) {
+  if (channel === 'email' && !profile.value.email) {
+    return show('请先在个人信息中配置邮箱，再开启邮箱通知', 'error')
+  }
+  const next = notifyChannels.value.includes(channel)
+    ? notifyChannels.value.filter(item => item !== channel)
+    : [...notifyChannels.value, channel]
+  if (next.length === 0) {
+    return show('至少保留一种通知方式，否则报告完成后你将收不到任何提醒', 'error')
+  }
+  const previous = notifyChannels.value
+  notifyChannels.value = next
+  notifySaving.value = true
+  notifySaved.value = false
+  try {
+    const res = await updateNotifyChannels(next.join(','))
+    if (res?.notifyChannels) {
+      notifyChannels.value = String(res.notifyChannels).split(',').filter(Boolean)
+    }
+    notifySaved.value = true
+    setTimeout(() => { notifySaved.value = false }, 2000)
+  } catch (err) {
+    notifyChannels.value = previous
+    show(err?.msg || '通知偏好保存失败', 'error')
+  } finally {
+    notifySaving.value = false
+  }
+}
+
 function show(text, type = 'info') {
   message.value = text
   messageType.value = type
@@ -159,13 +290,15 @@ function validate() {
 }
 
 function buildQueryData() {
-  // 身份证号改由候选人在中间页填写，此处不再按缺身份证推断 lackStatus，避免误判为人工补充单。
+  // 正常查询：身份证号由候选人在中间页填写，这里不传，也不按缺身份证推断 lackStatus，
+  //           否则会把正常单误判成人工补充单。
+  // 在线测试：不走中间页，身份证由发起方填，缺项交给后端 resolveLackStatus 标记转人工。
   // 订单状态一律由后端状态服务决定，前端不再传旧的数字状态。
   let lackStatus
   if (String(form.callTypeId) === '5') {
     lackStatus = '3'
   }
-  return {
+  const payload = {
     name: form.name,
     mobile: form.mobile,
     callTypeId: form.callTypeId,
@@ -173,6 +306,10 @@ function buildQueryData() {
     lackStatus,
     isBackground: 0
   }
+  if (canOnlineTest.value && form.idCard) {
+    payload.idCard = form.idCard
+  }
+  return payload
 }
 
 async function submitQuery() {
@@ -197,7 +334,10 @@ async function submitQuery() {
       const res = await getAllData(queryData)
       if (res?.data?.formDataId != null) {
         candidateLink.value = res.data.candidateLink || ''
-        show('已创建查询并发送候选人填写短信，请提醒候选人完成信息填写与授权签署。', 'success')
+        // 短信模板未上线时后端只返回链接、不真正发短信，提示语要跟着变，别谎报已发送
+        show(candidateLink.value
+          ? '查询已创建。短信模板审核通过前，请把下方链接发给候选人完成授权。'
+          : '已创建查询并发送候选人授权短信，请提醒候选人完成信息填写与授权签署。', 'success')
       } else {
         show('查询已提交，结果生成后可在查询记录查看。', 'success')
       }
@@ -225,6 +365,8 @@ async function loadPrices() {
     const res = await getUserProfile()
     const data = res.data || {}
     profile.value = data
+    // 初始化通知偏好；未设置过时默认站内信
+    notifyChannels.value = String(data.notifyChannels || 'inbox').split(',').map(v => v.trim()).filter(Boolean)
     const userId = data.userId || data.id
     if (userId) {
       try {
@@ -311,37 +453,10 @@ onMounted(async () => {
   gap: 24px;
 }
 
-.query-funds {
-  flex: 0 0 auto;
-  min-width: 150px;
-  padding-left: 20px;
-  border-left: 1px solid #dce5f0;
-  text-align: right;
-}
 
-.query-funds span,
-.query-funds strong {
-  display: block;
-}
 
-.query-funds span {
-  color: #667085;
-  font-size: 12px;
-  font-weight: 600;
-}
 
-.query-funds strong {
-  margin-top: 5px;
-  color: #172033;
-  font-size: 21px;
-  line-height: 1.2;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
 
-.query-funds.is-sub-account strong {
-  color: #157347;
-}
 
 .auth-method-panel {
   margin-top: 18px;
@@ -391,13 +506,69 @@ onMounted(async () => {
     gap: 14px;
   }
 
-  .query-funds {
-    width: 100%;
-    padding: 12px 0 0;
-    border-top: 1px solid #e5edf8;
-    border-left: 0;
-    text-align: left;
+
+}
+
+/* ---- 表单即时校验 ---- */
+.form-grid label { position: relative; }
+.form-grid label.has-error input,
+.form-grid label.has-error select {
+  border-color: #e35d5b;
+}
+.field-error,
+.field-ok {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.field-error { color: #e35d5b; }
+.field-ok { color: #8794a8; }
+
+/* ---- 提交区 ---- */
+.submit-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.submit-area .primary-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.submit-hint {
+  font-size: 12px;
+  color: #8794a8;
+}
+.submit-hint.warn { color: #d67a00; }
+
+/* 移动端：表单是这页的目的，必须排第一屏。
+   原先把整个侧栏 order:-1 提到最前，结果打开页面先看到的是一张全是「—」的空摘要，
+   要滚两屏才够得着输入框。改为拆开侧栏：表单 → 费用摘要 → 流程说明。 */
+@media (max-width: 900px) {
+  .query-layout { grid-template-columns: minmax(0, 1fr); }
+
+  /* contents 让两张卡片直接参与外层网格，才能各自排序 */
+  .query-aside { display: contents; }
+  .query-aside .cost-card { order: 2; }
+  .query-aside .flow-card { order: 3; }
+
+  .query-card-head { flex-direction: column; align-items: stretch; gap: 10px; }
+
+  /* 主操作在手机上占满一行；提示文字挪到按钮下方，
+     不然按钮被提示挤成 80px 宽，既难点也不像主按钮 */
+  .submit-area {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
   }
 
+  .submit-area .primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .submit-hint { text-align: center; }
 }
 </style>

@@ -4,11 +4,10 @@
       <div>
         <span class="welcome-kicker">企业背调工作台</span>
         <h2>{{ greeting }}，{{ displayName }}</h2>
-        <p>{{ todayText }}，以下是账户最新业务概况。</p>
       </div>
       <router-link class="new-query-btn" to="/query/create">
         <Plus :size="18" :stroke-width="2" />
-        {{ canOnlineTest ? '在线测试' : '发起背调查询' }}
+        {{ canOnlineTest ? '在线测试' : '发起背调' }}
       </router-link>
     </div>
 
@@ -29,8 +28,7 @@
       <article class="panel recent-panel">
         <div class="panel-head">
           <div>
-            <h3>最近查询记录</h3>
-            <p>当前账号最近提交的背调任务</p>
+            <h3>最近背调记录</h3>
           </div>
           <router-link to="/records">查看全部 <ArrowRight :size="15" /></router-link>
         </div>
@@ -45,12 +43,12 @@
           </thead>
           <tbody>
             <tr v-if="loadingRecords" class="skeleton-table-row"><td colspan="4"><span></span></td></tr>
-            <tr v-else-if="recentRecords.length === 0"><td colspan="4" class="table-empty">暂无查询记录，可点击右上角发起首次查询</td></tr>
+            <tr v-else-if="recentRecords.length === 0"><td colspan="4" class="table-empty">暂无查询记录</td></tr>
             <tr v-for="row in recentRecords" :key="row.id || row.name + row.time">
-              <td><strong>{{ row.name }}</strong></td>
-              <td>{{ row.type }}</td>
-              <td>{{ formatDateTime(row.time) }}</td>
-              <td><span class="status-pill" :class="statusClass(row.displayStatus)"><i></i>{{ statusText(row.displayStatus, row.displayStatusText) }}</span></td>
+              <td data-label="姓名"><strong>{{ row.name }}</strong></td>
+              <td data-label="查询类型">{{ row.type }}</td>
+              <td data-label="提交时间">{{ formatDateTime(row.time) }}</td>
+              <td data-label="状态"><span class="status-pill" :class="statusClass(row.displayStatus)"><i></i>{{ statusText(row.displayStatus, row.displayStatusText) }}</span></td>
             </tr>
           </tbody>
         </table>
@@ -81,7 +79,7 @@
         </div>
       </article>
 
-      <article class="panel chart-panel">
+      <article v-if="hasTrendData" class="panel chart-panel">
         <div class="panel-head">
           <div>
             <h3>近 30 天查询趋势</h3>
@@ -95,26 +93,6 @@
         </div>
       </article>
 
-      <article class="panel todo-panel">
-        <div class="panel-head">
-          <div>
-            <h3>待办提醒</h3>
-            <p>需要关注的授权与账户事项</p>
-          </div>
-        </div>
-        <div class="todo-list">
-          <div v-for="item in reminders" :key="item.title" class="todo-item">
-            <div class="todo-icon" :class="item.tone">
-              <component :is="item.icon" :size="18" :stroke-width="1.8" />
-            </div>
-            <div>
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.desc }}</p>
-            </div>
-            <b :class="item.tone">{{ item.count }}</b>
-          </div>
-        </div>
-      </article>
     </section>
 
   </div>
@@ -126,21 +104,17 @@ import * as echarts from 'echarts'
 import {
   ArrowRight,
   BarChart3,
-  CircleAlert,
   FileSignature,
   LoaderCircle,
   Megaphone,
-  PenLine,
-  Plus,
-  Search,
-  WalletCards
+  Plus
 } from '@lucide/vue'
 import { listData } from '../api/data'
 import { getAnnouncements } from '../api/notice'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserBalance, getUserProfile } from '../api/user'
 import { getUser } from '../utils/auth'
-import { formatDateTime, mapRecord, statusClass, statusText, yuanFromFen } from '../utils/format'
+import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
 
 const records = ref([])
 const notices = ref([])
@@ -154,32 +128,16 @@ const queryTypeMap = ref({})
 
 const displayName = computed(() => profile.value.enterpriseName || profile.value.nickName || profile.value.userName || '当前用户')
 const greeting = computed(() => new Date().getHours() < 12 ? '上午好' : '下午好')
-const todayText = computed(() => new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }))
 const recentRecords = computed(() => records.value.slice(0, 5))
-const monthCount = computed(() => records.value.filter(item => isWithinDays(item.time, 30)).length)
 const runningCount = computed(() => records.value.filter(r => ['processing', 'waiting_auth'].includes(String(r.displayStatus))).length)
 const authCount = computed(() => records.value.filter(r => String(r.displayStatus) === 'waiting_auth').length)
-const isSubAccount = computed(() => profile.value && profile.value.parentUserId != null)
 const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
-const subAccountTotalQuota = computed(() => Number(profile.value?.subAccountQuota || 0))
-const subAccountRemainingQuota = computed(() => Number(balance.value || 0))
+// 余额已常驻顶栏，不必在工作台再占一格；「近 30 天查询」下方的趋势图已经表达了同样的信息。
+// 剩下两项是当前真正需要盯的进行中事务，说明文字对老用户是噪音，去掉。
 const metrics = computed(() => [
-  {
-    label: isSubAccount.value ? '剩余可用额度' : '账户余额',
-    value: `¥${yuanFromFen(balance.value)}`,
-    desc: isSubAccount.value ? `分配总额度 ¥${yuanFromFen(subAccountTotalQuota.value)}` : '可用于背调查询结算',
-    icon: WalletCards
-  },
-  { label: '近 30 天查询', value: `${monthCount.value} 次`, desc: '按提交时间统计', icon: Search },
-  { label: '查询中', value: `${runningCount.value} 单`, desc: '包含授权后执行任务', icon: LoaderCircle },
-  { label: '待授权', value: `${authCount.value} 单`, desc: '等待候选人完成授权', icon: FileSignature }
+  { label: '背调中', value: `${runningCount.value} 单`, icon: LoaderCircle },
+  { label: '待授权', value: `${authCount.value} 单`, icon: FileSignature }
 ])
-const reminders = computed(() => [
-  { title: '授权待签署', desc: `${authCount.value} 份电子授权等待被查询人确认`, count: authCount.value, tone: 'warn', icon: PenLine },
-  { title: '查询失败可重试', desc: '失败记录建议重新发起或联系客服', count: records.value.filter(r => String(r.displayStatus) === 'failed').length, tone: 'danger', icon: CircleAlert },
-  { title: isSubAccount.value ? '额度状态' : '余额状态', desc: isSubAccount.value ? '分配总额度 ¥' + yuanFromFen(subAccountTotalQuota.value) + '，剩余可用 ¥' + yuanFromFen(subAccountRemainingQuota.value) : '当前可用余额 ¥' + yuanFromFen(balance.value), count: balance.value > 0 ? '正常' : '不足', tone: 'info', icon: WalletCards }
-])
-
 const trendSeries = computed(() => {
   const buckets = []
   const counts = new Map()
@@ -212,11 +170,6 @@ function parseDate(value) {
 
 function dateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-function isWithinDays(value, days) {
-  const parsed = parseDate(value)
-  return parsed ? Date.now() - parsed.getTime() <= days * 24 * 60 * 60 * 1000 : false
 }
 
 async function renderTrendChart() {

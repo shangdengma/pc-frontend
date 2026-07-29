@@ -7,10 +7,6 @@
         <p class="page-description">管理邀请渠道、下级客户及账户额度。</p>
       </div>
       <div class="page-actions">
-        <button class="secondary-btn" type="button" :disabled="loading" @click="loadAll">
-          <RefreshCw :size="17" :stroke-width="1.9" />
-          刷新
-        </button>
         <button class="primary-btn" type="button" :disabled="!isAgent" @click="openCreate">
           <Plus :size="17" :stroke-width="2" />
           新建邀请码
@@ -95,18 +91,18 @@
                     v-for="item in filteredCustomers"
                     :key="item.invitedUserId"
                   >
-                    <td>
+                    <td data-label="客户">
                       <div class="customer-cell">
                         <span class="customer-avatar">{{ avatarText(item) }}</span>
                         <div><strong>{{ item.nickName || item.userName || '-' }}</strong><small>{{ item.phonenumber || item.userName || '-' }}</small></div>
                       </div>
                     </td>
-                    <td>{{ item.enterpriseName || '-' }}</td>
-                    <td>{{ formatTime(item.invitedAt) }}</td>
-                    <td class="numeric money-value">&yen;{{ money(item.balanceAmount) }}</td>
-                    <td class="numeric">&yen;{{ money(item.rechargeAmount) }}</td>
-                    <td class="numeric">&yen;{{ money(item.consumeAmount) }}</td>
-                    <td class="row-actions">
+                    <td data-label="企业名称">{{ item.enterpriseName || '-' }}</td>
+                    <td data-label="注册时间">{{ formatTime(item.invitedAt) }}</td>
+                    <td data-label="当前余额" class="numeric money-value">&yen;{{ money(item.balanceAmount) }}</td>
+                    <td data-label="累计充值" class="numeric">&yen;{{ money(item.rechargeAmount) }}</td>
+                    <td data-label="累计消费" class="numeric">&yen;{{ money(item.consumeAmount) }}</td>
+                    <td data-label="操作" class="row-actions">
                       <button type="button" @click="openCustomerFinance(item)">资金明细</button>
                       <button class="primary-link" type="button" @click="openCustomerAllocation(item)">分配余额</button>
                     </td>
@@ -154,13 +150,13 @@
               </thead>
               <tbody>
                 <tr v-for="item in inviteCodes" :key="item.id" :class="{ muted: item.status !== 0 }">
-                  <td><strong class="invite-code">{{ item.inviteCode }}</strong></td>
-                  <td><span :class="['status-pill', item.status === 0 ? 'ok' : 'off']">{{ item.status === 0 ? '启用' : '停用' }}</span></td>
-                  <td class="numeric money-value">&yen;{{ money(item.giftAmount) }}</td>
-                  <td>{{ usageText(item) }}</td>
-                  <td>{{ item.expireTime ? formatTime(item.expireTime) : '长期有效' }}</td>
-                  <td class="remark-cell">{{ item.remark || '-' }}</td>
-                  <td class="icon-actions">
+                  <td data-label="邀请码"><strong class="invite-code">{{ item.inviteCode }}</strong></td>
+                  <td data-label="状态"><span :class="['status-pill', codeStatusClass(item)]">{{ codeStatusText(item) }}</span></td>
+                  <td data-label="注册赠送" class="numeric money-value">&yen;{{ money(item.giftAmount) }}</td>
+                  <td data-label="使用情况">{{ usageText(item) }}</td>
+                  <td data-label="有效期">{{ item.expireTime ? formatTime(item.expireTime) : '长期有效' }}</td>
+                  <td data-label="备注" class="remark-cell">{{ item.remark || '-' }}</td>
+                  <td data-label="操作" class="icon-actions">
                     <button type="button" title="复制邀请码" aria-label="复制邀请码" @click="copyCode(item.inviteCode)"><Copy :size="16" /></button>
                     <button type="button" title="编辑邀请码" aria-label="编辑邀请码" @click="openEdit(item)"><Pencil :size="16" /></button>
                     <button type="button" :title="item.status === 0 ? '停用邀请码' : '启用邀请码'" :aria-label="item.status === 0 ? '停用邀请码' : '启用邀请码'" @click="toggleStatus(item)">
@@ -231,6 +227,7 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
@@ -239,7 +236,6 @@ import {
   Pencil,
   Plus,
   Power,
-  RefreshCw,
   Search,
   ShieldAlert,
   TicketCheck,
@@ -248,10 +244,20 @@ import {
 } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
 import { allocateAgentCustomerBalance, createAgentInviteCode, getAgentOverview, listAgentCustomers, listAgentInviteCodes, updateAgentInviteCode } from '../api/agent'
+import { getUser } from '../utils/auth'
 
 const router = useRouter()
 
-const isAgent = ref(true)
+// 代理身份以 profile 里的 isAgent 为准。
+// 原先靠「接口报没报错」反推：初始 true 会让非代理先看到完整页面再闪回无权限；
+// 更糟的是网络错误时 err.code 是 undefined，条件不成立，isAgent 保持 true，
+// 用户对着一个数据全空的代理中心，以为自己是代理商。
+const isAgent = ref(isAgentFromCache())
+
+function isAgentFromCache() {
+  const user = getUser() || {}
+  return user.isAgent === true || user.isAgent === 1 || user.isAgent === '1'
+}
 const loading = ref(false)
 const customerLoading = ref(false)
 const saving = ref(false)
@@ -315,6 +321,24 @@ function apiDate(value) {
   if (!value) return null
   return String(value).replace('T', ' ') + (String(value).length === 16 ? ':00' : '')
 }
+
+// 与后端 RegisterInviteServiceImpl.isUsable 保持一致：
+// 状态、过期时间、剩余次数、赠送金额任一不满足，邀请码就无法用于注册。
+// 只看 status 会让已过期/已用完的码显示成"启用"，代理以为能用、客户注册时才失败。
+function codeStatusText(item) {
+  if (item.status !== 0) return '停用'
+  if (item.expireTime && new Date(String(item.expireTime).replace(/-/g, '/')) < new Date()) return '已过期'
+  const max = Number(item.maxUses || 0)
+  if (max > 0 && Number(item.remainingUses || 0) <= 0) return '已用完'
+  if (!(Number(item.giftAmount) > 0)) return '金额无效'
+  return '生效中'
+}
+function codeStatusClass(item) {
+  const text = codeStatusText(item)
+  if (text === '生效中') return 'ok'
+  if (text === '停用') return 'off'
+  return 'warn'
+}
 function showToast(text) {
   toast.value = text
   window.clearTimeout(showToast.timer)
@@ -335,8 +359,8 @@ async function loadAll() {
     ])
     inviteCodes.value = codeRes.data || []
     applyCustomerPage(customerRes.data)
-    isAgent.value = true
   } catch (err) {
+    // 只在后端明确拒绝时才翻转身份；网络异常不该改变「我是不是代理」的结论
     if (err && err.code && err.code !== 200) isAgent.value = false
   } finally {
     loading.value = false
@@ -388,7 +412,10 @@ function openEdit(item) {
   editingCode.value = item
   codeForm.giftAmount = item.giftAmount || ''
   codeForm.maxUses = item.maxUses || 0
-  codeForm.expireTime = item.expireTime ? String(item.expireTime).slice(0, 16) : ''
+  // 后端 @JsonFormat 返回 "yyyy-MM-dd HH:mm:ss"（空格分隔），
+  // 而 datetime-local 只接受 "YYYY-MM-DDTHH:mm"（T 分隔）。
+  // 不转换的话浏览器会判定为非法值并静默清空，保存时就把原有过期时间抹成了永久有效。
+  codeForm.expireTime = item.expireTime ? String(item.expireTime).replace(' ', 'T').slice(0, 16) : ''
   codeForm.remark = item.remark || ''
   message.value = ''
   codeDialog.value = true
@@ -411,7 +438,7 @@ async function saveCode() {
     await loadAll()
     showToast('邀请码已保存')
   } catch (err) {
-    message.value = err?.msg || err?.message || '提交失败'
+    message.value = err?.msg || err?.message || '提交失败，请稍后重试'
   } finally {
     saving.value = false
   }
@@ -422,7 +449,7 @@ async function toggleStatus(item) {
     await loadAll()
     showToast(item.status === 0 ? '邀请码已停用' : '邀请码已启用')
   } catch (err) {
-    showToast(err?.msg || '操作失败')
+    showToast(err?.msg || '操作失败，请稍后重试')
   }
 }
 async function copyCode(code) {
@@ -487,69 +514,71 @@ async function saveAllocation() {
     if (customer) selectedCustomer.value = customer
     showToast(`已成功分配 ¥${money(amount)}`)
   } catch (err) {
-    allocationMessage.value = err?.msg || err?.message || '余额分配失败'
+    allocationMessage.value = err?.msg || err?.message || '余额分配失败，请稍后重试'
   } finally {
     allocationSaving.value = false
   }
 }
 
 onMounted(loadAll)
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(loadAll)
 </script>
 
 <style scoped>
-.agent-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: #172033; }
-.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid #dfe6ef; }
-.page-eyebrow { margin: 0 0 5px; color: #2f6fe4; font-size: 13px; font-weight: 700; }
+.agent-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: var(--text); }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid var(--line); }
+.page-eyebrow { margin: 0 0 5px; color: var(--blue); font-size: 13px; font-weight: 700; }
 .page-header h2 { margin: 0; font-size: 25px; line-height: 1.3; letter-spacing: 0; }
 .page-description { margin: 6px 0 0; color: #6b778c; font-size: 14px; }
 .page-actions { display: flex; align-items: center; gap: 10px; }
 .primary-btn, .secondary-btn, .ghost-btn { min-width: 0; height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border-radius: 7px; font: inherit; font-weight: 700; cursor: pointer; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
-.primary-btn { border: 1px solid #2f6fe4; color: #fff; background: #2f6fe4; box-shadow: 0 7px 16px rgba(47, 111, 228, .16); }
+.primary-btn { border: 1px solid var(--blue); color: #fff; background: var(--blue); box-shadow: 0 7px 16px rgba(47, 111, 228, .16); }
 .primary-btn:hover { background: #255fca; }
-.secondary-btn, .ghost-btn { border: 1px solid #d6dfeb; color: #344054; background: #fff; }
-.secondary-btn:hover, .ghost-btn:hover { border-color: #9fb4cf; background: #f8fafc; }
+.secondary-btn, .ghost-btn { border: 1px solid #d6dfeb; color: var(--text-secondary); background: #fff; }
+.secondary-btn:hover, .ghost-btn:hover { border-color: #9fb4cf; background: var(--line-soft); }
 .primary-btn:active, .secondary-btn:active, .ghost-btn:active { transform: translateY(1px); }
 .primary-btn:disabled, .secondary-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 .primary-btn.compact { height: 36px; padding: 0 13px; font-size: 13px; box-shadow: none; }
 
-.overview-band { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(620px, 1.8fr); min-height: 126px; overflow: hidden; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
-.balance-overview { display: flex; align-items: center; gap: 16px; padding: 22px 24px; border-right: 1px solid #e6ebf2; background: #f7faff; }
-.metric-icon { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 8px; color: #245fc8; background: #e8f0ff; }
-.balance-overview div > span, .balance-overview small { display: block; color: #68758a; }
+.overview-band { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(620px, 1.8fr); min-height: 126px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-xs); }
+.balance-overview { display: flex; align-items: center; gap: 16px; padding: 22px 24px; border-right: 1px solid var(--line-soft); background: var(--line-soft); }
+.metric-icon { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: var(--radius-lg); color: var(--blue); background: var(--line-soft); }
+.balance-overview div > span, .balance-overview small { display: block; color: var(--muted); }
 .balance-overview div > span { margin-bottom: 7px; font-size: 13px; font-weight: 700; }
 .balance-overview strong { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .balance-overview small { margin-top: 7px; font-size: 12px; }
 .overview-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
-.overview-metrics div { display: flex; flex-direction: column; justify-content: center; padding: 20px 22px; border-right: 1px solid #edf1f6; }
+.overview-metrics div { display: flex; flex-direction: column; justify-content: center; padding: 20px 22px; border-right: 1px solid var(--line-soft); }
 .overview-metrics div:last-child { border-right: 0; }
-.overview-metrics dt { margin-bottom: 10px; color: #68758a; font-size: 13px; }
-.overview-metrics dd { margin: 0; color: #172033; font-size: 21px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.overview-metrics dt { margin-bottom: 10px; color: var(--muted); font-size: 13px; }
+.overview-metrics dd { margin: 0; color: var(--text); font-size: 21px; font-weight: 750; font-variant-numeric: tabular-nums; }
 .overview-metrics dd span { margin-left: 4px; color: #7d899b; font-size: 12px; font-weight: 600; }
 
-.workspace-shell { overflow: hidden; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
-.workspace-tabs { height: 58px; display: flex; align-items: stretch; gap: 28px; padding: 0 24px; border-bottom: 1px solid #e3e9f1; background: #fbfcfe; }
+.workspace-shell { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-xs); }
+.workspace-tabs { height: 58px; display: flex; align-items: stretch; gap: 28px; padding: 0 24px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
 .workspace-tabs button { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 0 2px; border: 0; color: #667388; background: transparent; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .workspace-tabs button::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: transparent; }
-.workspace-tabs button.active { color: #245fc8; }
-.workspace-tabs button.active::after { background: #2f6fe4; }
+.workspace-tabs button.active { color: var(--blue); }
+.workspace-tabs button.active::after { background: var(--blue); }
 .workspace-tabs button > span { min-width: 22px; height: 20px; display: inline-grid; place-items: center; padding: 0 6px; border-radius: 10px; color: #64748b; background: #e9eef5; font-size: 12px; }
-.workspace-tabs button.active > span { color: #245fc8; background: #e7efff; }
+.workspace-tabs button.active > span { color: var(--blue); background: #e7efff; }
 .workspace-content { padding: 24px; }
 .section-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
 .section-toolbar h3 { margin: 0 0 5px; font-size: 18px; }
-.section-toolbar p { margin: 0; color: #758196; font-size: 13px; }
+.section-toolbar p { margin: 0; color: var(--muted); font-size: 13px; }
 .search-box { width: min(380px, 42%); height: 40px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #d7e0eb; border-radius: 7px; color: #8a96a8; background: #fff; }
 .search-box:focus-within { border-color: #7ba6ef; box-shadow: 0 0 0 3px rgba(47, 111, 228, .1); }
-.search-box input { min-width: 0; width: 100%; border: 0; outline: 0; color: #172033; background: transparent; font: inherit; font-size: 14px; }
+.search-box input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--text); background: transparent; font: inherit; font-size: 14px; }
 
 .data-table-wrap { overflow: auto; border: 1px solid #e2e8f0; border-radius: 7px; }
 .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .data-table { min-width: 1080px; }
 .data-table th { padding: 12px 14px; border-bottom: 1px solid #dfe6ee; color: #637087; background: #f6f8fb; text-align: left; font-size: 12px; font-weight: 700; }
-.data-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: #344054; font-size: 13px; vertical-align: middle; }
+.data-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: var(--text-secondary); font-size: 13px; vertical-align: middle; }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table tbody tr { transition: background .14s ease; }
-.data-table tbody tr:hover { background: #f7faff; }
+.data-table tbody tr:hover { background: var(--line-soft); }
 .data-table tr.muted { opacity: .67; }
 .data-table .numeric { text-align: right; font-variant-numeric: tabular-nums; }
 .customer-table th:first-child { width: 190px; }
@@ -565,49 +594,51 @@ onMounted(loadAll)
 .code-table th:last-child { width: 140px; }
 .actions-column { text-align: right !important; }
 .customer-cell { display: flex; align-items: center; gap: 11px; }
-.customer-avatar { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; color: #245fc8; background: #e9f1ff; font-weight: 800; }
+.customer-avatar { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; color: var(--blue); background: #e9f1ff; font-weight: 800; }
 .customer-cell div { min-width: 0; }
 .customer-cell strong, .customer-cell small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.customer-cell strong { color: #172033; font-size: 14px; }
+.customer-cell strong { color: var(--text); font-size: 14px; }
 .customer-cell small { margin-top: 4px; color: #7a8698; font-size: 12px; }
-.money-value { color: #172033 !important; font-weight: 700; font-variant-numeric: tabular-nums; }
+.money-value { color: var(--text) !important; font-weight: 700; font-variant-numeric: tabular-nums; }
 .row-actions { text-align: right; white-space: nowrap; }
 .row-actions button { padding: 5px 7px; border: 0; color: #58677d; background: transparent; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.row-actions button:hover, .row-actions .primary-link { color: #245fc8; }
-.invite-code { color: #172033; font-size: 14px; letter-spacing: .04em; }
+.row-actions button:hover, .row-actions .primary-link { color: var(--blue); }
+.invite-code { color: var(--text); font-size: 14px; letter-spacing: .04em; }
 .status-pill { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
 .status-pill.ok { color: #087443; background: #e8f7ef; }
 .status-pill.off { color: #667085; background: #eef1f5; }
+/* 已过期 / 已用完：状态是"启用"但实际不可用，用警示色区分 */
+.status-pill.warn { color: #b54708; background: #fffaeb; }
 .remark-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .icon-actions { text-align: right; white-space: nowrap; }
 .icon-actions button { width: 32px; height: 32px; display: inline-grid; place-items: center; margin-left: 3px; border: 1px solid transparent; border-radius: 6px; color: #66758c; background: transparent; cursor: pointer; }
-.icon-actions button:hover { border-color: #cfdbeb; color: #245fc8; background: #f4f8ff; }
+.icon-actions button:hover { border-color: #cfdbeb; color: var(--blue); background: #f4f8ff; }
 .pagination-bar { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 14px; color: #738096; font-size: 12px; }
 .pagination-bar > div { display: flex; align-items: center; gap: 9px; }
-.pagination-bar button { height: 32px; padding: 0 12px; border: 1px solid #d5deea; border-radius: 6px; color: #45546a; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-.pagination-bar button:hover:not(:disabled) { border-color: #8eabe0; color: #245fc8; background: #f7faff; }
+.pagination-bar button { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 6px; color: #45546a; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.pagination-bar button:hover:not(:disabled) { border-color: #8eabe0; color: var(--blue); background: var(--line-soft); }
 .pagination-bar button:disabled { opacity: .45; cursor: not-allowed; }
-.pagination-bar strong { min-width: 58px; color: #344054; text-align: center; font-variant-numeric: tabular-nums; }
+.pagination-bar strong { min-width: 58px; color: var(--text-secondary); text-align: center; font-variant-numeric: tabular-nums; }
 
 .empty-state { min-height: 260px; display: grid; place-items: center; align-content: center; gap: 9px; color: #8591a3; text-align: center; }
-.empty-state strong { color: #344054; font-size: 15px; }
+.empty-state strong { color: var(--text-secondary); font-size: 15px; }
 .empty-state span { font-size: 13px; }
 .empty-state .primary-btn { margin-top: 8px; color: #fff; }
-.loading-table { display: grid; gap: 1px; overflow: hidden; border: 1px solid #e3e9f1; border-radius: 7px; background: #e7ecf3; }
-.loading-table span { height: 58px; background: linear-gradient(90deg, #f8fafc 25%, #eef2f7 40%, #f8fafc 65%); background-size: 400% 100%; animation: loading 1.4s ease infinite; }
+.loading-table { display: grid; gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; background: #e7ecf3; }
+.loading-table span { height: 58px; background: linear-gradient(90deg, var(--line-soft) 25%, #eef2f7 40%, var(--line-soft) 65%); background-size: 400% 100%; animation: loading 1.4s ease infinite; }
 @keyframes loading { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-.no-permission { margin-top: 10px; padding: 52px 24px; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; text-align: center; }
-.empty-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 8px; color: #2f6fe4; background: #eaf1ff; }
+.no-permission { margin-top: 10px; padding: 52px 24px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; text-align: center; }
+.empty-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: var(--radius-lg); color: var(--blue); background: #eaf1ff; }
 .no-permission h3 { margin: 0 0 8px; font-size: 18px; }
-.no-permission p { margin: 0; color: #758196; }
+.no-permission p { margin: 0; color: var(--muted); }
 
-.notice-tip { margin-bottom: 18px; padding: 12px 14px; border-left: 3px solid #2f6fe4; color: #2f4e7c; background: #f3f7fd; font-size: 13px; line-height: 1.6; }
+.notice-tip { margin-bottom: 18px; padding: 12px 14px; border-left: 3px solid var(--blue); color: #2f4e7c; background: #f3f7fd; font-size: 13px; line-height: 1.6; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
 .form-grid.single-column { grid-template-columns: 1fr; }
-.form-grid label { display: grid; gap: 8px; color: #344054; font-size: 13px; font-weight: 700; }
-.form-grid input { min-width: 0; height: 44px; padding: 0 13px; border: 1px solid #d5deea; border-radius: 7px; outline: none; color: #172033; background: #fff; font: inherit; }
+.form-grid label { display: grid; gap: 8px; color: var(--text-secondary); font-size: 13px; font-weight: 700; }
+.form-grid input { min-width: 0; height: 44px; padding: 0 13px; border: 1px solid var(--line); border-radius: 7px; outline: none; color: var(--text); background: #fff; font: inherit; }
 .form-grid input:focus, .money-input:focus-within { border-color: #76a2ea; box-shadow: 0 0 0 3px rgba(47, 111, 228, .1); }
-.money-input { height: 44px; display: flex; align-items: center; border: 1px solid #d5deea; border-radius: 7px; background: #fff; }
+.money-input { height: 44px; display: flex; align-items: center; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
 .money-input b { padding-left: 13px; color: #6b778c; font-size: 15px; }
 .money-input input { flex: 1; border: 0; box-shadow: none !important; }
 .form-message { margin: 14px 0 0; padding: 11px 13px; border: 1px solid #ffd2cf; border-radius: 7px; color: #c43227; background: #fff4f3; font-size: 13px; }
@@ -617,11 +648,11 @@ onMounted(loadAll)
 .allocation-summary span { display: block; margin-bottom: 7px; color: #6e7b90; font-size: 12px; }
 .allocation-summary strong { font-size: 19px; font-variant-numeric: tabular-nums; }
 .allocation-hint { margin: 14px 0 0; color: #6f7c90; font-size: 12px; line-height: 1.6; }
-.toast { position: fixed; right: 30px; bottom: 30px; z-index: 100; padding: 11px 16px; border-radius: 7px; color: #fff; background: #172033; box-shadow: 0 12px 30px rgba(23, 32, 51, .22); font-size: 13px; font-weight: 700; }
+.toast { position: fixed; right: 30px; bottom: 30px; z-index: 100; padding: 11px 16px; border-radius: 7px; color: #fff; background: var(--text); box-shadow: 0 12px 30px rgba(23, 32, 51, .22); font-size: 13px; font-weight: 700; }
 
 @media (max-width: 1180px) {
   .overview-band { grid-template-columns: 1fr; }
-  .balance-overview { border-right: 0; border-bottom: 1px solid #e6ebf2; }
+  .balance-overview { border-right: 0; border-bottom: 1px solid var(--line-soft); }
   .search-box { width: min(350px, 46%); }
 }
 @media (max-width: 820px) {
@@ -630,10 +661,22 @@ onMounted(loadAll)
   .page-actions button { flex: 1; }
   .overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .overview-metrics div:nth-child(2) { border-right: 0; }
-  .overview-metrics div:nth-child(-n+2) { border-bottom: 1px solid #edf1f6; }
+  .overview-metrics div:nth-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
   .workspace-tabs, .workspace-content { padding-right: 16px; padding-left: 16px; }
   .search-box { width: 100%; }
   .pagination-bar { align-items: flex-start; flex-direction: column; }
   .form-grid { grid-template-columns: 1fr; }
+}
+
+/* 移动端：概览带单列，功能 tab 横向可滚，弹层贴底 */
+@media (max-width: 768px) {
+  .overview-band { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace-tabs { overflow-x: auto; scrollbar-width: none; }
+  .workspace-tabs::-webkit-scrollbar { display: none; }
+  .workspace-tabs button { flex: 0 0 auto; white-space: nowrap; }
+  .section-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .search-box { width: 100%; }
+  .code-form-grid { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

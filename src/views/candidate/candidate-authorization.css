@@ -659,9 +659,15 @@
   margin-bottom: 20px;
   place-items: center;
   border-radius: 50%;
+  /* 默认成功态；终态各自的语义色见下方 is-* */
   color: #0c9963;
   background: #e9f8f1;
 }
+
+.candidate-complete-icon.is-success { color: #0c9963; background: #e9f8f1; }
+.candidate-complete-icon.is-warn    { color: #b54708; background: #fef6e7; }
+.candidate-complete-icon.is-danger  { color: #b42318; background: #fdeceb; }
+.candidate-complete-icon.is-neutral { color: #667085; background: #f0f2f5; }
 
 .candidate-complete-step p {
   max-width: 460px;

@@ -55,3 +55,14 @@ export function deleteEnterpriseCertFile(fileId) {
     method: 'delete'
   })
 }
+
+// 读取认证附件内容（营业执照等）。
+// 这类文件不再通过 /profile/** 静态路径暴露——那条路径免鉴权，
+// 猜到文件名就能下载。改走本接口，由后端校验归属后返回二进制。
+export function fetchEnterpriseCertFile(fileId) {
+  return request({
+    url: `/interface/enterpriseCert/file/${fileId}/content`,
+    method: 'get',
+    responseType: 'blob'
+  })
+}

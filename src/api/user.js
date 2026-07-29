@@ -49,3 +49,12 @@ export function getUserBalance(userId) {
     params: { userId }
   })
 }
+
+// 保存报告完成通知偏好（逗号分隔：inbox,sms,email）
+export function updateNotifyChannels(notifyChannels) {
+  return request({
+    url: '/system/user/profile/notifyChannels',
+    method: 'put',
+    data: { notifyChannels }
+  })
+}

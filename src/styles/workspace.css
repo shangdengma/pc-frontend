@@ -44,7 +44,7 @@ textarea:focus-visible {
 .messages-panel,
 .announcements-panel {
   border-radius: var(--radius);
-  border-color: #e2e8f0;
+  border-color: var(--line);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
@@ -62,7 +62,7 @@ textarea:focus-visible {
   padding: 0 0 18px;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--line);
   border-radius: 0;
   box-shadow: none;
 }
@@ -103,7 +103,7 @@ textarea:focus-visible {
   overflow: hidden;
   margin-bottom: var(--workspace-gap);
   background: #fff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 
@@ -142,30 +142,33 @@ textarea:focus-visible {
 
 .records-card .toolbar {
   margin-bottom: 14px;
-  padding: 14px 16px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius);
+  padding: 0 0 14px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
 }
 
 .records-card .toolbar input,
 .records-card .toolbar select {
   height: 38px;
-  border-color: #d9e1eb;
+  border-color: var(--line);
   border-radius: 6px;
   background: #fff;
 }
 
 .records-card .toolbar .ghost-btn {
-  height: 38px;
-  min-height: 38px;
+  /* 与同排的输入框/下拉统一到 40px，原先 38px 差 2px 视觉上是歪的 */
+  height: 40px;
+  min-height: 40px;
+  border-radius: var(--radius);
 }
 
 .records-table-wrap,
 .invoice-table-wrap {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--radius);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .data-table th,
@@ -174,8 +177,8 @@ textarea:focus-visible {
 .ledger-table th {
   height: 44px;
   color: #475467;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: transparent;
+  border-bottom: 1px solid var(--line);
   font-size: 12px;
 }
 
@@ -188,14 +191,20 @@ textarea:focus-visible {
 }
 
 .pager {
-  min-height: 56px;
+  min-height: 52px;
   margin-top: 0;
-  padding: 10px 16px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-top: 0;
-  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 12px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
 }
+
+/* 分页文案不允许折行：窄屏上「上一页」会被拆成两行 */
+.pager > *,
+.pager button,
+.pager span,
+.pager strong { white-space: nowrap; }
 
 .form-grid,
 .cert-form-grid,
@@ -400,4 +409,96 @@ textarea:focus-visible {
   .invoice-stats,
   .sub-summary,
   .agent-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  /* 分页：统计信息单独一行，操作按钮一行，避免五个元素挤在一行里折字 */
+  .pager {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px 12px;
+    font-size: 12.5px;
+  }
+
+  .pager select { grid-column: 2; justify-self: end; }
+
+  .pager .ghost-btn,
+  .pager > span:last-of-type {
+    grid-row: 2;
+  }
+
+  .pager .ghost-btn { padding: 0 12px; }
+}
+
+/* ---- 查询记录：状态 Tab ----
+   与消息通知页的 .message-tabs 同一套下划线语言，避免站内出现两种切换控件。 */
+.records-card .status-tabs {
+  display: flex;
+  gap: 24px;
+  margin: 2px 0 0;
+  padding: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.records-card .status-tabs button {
+  position: relative;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .14s ease;
+}
+
+.records-card .status-tabs button:hover { color: var(--text-secondary); }
+
+.records-card .status-tabs button.active {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.records-card .status-tabs button.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--text);
+}
+
+/* 页头「导出」与「发起查询」并排 */
+.records-card .records-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  /* 五个 Tab 在 375px 上正好平分；overflow 是将来加状态时的兜底 */
+  .records-card .status-tabs {
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .records-card .status-tabs::-webkit-scrollbar { display: none; }
+
+  .records-card .status-tabs button {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 4px;
+    font-size: 13px;
+  }
+
+  /* 导出是低频操作，窄屏让位给主按钮 */
+  .records-card .records-head-actions { gap: 8px; }
+  .records-card .records-head-actions .ghost-btn { padding: 0 12px; }
 }

@@ -9,9 +9,9 @@
 
 :root {
   /* 品牌与语义色（保留旧变量名以兼容各页面 scoped 样式） */
-  --blue: #2563eb;
-  --blue-dark: #1d4ed8;
-  --blue-soft: #eef4ff;
+  --blue: #16181d;          /* 主操作色：墨黑，替代原亮蓝 */
+  --blue-dark: #262a33;
+  --blue-soft: #eef0f4;
   --navy: #0f2a52;          /* 仅登录页品牌区使用 */
   --navy-dark: #0b2142;
   --navy-active: #1e3a66;
@@ -23,31 +23,32 @@
   --red-soft: #fef2f2;
   --purple: #7c3aed;
   --purple-soft: #f3efff;
+  --cinnabar: #a6392e;      /* 强调色：朱砂，用于链接与激活态 */
 
   /* 中性色 */
-  --bg: #f6f8fb;
+  --bg: #f4f5f7;            /* 中性浅灰底，衬托白色内容面 */
   --card: #ffffff;
   --text: #101828;
   --text-secondary: #475467;
   --muted: #667085;
   --faint: #98a2b3;
-  --line: #e4e9f0;
-  --line-soft: #eef1f6;
+  --line: #e3e5e9;
+  --line-soft: #eef0f3;
 
   /* 圆角 */
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 3px;
+  --radius: 4px;
+  --radius-lg: 6px;
 
   /* 阴影：轻、贴地 */
-  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 2px 8px rgba(16, 24, 40, 0.04);
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.06);
   --shadow-panel: var(--shadow-sm);
-  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.14);
-  --shadow-modal: 0 20px 56px rgba(16, 24, 40, 0.2);
+  --shadow-lg: 0 4px 16px rgba(22, 24, 29, 0.08);
+  --shadow-modal: 0 12px 36px rgba(22, 24, 29, 0.16);
 
   /* 焦点环 */
-  --ring: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  --ring: 0 0 0 3px rgba(22, 24, 29, 0.07);
 }
 
 html,
@@ -153,10 +154,14 @@ textarea:focus-visible {
   color: #ffffff;
   font-size: 17px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  /* 与登录页同一枚朱砂方印，保持品牌一致 */
+  background: var(--cinnabar);
   border: 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28);
+  border-radius: 3px;
+  transform: rotate(-2.5deg);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 0 5px rgba(120, 28, 20, 0.42);
 }
 
 .brand-title {
@@ -724,7 +729,8 @@ textarea:focus-visible {
 .metric-grid,
 .dashboard-page .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 两项指标（背调中 / 待授权），四列会在右侧空掉半屏 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -1189,12 +1195,18 @@ textarea:focus-visible {
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
+  /* 行高只由内容决定：有的字段带下方提示文字（三行），有的没有（两行），
+     若让行去分摊剩余高度，同一栅格行里的输入框顶边就会错开十几像素 */
+  grid-auto-rows: max-content;
+  align-content: start;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  /* 同理，label 本身也不要被拉到等高 */
+  align-items: start;
 }
 
 .form-grid label > span {
@@ -1291,9 +1303,9 @@ textarea::placeholder {
 
 .work-card {
   width: 100%;
-  max-width: 1080px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 26px;
+  padding: 20px 24px;
 }
 
 .work-card-head {
@@ -1359,12 +1371,13 @@ textarea::placeholder {
 
 .state-box {
   display: grid;
-  min-height: 140px;
+  min-height: 110px;
   place-items: center;
   color: var(--faint);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  background: #fafbfd;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 13px;
 }
 
 .query-tips {
@@ -1386,211 +1399,283 @@ textarea::placeholder {
    8. 登录 / 注册
    ============================================================ */
 
+/* ============================================================
+   登录 / 注册
+   单列居中、紧凑排布：登录页不承担营销职能，去掉左侧品牌大区，
+   垂直节奏收紧到 Linear / 飞书那种密度。
+   配色沿用墨黑主按钮 + 朱砂点缀 + 暖白底，避开 Tailwind 蓝。
+   ============================================================ */
 .login-page {
+  --ink: #16181d;
+  --ink-soft: #3d434e;
+  --paper: #faf9f6;
+  --paper-line: #e4e1da;
+  --cinnabar: #a6392e;
+
   position: relative;
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
-  gap: 48px;
-  align-items: center;
-  padding: 48px max(48px, 7vw);
-  background:
-    radial-gradient(880px 440px at 8% -10%, rgba(37, 99, 235, 0.09), transparent 60%),
-    radial-gradient(720px 420px at 100% 110%, rgba(37, 99, 235, 0.07), transparent 55%),
-    linear-gradient(160deg, #f8fafd 0%, #eef3fa 100%);
-}
-
-.login-hero {
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding-left: 2vw;
-  color: var(--text);
+  gap: 0;
+  padding: 40px 20px;
+  background: var(--paper);
 }
 
-.brand-row {
+/* 纸纹：只提供质感，不构成可见图案 */
+.login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+.login-brand,
+.login-card,
+.login-foot { position: relative; z-index: 1; }
+
+/* ---- 品牌行：一行搞定，不占额外版面 ---- */
+.login-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.login-hero .brand-mark {
-  width: 40px;
-  height: 40px;
-  flex-basis: 40px;
-  font-size: 20px;
-  border-radius: 10px;
-}
-
-.login-hero .brand-title {
-  font-size: 18px;
-}
-
-.login-hero .brand-sub {
-  color: var(--muted);
-}
-
-.login-hero h1 {
-  max-width: 600px;
-  margin: 40px 0 14px;
-  color: var(--text);
-  font-size: 38px;
-  line-height: 1.3;
-  font-weight: 700;
-  letter-spacing: -0.4px;
-}
-
-.login-hero p {
-  max-width: 520px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.75;
-}
-
-.hero-points {
-  display: grid;
-  gap: 14px;
-  margin-top: 36px;
-  padding: 0;
-  list-style: none;
-}
-
-.hero-points li {
-  display: flex;
-  align-items: flex-start;
   gap: 10px;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.hero-points svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--green);
-}
-
-.login-card {
-  align-self: center;
   width: 100%;
-  padding: 32px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  max-width: 340px;
+  margin-bottom: 26px;
+}
+
+.brand-seal {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: var(--cinnabar);
+  border-radius: 3px;
+  transform: rotate(-2.5deg);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 0 5px rgba(120, 28, 20, 0.42);
+}
+
+.brand-seal span {
+  font-family: "Songti SC", "SimSun", "Noto Serif CJK SC", serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: #fff;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  height: 25px;
+  display: grid;
+  place-content: center;
+}
+
+.brand-names {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.brand-names .brand-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--ink);
+}
+
+.brand-names .brand-sub {
+  font-size: 11.5px;
+  color: #9a9287;
+}
+
+/* ---- 表单：直接落在纸面，不做浮起卡片 ---- */
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .login-card h2 {
-  margin: 0 0 6px;
-  font-size: 22px;
-  font-weight: 700;
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--ink);
 }
 
 .login-subtitle {
   margin: 0 0 20px;
-  color: var(--muted);
-  font-size: 13px;
+  color: #9a9287;
+  font-size: 12px;
 }
 
 .login-card label {
-  margin-bottom: 16px;
+  display: block;
+  margin-bottom: 12px;
 }
 
+.login-card label > span {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.login-card input {
+  width: 100%;
+  height: 38px;
+  padding: 0 11px;
+  border-radius: 5px;
+  border: 1px solid var(--paper-line);
+  background: #fff;
+  font-size: 13.5px;
+  box-sizing: border-box;
+  transition: border-color .14s ease, box-shadow .14s ease;
+}
+
+.login-card input:hover { border-color: #cfc9bd; }
+
+.login-card input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(22, 24, 29, 0.06);
+}
+
+/* 墨黑主按钮：比亮蓝沉稳，也避开满大街的 Tailwind blue */
 .login-card .primary-btn {
   width: 100%;
-  height: 42px;
-  margin-top: 6px;
-  font-size: 15px;
+  height: 38px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  transition: background .14s ease;
 }
 
+.login-card .primary-btn:hover:not(:disabled) { background: #262a33; }
+.login-card .primary-btn:disabled { background: #bdb8af; cursor: not-allowed; }
+
+/* 下划线切换，去掉胶囊背景 */
 .login-mode-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px;
-  margin: 0 0 20px;
-  border-radius: 8px;
-  background: #f2f5f9;
+  display: flex;
+  gap: 22px;
+  padding: 0;
+  margin: 0 0 18px;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--paper-line);
 }
 
 .login-mode-tabs button {
-  height: 36px;
+  position: relative;
+  height: 30px;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
-  color: var(--muted);
+  color: #9a9287;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
 
 .login-mode-tabs button.active {
-  color: var(--blue-dark);
-  background: #ffffff;
+  color: var(--ink);
+  background: transparent;
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+  box-shadow: none;
+}
+
+.login-mode-tabs button.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--cinnabar);
 }
 
 .captcha-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 116px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 100px;
+  gap: 8px;
 }
 
 .captcha-row img {
-  width: 116px;
-  height: 40px;
+  width: 100px;
+  height: 38px;
   object-fit: cover;
-  border: 1px solid #d6dee9;
-  border-radius: 8px;
+  border: 1px solid var(--paper-line);
+  border-radius: 5px;
   cursor: pointer;
 }
 
 .captcha-row.sms-row button {
-  height: 40px;
-  border: 1px solid #c8dafc;
-  border-radius: 8px;
-  background: var(--blue-soft);
-  color: var(--blue);
-  font-size: 13px;
+  height: 38px;
+  border: 1px solid var(--paper-line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
+  transition: border-color .14s ease;
 }
 
-.captcha-row.sms-row button:disabled {
-  color: var(--faint);
-  cursor: not-allowed;
-}
+.captcha-row.sms-row button:hover:not(:disabled) { border-color: var(--ink); }
+.captcha-row.sms-row button:disabled { color: #b8b2a8; cursor: not-allowed; }
 
-.login-tip {
-  margin: 14px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.login-tip a {
-  color: var(--blue);
-  font-weight: 500;
-}
+.login-tip { margin: 12px 0 0; color: #9a9287; font-size: 12px; }
+.login-tip a { color: var(--cinnabar); font-weight: 500; }
 
 .login-register-entry {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 18px;
-  color: var(--muted);
-  font-size: 13.5px;
+  gap: 5px;
+  margin-top: 16px;
+  color: #9a9287;
+  font-size: 12.5px;
 }
 
-.login-register-entry a {
-  color: var(--blue);
-  font-weight: 600;
+.login-register-entry a { color: var(--cinnabar); font-weight: 500; }
+
+.login-foot {
+  margin-top: 34px;
+  font-size: 11px;
+  color: #b3aca1;
+  text-align: center;
 }
 
+@media (max-width: 480px) {
+  .login-page { padding: 32px 20px calc(32px + env(safe-area-inset-bottom)); }
+  .login-brand, .login-card { max-width: 100%; }
+  .login-foot { margin-top: 26px; }
+}
+
+.register-page .login-brand,
 .register-page .register-card {
-  width: 460px;
-  max-width: 100%;
+  max-width: 400px;   /* 注册字段多，比登录略宽 */
 }
+
+.register-page .login-foot { margin-top: 28px; }
 
 .register-page .register-card h2 {
   margin-bottom: 8px;
@@ -1702,7 +1787,11 @@ textarea::placeholder {
 }
 
 .records-table {
-  min-width: 1240px;
+  /* 原先写死 min-width:1240px，容器只有 1136 时必然溢出、桌面端也出横向滚动条。
+     列宽本来就是百分比，去掉最小宽即可按容器自适应；
+     只在极窄屏保留一个下限，避免列被挤到不可读。 */
+  width: 100%;
+  min-width: 860px;
   table-layout: fixed;
 }
 
@@ -1810,11 +1899,12 @@ textarea::placeholder {
 }
 
 .cost-card {
-  padding: 20px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-xs);
+  padding: 16px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .cost-card h3 {
@@ -1868,10 +1958,12 @@ textarea::placeholder {
 }
 
 .flow-card {
-  padding: 18px 20px;
-  background: #f8fafc;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius);
+  padding: 16px 0 0;
+  margin-top: 20px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
 }
 
 .flow-card h4 {
@@ -2588,30 +2680,15 @@ textarea::placeholder {
   border-bottom: 0;
 }
 
+/* 未读态不再整行铺底色：一列看下来全是色块，正是"卡片堆叠"的观感来源。
+   改由左侧圆点 + 标题字重表达，样式在 Announcements.vue 内。 */
 .message-card.unread {
-  background: #f8faff;
-  box-shadow: inset 3px 0 var(--blue);
+  background: transparent;
+  box-shadow: none;
 }
 
-.message-tabs {
-  width: fit-content;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f5f7fa;
-}
-
-.message-tabs button {
-  min-width: 72px;
-  height: 32px;
-  border-radius: 6px;
-}
-
-.message-tabs button.active {
-  color: var(--blue-dark);
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
-}
+/* 切换器改为下划线式，具体样式见 Announcements.vue；
+   这里不再重复定义胶囊外观，否则会与组件内样式打架。 */
 
 /* ============================================================
    15. 报告摘要 / JSON 面板
@@ -2773,4 +2850,1149 @@ textarea::placeholder {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* 报告完成通知偏好（发起查询页） */
+/* 通知偏好：设置一次长期生效，压成单行 chip，细节走 title 提示 */
+.notify-pref-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.notify-pref-label {
+  color: #64748b;
+  cursor: help;
+}
+.notify-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: all .15s;
+}
+.notify-chip:hover { border-color: #c3d0e4; }
+.notify-chip input { margin: 0; cursor: pointer; }
+.notify-chip.on {
+  border-color: #2168f3;
+  background: #eef4ff;
+  color: #1b4fc0;
+}
+.notify-chip.off { background: #f8fafc; color: #94a3b8; }
+.notify-pref-link {
+  font-size: 12px;
+  color: #2168f3;
+  text-decoration: underline;
+}
+.notify-pref-state { font-size: 12px; color: #8794a8; margin-left: auto; }
+.notify-pref-state.ok { color: #0b9f62; }
+
+
+/* ============================================================
+   去卡片化补充：分隔靠细线，不靠投影与圆角
+   ============================================================ */
+.work-card,
+.panel,
+.stat-card,
+.sub-card,
+.profile-detail-card,
+.report-detail-card,
+.todo-panel {
+  box-shadow: none;
+}
+
+/* 表格：行高收紧，表头用细线而非底色块 */
+.data-table th {
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.data-table td {
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+/* 强调色：链接、激活态 */
+.primary-link,
+.page-eyebrow {
+  color: var(--cinnabar);
+}
+
+/* ============================================================
+   移动端适配 —— 目标是让 PC 前端在手机上完整可用
+   断点：1024 平板收窄，768 进入移动形态，480 极窄机型
+   ============================================================ */
+
+/* 汉堡按钮：仅移动端出现 */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(22, 24, 29, 0.38);
+}
+
+@media (max-width: 1024px) {
+  .work-card { padding: 18px 18px; }
+  .query-layout { grid-template-columns: minmax(0, 1fr); }
+  .query-aside { order: -1; }
+}
+
+@media (max-width: 768px) {
+  /* 侧栏改为抽屉：默认移出视口，展开时滑入 */
+  .client-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    width: 264px;
+    max-width: 82vw;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    box-shadow: none;
+  }
+
+  .client-shell.nav-open .sidebar {
+    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .nav-toggle { display: inline-flex; }
+
+  .topbar {
+    height: 56px;
+    padding: 0 14px;
+  }
+
+  .topbar-context span { display: none; }
+  .topbar-context h1 { font-size: 16px; }
+
+  /* 用户菜单在窄屏只留头像 */
+  .user-menu-copy,
+  .menu-chevron { display: none; }
+
+  .page-content { padding: 14px 12px calc(20px + env(safe-area-inset-bottom)); }
+  .work-card { padding: 0; }
+
+  .page-header,
+  .section-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .page-actions { flex-wrap: wrap; }
+  .page-actions button { flex: 1 1 auto; }
+
+  /* 概览指标：两列 */
+  .overview-metrics,
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* ---- 表格转卡片：手机上横向滚动表格极难用 ---- */
+  .data-table-wrap,
+  .records-table-wrap,
+  .table-wrap { overflow: visible; }
+
+  .data-table,
+  .records-table {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table thead,
+  .records-table thead { display: none; }
+
+  .data-table tbody,
+  .records-table tbody { display: block; }
+
+  .data-table tr,
+  .records-table tr {
+    display: block;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .data-table td,
+  .records-table td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 4px 0;
+    border: 0;
+    text-align: right;
+  }
+
+  /* 用 data-label 补出字段名，因为表头被隐藏了 */
+  .data-table td::before,
+  .records-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: left;
+  }
+
+  .data-table td.numeric,
+  .records-table td.numeric { text-align: right; }
+
+  .data-table td.row-actions,
+  .data-table td.icon-actions,
+  .records-table td.row-actions {
+    justify-content: flex-end;
+    padding-top: 10px;
+  }
+
+  /* 分页条 */
+  .pagination-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* 弹层在窄屏贴底展开，更接近原生交互 */
+  .modal-card,
+  .dialog-card {
+    width: 100%;
+    max-width: 100%;
+    margin-top: auto;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  /* 表单栅格单列 */
+  .form-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+@media (max-width: 480px) {
+  .overview-metrics,
+  .stats-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .topbar-context h1 { font-size: 15px; }
+}
+
+/* 触摸目标不小于 40px，避免手机上点不中 */
+@media (pointer: coarse) {
+  button,
+  .nav-item,
+  .row-actions button,
+  .icon-actions button {
+    min-height: 40px;
+  }
+}
+
+
+/* ---- 去卡片化补丁：工具条与分页条 ---- */
+.toolbar,
+.records-table-wrap,
+.pagination-bar {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.toolbar {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pagination-bar {
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+/* 分页按钮文字不换行——窄屏上「上一页」会被折成两行 */
+.pagination-bar button,
+.pagination-bar strong,
+.pagination-bar span {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  /* 工具条两列：普通控件整行，起止日期各占一半真正并排 */
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .toolbar input,
+  .toolbar select,
+  .toolbar button {
+    width: 100%;
+    grid-column: 1 / -1;
+  }
+
+  /* 桌面端 .toolbar input[type="date"] 写了 width:150px，
+     特异性(0,2,1)高于上面的 .toolbar input(0,1,1)，必须同样带属性选择器才盖得住 */
+  .toolbar input[type="date"] {
+    width: 100%;
+    grid-column: auto;
+  }
+
+  /* 标签留着：日期框自己不说明是「提交时间」还是别的时间 */
+  .toolbar-label {
+    grid-column: 1 / -1;
+    margin-bottom: -4px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .toolbar-sep { display: none; }
+
+  .pagination-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .pagination-bar > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .pagination-bar button { flex: 0 0 auto; padding: 0 14px; }
+}
+
+
+/* ============================================================
+   修正：恢复内容面
+   之前把卡片全部拉平后，浅底上再无白色面，整页只剩发丝线，
+   没有层次也没有对比，看着像没做完。
+   Linear / 飞书 的紧凑感来自「小圆角 + 细边 + 紧间距」，
+   而不是取消内容面本身。
+   ============================================================ */
+.work-card,
+.panel,
+.stat-card,
+.sub-card,
+.todo-panel,
+.profile-detail-card,
+.report-detail-card,
+.records-card .toolbar,
+.records-table-wrap,
+.invoice-table-wrap,
+.pager,
+.cost-card,
+.flow-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+/* 内容面内部保持紧凑内边距 */
+.work-card { padding: 18px 20px; }
+.records-card .toolbar { padding: 12px 14px; margin-bottom: 12px; }
+.cost-card { padding: 16px 18px; }
+.flow-card { padding: 14px 18px; margin-top: 14px; }
+
+/* 表格容器与分页条同属一个面，接缝处不重复描边 */
+.records-table-wrap,
+.invoice-table-wrap {
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.pager {
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  padding: 10px 14px;
+  margin-top: 0;
+}
+
+/* records-card 自身是外层容器，不再重复画面 */
+.records-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* 强调色回归克制：朱砂只留给品牌印章，链接用中性深色，
+   满屏红字在密集界面里过于刺眼 */
+.primary-link { color: var(--blue); }
+.page-eyebrow { color: var(--muted); }
+
+@media (max-width: 768px) {
+  /* 窄屏内容面贴边，省出横向空间 */
+  .work-card,
+  .records-card .toolbar,
+  .records-table-wrap,
+  .pager {
+    border-radius: var(--radius);
+  }
+  .work-card { padding: 14px; }
+}
+
+/* ============================================================
+   移动端排版修正（依据真机尺寸截图逐项定位）
+   ============================================================ */
+@media (max-width: 768px) {
+  /* 1. 页头：标题与操作按钮分行，按钮占满宽度不再折字 */
+  .page-header,
+  .work-card-head,
+  .query-card-head {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .page-header .page-actions,
+  .work-card-head .page-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .page-header .page-actions button,
+  .work-card-head .page-actions button,
+  .page-header > button,
+  .work-card-head > button {
+    flex: 1 1 0;
+    width: 100%;
+    white-space: nowrap;   /* 「发起背调查询」不再被折成两行 */
+    padding: 0 12px;
+  }
+
+  /* 2. 空态与占位单元格居中，不要继承数据行的右对齐 */
+  .data-table td[colspan],
+  .records-table td[colspan],
+  .table-empty {
+    display: block;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .data-table td[colspan]::before,
+  .records-table td[colspan]::before { content: none; }
+
+  /* 3. 指标卡收紧：默认尺寸在手机上一屏放不下四张 */
+  .stat-card,
+  .metric-card {
+    padding: 14px 14px 12px;
+  }
+
+  .stat-card strong,
+  .metric-card strong,
+  .stat-value {
+    font-size: 26px;
+    line-height: 1.2;
+  }
+
+  .stat-card small,
+  .metric-card small { font-size: 11.5px; }
+
+  /* 4. 面板标题区紧凑，"查看全部"不换行 */
+  .panel-head,
+  .detail-card-head {
+    gap: 10px;
+  }
+
+  .panel-head a,
+  .panel-head .text-btn,
+  .detail-card-head a { white-space: nowrap; font-size: 13px; }
+
+  /* 5. 页面主标题降一档，长句不至于占三行 */
+  .page-header h2,
+  .work-card-head h2 { font-size: 20px; }
+  .page-description,
+  .work-card-head p { font-size: 12.5px; line-height: 1.6; }
+}
+
+/* Dashboard 移动端：类名是 welcome-row / new-query-btn / metric-card，
+   不在前面那批通用选择器里，需单独处理 */
+@media (max-width: 768px) {
+  .welcome-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .welcome-row h2 { font-size: 21px; }
+  .welcome-row p { font-size: 12.5px; line-height: 1.6; }
+
+  .new-query-btn {
+    width: 100%;
+    justify-content: center;
+    white-space: nowrap;   /* 原先「发起背调查询」被折成两行 */
+    height: 42px;
+  }
+
+  /* 指标卡收紧：四张卡原本占掉一屏还多 */
+  .metric-grid { gap: 10px; }
+
+  .metric-card { padding: 13px 14px 12px; }
+  .metric-card .metric-top span:first-child { font-size: 12.5px; }
+  .metric-card strong,
+  .metric-card .metric-value { font-size: 24px; }
+  .metric-card small,
+  .metric-card .metric-foot { font-size: 11px; }
+  .metric-icon { width: 30px; height: 30px; }
+}
+
+/* ============================================================
+   PC 布局调整
+   1. 顶栏不再重复页面标题，只留定位与全局操作
+   2. 工作区放宽：原先 page-content 给到 1440，内层 work-card 却卡在
+      1180，白白浪费 260px
+   3. 侧栏可折叠：9 个菜单里日常只用 3 个，笔记本上 240px 常驻太占地方
+   ============================================================ */
+
+/* ---- 1. 顶栏 ---- */
+.topbar-context span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rail-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+
+.rail-toggle:hover { background: var(--line-soft); color: var(--text); }
+
+/* ---- 2. 工作区放宽 ---- */
+.work-card { max-width: none; }
+
+.page-content,
+.page-content.page-content-wide {
+  max-width: 1560px;
+  padding: 20px 26px 48px;
+}
+
+/* ---- 3. 侧栏折叠 ---- */
+.client-shell {
+  transition: grid-template-columns .18s ease;
+}
+
+.client-shell.rail-collapsed {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.client-shell.rail-collapsed .sidebar {
+  overflow: visible;
+}
+
+/* 折叠后只留图标：文字、分组标题、底部说明全部隐藏 */
+.client-shell.rail-collapsed .nav-item span,
+.client-shell.rail-collapsed .nav-section,
+.client-shell.rail-collapsed .brand > div:not(.brand-mark),
+.client-shell.rail-collapsed .sidebar-footer {
+  display: none;
+}
+
+.client-shell.rail-collapsed .brand {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.client-shell.rail-collapsed .nav-item {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.client-shell.rail-collapsed .nav-group + .nav-group {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* 折叠态下悬停显示名称 */
+.client-shell.rail-collapsed .nav-item { position: relative; }
+
+.client-shell.rail-collapsed .nav-item::after {
+  content: attr(data-title);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 5px 9px;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: #fff;
+  background: var(--text);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+  z-index: 60;
+}
+
+.client-shell.rail-collapsed .nav-item:hover::after { opacity: 1; }
+
+/* 移动端不参与折叠逻辑，抽屉始终是完整形态 */
+@media (max-width: 768px) {
+  .rail-toggle { display: none; }
+  .client-shell.rail-collapsed { grid-template-columns: minmax(0, 1fr); }
+  .client-shell.rail-collapsed .nav-item span,
+  .client-shell.rail-collapsed .nav-section,
+  .client-shell.rail-collapsed .brand > div,
+  .client-shell.rail-collapsed .sidebar-footer { display: revert; }
+  .client-shell.rail-collapsed .nav-item { justify-content: flex-start; padding-left: 14px; }
+  .client-shell.rail-collapsed .nav-item::after { content: none; }
+}
+
+/* ============================================================
+   工作台信息层级调整
+   原顺序：指标 → 最近记录 / 公告 / 趋势图 / 待办(最末)
+   问题：待办是唯一需要用户行动的内容，却排在最下面；
+        趋势图在数据量小时几乎全是空图，占了主列一大块。
+   现顺序：待办(通栏，最先看到) → 最近记录 / 公告 → 趋势图
+   ============================================================ */
+
+/* 待办通栏置顶，三条提醒横排 */
+.dashboard-grid .todo-panel {
+  grid-column: 1 / -1;
+}
+
+.dashboard-grid .todo-panel .todo-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.dashboard-grid .todo-panel .todo-item {
+  border-bottom: 0;
+  border-right: 1px solid var(--line-soft);
+}
+
+.dashboard-grid .todo-panel .todo-item:last-child { border-right: 0; }
+
+/* 趋势图退到通栏最后，高度压低——小数据量下它信息密度很低 */
+.dashboard-grid .chart-panel {
+  grid-column: 1 / -1;
+}
+
+.dashboard-grid .chart-panel .line-chart { height: 190px; }
+
+@media (max-width: 1024px) {
+  .dashboard-grid,
+  .dashboard-page .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid .todo-panel .todo-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-grid .todo-panel .todo-item {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .dashboard-grid .todo-panel .todo-item:last-child { border-bottom: 0; }
+  .dashboard-grid .chart-panel .line-chart { height: 160px; }
+}
+
+/* 指标条：四个数字不值得占四张大卡，压成一条窄带 */
+.metric-grid {
+  /* 工作台只留「背调中」「待授权」两项，仍按 4 列排会在右侧留出半屏空白 */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+
+.metric-grid .metric-card {
+  border: 0;
+  border-right: 1px solid var(--line-soft);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 14px 16px;
+}
+
+.metric-grid .metric-card:last-child { border-right: 0; }
+
+.metric-grid .metric-card strong,
+.metric-grid .metric-card .metric-value { font-size: 24px; }
+
+@media (max-width: 1024px) {
+  .metric-grid .metric-card:nth-child(2) { border-right: 0; }
+}
+
+@media (max-width: 768px) {
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-grid .metric-card { padding: 12px 13px; }
+  .metric-grid .metric-card strong,
+  .metric-grid .metric-card .metric-value { font-size: 20px; }
+}
+
+/* ============================================================
+   各页面移动端适配
+   按各页实际类名逐一处理 —— 通用选择器覆盖不到它们：
+   recharge-hero / invoice-hero / cert-hero / sub-hero /
+   messages-hero / profile-summary / finance-page-header
+   ============================================================ */
+@media (max-width: 768px) {
+  /* 各页头部统一：标题与操作分行，按钮占满不折字 */
+  .recharge-hero,
+  .invoice-hero,
+  .cert-hero,
+  .sub-hero,
+  .messages-hero,
+  .finance-page-header,
+  .profile-summary {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .recharge-hero > button,
+  .invoice-hero > button,
+  .cert-hero > button,
+  .sub-hero > button,
+  .messages-hero > button,
+  .recharge-hero .primary-btn,
+  .invoice-hero .primary-btn,
+  .cert-hero .primary-btn,
+  .sub-hero .primary-btn,
+  .messages-hero .primary-btn {
+    width: 100%;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .recharge-hero h2,
+  .invoice-hero h2,
+  .cert-hero h2,
+  .sub-hero h2,
+  .messages-hero h2 { font-size: 20px; }
+
+  .eyebrow { font-size: 11.5px; }
+
+  /* 基本信息：仅头像区居中，标题与字段保持左对齐 */
+  .profile-summary { align-items: center; }
+  .profile-summary > div { text-align: center; }
+  .profile-summary .summary-avatar { margin: 0 auto; }
+
+  /* 字段行：标签在上、值在下，右侧操作不挤压 */
+  .profile-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "label action" "value action";
+    align-items: center;
+    gap: 2px 12px;
+    padding: 12px 0;
+  }
+  .profile-row .row-label { grid-area: label; font-size: 12px; }
+  .profile-row .row-value { grid-area: value; font-size: 14px; word-break: break-all; }
+  .profile-row .row-action { grid-area: action; white-space: nowrap; }
+
+  /* 充值套餐：单列 */
+  .recharge-plans,
+  .plan-grid { grid-template-columns: minmax(0, 1fr) !important; }
+
+  /* 企业认证：上传区与缩略图放大到可点 */
+  .license-thumb,
+  .upload-tile { width: 100%; min-height: 160px; }
+
+  /* 返回链接单独一行 */
+  .back-link { align-self: flex-start; }
+
+  /* 详情卡头部 */
+  .detail-card-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  /* 代理中心工作区 tab 横向可滚，不换行挤压 */
+  .workspace-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .workspace-tabs::-webkit-scrollbar { display: none; }
+  .workspace-tabs button { flex: 0 0 auto; white-space: nowrap; }
+
+  /* 概览带：指标两列 */
+  .overview-band {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+/* ============================================================
+   账户充值页布局整理
+   原问题：
+   - 顶部「资金流水」按钮与「当前余额」面板高度、样式各不相同，右上角显得散
+   - 「刷新」按钮因 compact-head 的 align-items:flex-start 掉到标题下方
+   - 套餐区无数据时空占大片，右侧支付栏被挤窄
+   ============================================================ */
+
+.recharge-hero-actions {
+  display: flex;
+  align-items: stretch;   /* 两块等高，右上角不再高低不齐 */
+  gap: 12px;
+}
+
+.recharge-hero-actions .ledger-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .14s ease, color .14s ease;
+}
+
+.recharge-hero-actions .ledger-entry:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.recharge-hero-actions .balance-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 168px;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line-soft);
+}
+
+.recharge-hero-actions .balance-panel span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.recharge-hero-actions .balance-panel strong {
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+/* 标题与刷新按钮同一行 —— 原先 flex-start 让按钮掉到了下面 */
+.compact-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compact-head h3 { margin: 0; }
+
+/* 套餐区无数据时不必占满高度 */
+.package-card .state-box { min-height: 96px; }
+
+@media (max-width: 1024px) {
+  .recharge-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .recharge-hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .recharge-hero-actions .ledger-entry {
+    justify-content: space-between;
+    height: 42px;
+  }
+  .recharge-hero-actions .balance-panel {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .compact-head { align-items: center; }
+}
+
+/* ============================================================
+   企业认证：改为内容驱动布局
+   原来是固定两栏，未认证时右侧「认证记录」必然为空却占掉一半版面，
+   「去认证」按钮又和「认证流程」挤在同一个框里，按钮像是流程的标题。
+   现在：没有记录就单列，主操作独占；流程独立成块；有记录才两栏。
+   ============================================================ */
+.cert-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  max-width: 720px;   /* 单列时不要拉满整屏，阅读宽度更舒服 */
+}
+
+/* 有历史记录时才回到两栏，并放开宽度 */
+.cert-layout:has(.cert-history-card) {
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  max-width: none;
+}
+
+.cert-layout:has(.cert-history-card) .cert-history-card {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+}
+
+/* 状态卡：主操作放大，不再是行内小按钮 */
+.cert-status-card .status-actions {
+  margin-top: 16px;
+}
+
+.cert-status-card .status-actions .primary-action {
+  min-width: 132px;
+  height: 40px;
+  padding: 0 22px;
+  font-size: 14px;
+}
+
+/* 流程块 */
+
+
+@media (max-width: 900px) {
+  .cert-layout,
+  .cert-layout:has(.cert-history-card) {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+  }
+  .cert-layout:has(.cert-history-card) .cert-history-card {
+    grid-row: auto;
+    grid-column: auto;
+  }
+}
+
+
+/* 认证表单按钮：两个按钮同高同形，主按钮不许被拉伸撑满
+   （.primary-action 在别处带了 width:100%，这里显式收回） */
+.cert-form-card .cert-form-actions button,
+.cert-form-card .cert-form-actions .primary-action {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 108px;
+  height: 40px;
+  padding: 0 22px;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 1;
+  box-sizing: border-box;   /* .primary-action 带 1px 边框，不算进盒模型会比另一个高 2px */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .cert-form-card .cert-form-actions button,
+  .cert-form-card .cert-form-actions .primary-action { width: 100%; }
+}
+
+
+/* ============================================================
+   移动端表格转卡片：必须废掉 colgroup 的固定列宽
+   否则 table 虽然 display:block，td 仍按 colgroup 撑到 1200px+，
+   「字段名 : 值」里的值被推到屏幕外，只剩一列光秃秃的标签。
+   ============================================================ */
+@media (max-width: 768px) {
+  .data-table colgroup,
+  .records-table colgroup { display: none; }
+
+  .data-table,
+  .records-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto !important;
+  }
+
+  .data-table tr,
+  .records-table tr { width: 100%; }
+
+  .data-table td,
+  .records-table td {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  /* 值靠右、可换行，长身份证号不撑破 */
+  .data-table td,
+  .records-table td {
+    gap: 12px;
+    word-break: break-all;
+  }
+
+  .data-table td::before,
+  .records-table td::before {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* 每行之间留出间隔，视觉上成为一张"卡片" */
+  .data-table tbody tr,
+  .records-table tbody tr {
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+
+  .data-table tbody tr:last-child,
+  .records-table tbody tr:last-child { margin-bottom: 0; }
+}
+
+
+/* 记录卡收紧：一条记录原本要占满整屏，翻 10 条得滚 10 屏 */
+@media (max-width: 768px) {
+  .data-table tbody tr,
+  .records-table tbody tr {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .data-table tbody td,
+  .records-table tbody td {
+    padding: 3px 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    line-height: 1.5 !important;
+    font-size: 13px;
+  }
+
+  .data-table tbody td::before,
+  .records-table tbody td::before {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* 姓名与状态是扫视时最先找的两项，给一点视觉权重 */
+  .records-table tbody td[data-label="姓名"] { font-size: 15px; font-weight: 600; padding-bottom: 6px !important; }
+  .records-table tbody td[data-label="状态"] { padding-top: 6px !important; }
+
+  /* 操作行与上方内容拉开，并靠右 */
+  .records-table tbody td.actions-cell,
+  .data-table tbody td.row-actions,
+  .data-table tbody td.icon-actions {
+    margin-top: 6px;
+    padding-top: 8px !important;
+    border-top: 1px solid var(--line-soft);
+  }
+}
+
+
+/* 手机端记录卡：默认只留关键四项，其余点「详情」展开 */
+.mobile-only-btn { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-only-btn { display: inline-block; }
+
+  .records-table tbody tr:not(.row-expanded) td[data-label="查询类型"],
+  .records-table tbody tr:not(.row-expanded) td[data-label="身份证号"],
+  .records-table tbody tr:not(.row-expanded) td[data-label="手机号"] {
+    display: none;
+  }
+
+  /* 展开的行给一点区分，知道自己点开了哪张 */
+  .records-table tbody tr.row-expanded {
+    border-color: var(--text);
+  }
+
+  .records-table tbody td.actions-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: flex-end;
+  }
+  .records-table tbody td.actions-cell::before { margin-right: auto; }
+}
+
+
+/* ============================================================
+   查询记录工具栏：控件对齐
+   原状态：输入框/下拉 40px 圆角 6px，「查询」按钮 38px 圆角 8px，
+   高度差 2px、圆角不一致，一排看下来是歪的。
+   ============================================================ */
+.toolbar {
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar input,
+.toolbar select,
+.toolbar .ghost-btn,
+.toolbar .text-btn {
+  height: 40px;
+  min-height: 40px;
+  border-radius: var(--radius);
+  box-sizing: border-box;
+  font-size: 13.5px;
+}
+
+.toolbar .ghost-btn,
+.toolbar .text-btn {
+  padding: 0 18px;
+  white-space: nowrap;
+}
+
+/* 日期区组合成一个整体，中间的连字符不再是散落的裸文字 */
+.toolbar-label {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.toolbar-sep {
+  color: var(--faint);
+  padding: 0 2px;
+}
+
+.toolbar input[type="date"] {
+  min-width: 148px;
 }

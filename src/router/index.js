@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import ClientLayout from '../layout/ClientLayout.vue'
-import { getToken } from '../utils/auth'
+import { getToken, getUser } from '../utils/auth'
 
 const Dashboard = () => import('../views/Dashboard.vue')
 const Login = () => import('../views/Login.vue')
@@ -36,8 +36,8 @@ const routes = [
     redirect: '/dashboard',
     children: [
       { path: 'dashboard', name: 'dashboard', component: Dashboard, meta: { title: '工作台' } },
-      { path: 'account-profile', name: 'accountProfile', component: AccountProfile, meta: { title: '基本信息' } },
-      { path: 'query/create', name: 'queryCreate', component: QueryCreate, meta: { title: '发起背调查询' } },
+      { path: 'account-profile', name: 'accountProfile', component: AccountProfile, meta: { title: '基础信息' } },
+      { path: 'query/create', name: 'queryCreate', component: QueryCreate, meta: { title: '发起背调' } },
       { path: 'records', name: 'records', component: Records, meta: { title: '查询记录' } },
       { path: 'report/:id', name: 'reportDetail', component: ReportFull, meta: { title: '报告详情' } },
       { path: 'recharge', name: 'recharge', component: Recharge, meta: { title: '账户充值' } },
@@ -63,6 +63,19 @@ router.beforeEach((to, from, next) => {
   if (to.path === '/login' || to.path === '/register' || to.meta.public) return next()
   if (!getToken()) return next('/login')
 
+  // 路由上标了 mainOnly / agentOnly 却一直没人读，导致侧栏虽然隐藏了入口，
+  // 手输 #/sub-accounts、#/agent-center 仍能进到一个必然报错的空页面。
+  // 后端对这两类接口都有校验，这里只是不让用户白跑一趟。
+  const user = getUser() || {}
+  const isSubAccount = user.parentUserId != null || user.accountType === 'sub'
+  // isAgent 要等 ClientLayout 拉过一次 profile 才会进缓存。
+  // 字段还没有时一律放行，交给页面自己判断——错拦一个真代理商，
+  // 比让一个非代理多看一眼空页面严重得多。
+  const knowsAgent = 'isAgent' in user
+  const isAgent = user.isAgent === true || user.isAgent === 1 || user.isAgent === '1'
+
+  if (to.meta.mainOnly && isSubAccount) return next('/dashboard')
+  if (to.meta.agentOnly && knowsAgent && !isAgent) return next('/dashboard')
 
   next()
 })

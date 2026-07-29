@@ -2,7 +2,7 @@
   <div class="account-profile-page">
     <section class="profile-summary">
       <div class="summary-avatar" :class="{ image: avatarUrl }">
-        <img v-if="avatarUrl" :src="avatarUrl" alt="企业标志">
+        <img v-if="avatarUrl" :src="avatarUrl" alt="账户头像">
         <span v-else>{{ profileInitial }}</span>
       </div>
       <div class="summary-copy">
@@ -13,33 +13,19 @@
           <span v-if="certStatusText" :class="['cert-pill', certStatusClass]">{{ certStatusText }}</span>
         </div>
       </div>
-      <button class="primary-btn compact" type="button" @click="openEditor">编辑资料</button>
     </section>
 
     <section class="profile-detail-card">
       <header class="detail-card-head">
         <div>
-          <h3>基本信息</h3>
-          <p>企业账户资料</p>
+          <h3>基础信息</h3>
         </div>
       </header>
 
       <div class="profile-row">
         <span class="row-label">账户类型</span>
         <strong>{{ accountTypeLabel }}</strong>
-        <span class="row-note">{{ isSubAccount ? '由主账号统一管理' : '企业客户账户' }}</span>
-      </div>
-
-      <div class="profile-row logo-row">
-        <span class="row-label">企业标志</span>
-        <div class="row-logo" :class="{ image: avatarUrl }">
-          <img v-if="avatarUrl" :src="avatarUrl" alt="企业标志">
-          <span v-else>{{ profileInitial }}</span>
-        </div>
-        <label class="row-action upload-action">
-          {{ uploading ? '上传中' : '修改' }}
-          <input type="file" accept="image/png,image/jpeg,image/webp" :disabled="uploading" @change="handleAvatarChange">
-        </label>
+        <span v-if="isSubAccount" class="row-note">由主账号统一管理</span>
       </div>
 
       <div class="profile-row">
@@ -54,13 +40,11 @@
       <div class="profile-row">
         <span class="row-label">登录名</span>
         <strong>{{ profile.userName || '-' }}</strong>
-        <span class="row-note">登录名设置后不可修改</span>
       </div>
 
       <div class="profile-row">
         <span class="row-label">手机</span>
         <strong>{{ maskedPhone }}</strong>
-        <span class="row-note">已绑定</span>
       </div>
 
       <div class="profile-row">
@@ -74,7 +58,6 @@
       <header class="detail-card-head">
         <div>
           <h3>账户安全</h3>
-          <p>登录凭证与身份验证信息</p>
         </div>
       </header>
 
@@ -93,7 +76,7 @@
 
     <p v-if="message" :class="['profile-message', messageType]">{{ message }}</p>
 
-    <AppModal :open="editorVisible" title="编辑基本信息" eyebrow="账户资料" size="md" @close="closeEditor">
+    <AppModal :open="editorVisible" title="编辑基础信息" eyebrow="账户资料" size="md" @close="closeEditor">
       <div class="editor-grid">
         <label>
           <span>邮箱</span>
@@ -156,7 +139,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'v
 import { useRouter } from 'vue-router'
 import AppModal from '../components/AppModal.vue'
 import { getMyEnterpriseCertList } from '../api/enterpriseCert'
-import { getUserProfile, sendPasswordCode, updateUserPassword, updateUserProfile, uploadUserAvatar } from '../api/user'
+import { getUserProfile, sendPasswordCode, updateUserPassword, updateUserProfile } from '../api/user'
 import { removeToken, setUser } from '../utils/auth'
 
 const emit = defineEmits(['profile-updated'])
@@ -169,7 +152,6 @@ const saving = ref(false)
 const passwordChanging = ref(false)
 const smsSending = ref(false)
 const smsCountdown = ref(0)
-const uploading = ref(false)
 const showPassword = ref(false)
 const message = ref('')
 const messageType = ref('success')
@@ -273,7 +255,7 @@ async function saveProfile() {
     })
     await loadProfile()
     editorVisible.value = false
-    showMessage('基本信息已更新')
+    showMessage('基础信息已更新')
     emit('profile-updated')
   } catch (error) {
     showMessage(error?.msg || error?.message || '保存失败，请稍后重试', 'error')
@@ -338,25 +320,6 @@ async function changePassword() {
   }
 }
 
-async function handleAvatarChange(event) {
-  const file = event.target.files?.[0]
-  event.target.value = ''
-  if (!file) return
-  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return showMessage('仅支持 JPG、PNG 或 WebP 图片', 'error')
-  if (file.size > 2 * 1024 * 1024) return showMessage('图片大小不能超过 2MB', 'error')
-  uploading.value = true
-  try {
-    await uploadUserAvatar(file)
-    await loadProfile()
-    showMessage('企业标志已更新')
-    emit('profile-updated')
-  } catch (error) {
-    showMessage(error?.msg || error?.message || '上传失败，请稍后重试', 'error')
-  } finally {
-    uploading.value = false
-  }
-}
-
 function showMessage(text, type = 'success') {
   message.value = text
   messageType.value = type
@@ -390,7 +353,7 @@ onMounted(async () => {
   try {
     await Promise.all([loadProfile(), loadCertification()])
   } catch (error) {
-    showMessage(error?.msg || error?.message || '基本信息加载失败', 'error')
+    showMessage(error?.msg || error?.message || '基础信息加载失败', 'error')
   }
 })
 
@@ -400,9 +363,9 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 <style scoped>
 .account-profile-page { width: min(1180px, 100%); margin: 0 auto; display: grid; gap: 16px; }
 .profile-summary { min-height: auto; padding: 0 0 18px; display: flex; align-items: center; gap: 18px; background: transparent; color: #101828; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
-.summary-avatar, .row-logo { flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: #fff; color: #1d5baa; font-weight: 800; }
+.summary-avatar { flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: #fff; color: #1d5baa; font-weight: 800; }
 .summary-avatar { width: 64px; height: 64px; border: 1px solid #dce6f3; border-radius: 8px; font-size: 26px; background: #eef4ff; }
-.summary-avatar img, .row-logo img { width: 100%; height: 100%; object-fit: cover; }
+.summary-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .summary-copy { min-width: 0; flex: 1; }
 .summary-copy p, .summary-copy h2 { margin: 0; letter-spacing: 0; }
 .summary-copy p { margin-bottom: 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
@@ -431,9 +394,6 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .profile-summary .cert-pill.approved { background: #e8f8ef; color: #087443; }
 .profile-summary .cert-pill.pending, .profile-summary .cert-pill.reviewing { background: #fff4df; color: #a15c00; }
 .profile-summary .cert-pill.rejected { background: #fff0f0; color: #b42318; }
-.row-logo { width: 48px; height: 48px; border: 1px solid #dfe6ef; border-radius: 6px; background: #eef4fb; font-size: 18px; }
-.upload-action { position: relative; }
-.upload-action input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .profile-message { position: fixed; top: 84px; left: 50%; z-index: 70; margin: 0; padding: 11px 18px; transform: translateX(-50%); border: 1px solid #abefc6; border-radius: 6px; background: #ecfdf3; color: #027a48; box-shadow: 0 10px 25px rgba(16, 24, 40, .12); }
 .profile-message.error { border-color: #fecdca; background: #fef3f2; color: #b42318; }
 .editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
@@ -458,5 +418,24 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
   .profile-row { padding: 16px 20px; grid-template-columns: 105px minmax(0, 1fr); gap: 10px 18px; }
   .profile-row > :last-child { grid-column: 2; justify-self: start; }
   .editor-grid { grid-template-columns: 1fr; }
+}
+
+/* 移动端：字段行改为「标签在上、值在下、操作靠右」，头像居中 */
+@media (max-width: 768px) {
+  .profile-summary { flex-direction: column; align-items: center; gap: 12px; }
+  .profile-summary > div { text-align: center; }
+  /* 卡片头在窄屏变成纵向后，基类的 align-items:center 会把标题横向居中，
+     这里显式改回左对齐 */
+  .detail-card-head { align-items: flex-start; text-align: left; }
+  .profile-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "label action" "value action";
+    align-items: center;
+    gap: 2px 12px;
+  }
+  .row-label { grid-area: label; font-size: 12px; }
+  .row-value { grid-area: value; font-size: 14px; word-break: break-all; }
+  .row-action { grid-area: action; white-space: nowrap; }
 }
 </style>

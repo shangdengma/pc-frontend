@@ -6,7 +6,6 @@
         <h2>企业认证</h2>
         <p>{{ isSubAccount ? "认证信息继承自主账号。" : "提交企业资料，完成账户认证。" }}</p>
       </div>
-      <button class="ghost-light-btn" type="button" :disabled="loading" @click="loadList">刷新状态</button>
     </div>
 
     <div class="cert-layout">
@@ -20,28 +19,54 @@
             <p>{{ mainCert ? mainCert.enterpriseName || '企业认证申请' : '当前账号还未提交企业认证申请' }}</p>
           </div>
         </div>
+        <dl v-if="mainCert && mainCert.status === 'approved'" class="cert-facts">
+          <div><dt>企业名称</dt><dd>{{ mainCert.enterpriseName || '-' }}</dd></div>
+          <div><dt>认证时间</dt><dd>{{ formatTime(mainCert.reviewedAt) || '-' }}</dd></div>
+          <div><dt>认证方式</dt><dd>营业执照<button class="link-btn" type="button" @click="openView(mainCert)">查看</button></dd></div>
+        </dl>
+
         <div v-if="mainCert?.rejectReason" class="reject-box">
           驳回原因：{{ mainCert.rejectReason }}
         </div>
         <div class="status-actions">
-          <button v-if="!mainCert && !isSubAccount" class="primary-action small" type="button" @click="openCreate">去认证</button>
-          <button v-else-if="mainCert && mainCert.status === 'draft' && !isSubAccount" class="primary-action small" type="button" @click="openEdit(mainCert)">继续填写</button>
-          <button v-else-if="mainCert && mainCert.status === 'rejected' && !isSubAccount" class="primary-action small" type="button" @click="openCreate">重新申请</button>
-          <button v-else-if="mainCert" class="primary-action small" type="button" @click="openView(mainCert)">查看认证信息</button>
+          <!-- 未认证/草稿/被驳回的表单已直接内联在下方，此处不再重复放入口按钮 -->
+          <template v-if="mainCert && mainCert.status === 'approved'">
+            <button class="primary-action small" type="button" @click="openView(mainCert)">查看认证信息</button>
+            <!-- 二次认证：企业更名或主体变更时重新提交 -->
+            <button v-if="!isSubAccount" class="ghost-btn" type="button" @click="startRecertify">重新认证</button>
+          </template>
+          <button v-else-if="mainCert && mainCert.status !== 'draft' && mainCert.status !== 'rejected'"
+                  class="primary-action small" type="button" @click="openView(mainCert)">查看认证信息</button>
         </div>
         <div v-if="isSubAccount" class="inherit-tip">子账号使用主账号的企业认证状态，如需提交或修改认证资料，请联系主账号处理。</div>
 
-        <div class="cert-steps">
-          <div class="cert-step-title">认证流程</div>
-          <ol>
-            <li><span class="cs-num">1</span><div><strong>填写企业信息</strong><em>填写企业名称、联系人并上传营业执照</em></div></li>
-            <li><span class="cs-num">2</span><div><strong>提交审核</strong><em>资料提交后由平台进行人工核验</em></div></li>
-            <li><span class="cs-num">3</span><div><strong>认证完成</strong><em>认证结果同步至企业账户</em></div></li>
-          </ol>
+      </div>
+
+      <!-- 未认证 / 草稿 / 被驳回：表单直接摆在页面上，不再点按钮弹窗。
+           这是这些状态下用户唯一要做的事，没有理由多一次点击。 -->
+      <div v-if="showInlineForm" class="work-card cert-form-card">
+        <div class="work-card-head compact-head">
+          <div>
+            <h3>{{ mainCert && mainCert.status === 'rejected' ? '重新提交认证' : '填写企业认证信息' }}</h3>
+            <p class="cert-form-desc">认证通过后，企业名称将同步为账号的企业名，用于授权声明与短信通知。</p>
+          </div>
+        </div>
+
+        <CertFormBody
+          :form="form" :file-list="fileList" :form-readonly="false" :can-edit="true"
+          :uploading="uploading" :detail-loading="false"
+          :error-msg="errorMsg" :success-msg="successMsg" :file-url="fileUrl"
+          @preview="previewFile" @remove="removeLocalFile" @file-change="handleFileChange"
+        />
+
+        <div class="cert-form-actions">
+          <button type="button" class="ghost-btn" :disabled="saving" @click="saveDraft">保存草稿</button>
+          <button type="button" class="primary-action" :disabled="saving" @click="submitAudit">提交审核</button>
         </div>
       </div>
 
-      <div class="work-card cert-history-card">
+
+      <div v-if="certList.length" class="work-card cert-history-card">
         <div class="work-card-head compact-head">
           <div>
             <h3>认证记录</h3>
@@ -79,57 +104,12 @@
       :footer-visible="canEdit && !detailLoading"
       @close="closePanel"
     >
-      <div v-if="detailLoading" class="state-box">正在加载详情...</div>
-      <template v-else>
-          <div class="cert-form-grid">
-            <label>
-              <span>企业名称</span>
-              <input v-model.trim="form.enterpriseName" :disabled="formReadonly" placeholder="请输入企业/个体工商户名称">
-            </label>
-            <label>
-              <span>统一社会信用代码</span>
-              <input v-model.trim="form.unifiedSocialCreditCode" :disabled="formReadonly" maxlength="32" placeholder="请输入统一社会信用代码/工商注册号">
-            </label>
-            <label>
-              <span>法定代表人/负责人</span>
-              <input v-model.trim="form.legalRepresentativeName" :disabled="formReadonly" placeholder="请输入法定代表人或负责人姓名">
-            </label>
-            <label>
-              <span>联系人</span>
-              <input v-model.trim="form.contactPerson" :disabled="formReadonly" placeholder="请输入联系人姓名">
-            </label>
-            <label>
-              <span>联系电话</span>
-              <input v-model.trim="form.contactPhone" :disabled="formReadonly" maxlength="11" inputmode="numeric" placeholder="请输入联系电话">
-            </label>
-          </div>
-
-          <div class="license-section">
-            <div class="license-title">
-              <span>营业执照照片</span>
-              <em v-if="canEdit">支持 JPG/PNG，上传后随认证信息一起提交</em>
-            </div>
-            <div class="license-list">
-              <div v-for="file in fileList.business_license" :key="file.id || file.filePath" class="license-thumb">
-                <img :src="fileUrl(file)" alt="营业执照" @click="previewFile(file)">
-                <button v-if="canEdit" type="button" @click="removeLocalFile(file)">删除</button>
-              </div>
-              <label v-if="canEdit && fileList.business_license.length < 1" class="upload-tile">
-                <input type="file" accept="image/*" @change="handleFileChange">
-                <strong>+</strong>
-                <span>{{ uploading ? '上传中...' : '上传营业执照' }}</span>
-              </label>
-            </div>
-          </div>
-
-          <div v-if="form.rejectReason" class="reject-box panel-reject">
-            驳回原因：{{ form.rejectReason }}
-          </div>
-
-          <p v-if="errorMsg" class="error-line">{{ errorMsg }}</p>
-          <p v-if="successMsg" class="form-success">{{ successMsg }}</p>
-
-      </template>
+      <CertFormBody
+        :form="form" :file-list="fileList" :form-readonly="formReadonly" :can-edit="canEdit"
+        :uploading="uploading" :detail-loading="detailLoading"
+        :error-msg="errorMsg" :success-msg="successMsg" :file-url="fileUrl"
+        @preview="previewFile" @remove="removeLocalFile" @file-change="handleFileChange"
+      />
       <template #footer>
         <button type="button" class="ghost-btn" :disabled="saving" @click="saveDraft">保存草稿</button>
         <button type="button" class="primary-action small" :disabled="saving" @click="submitAudit">提交审核</button>
@@ -139,7 +119,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { useRefresh } from '../composables/pullRefresh'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import CertFormBody from './components/CertFormBody.vue'
 import { BadgeCheck, Building2, CircleX, Clock3, FilePenLine, ShieldCheck } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
 import { getUserProfile } from '../api/user'
@@ -147,6 +129,7 @@ import { getUser, setUser } from '../utils/auth'
 import {
   addEnterpriseCert,
   deleteEnterpriseCertFile,
+  fetchEnterpriseCertFile,
   getEnterpriseCertDetail,
   getMyEnterpriseCertList,
   submitEnterpriseCert,
@@ -186,6 +169,35 @@ const fileList = reactive({ business_license: [] })
 
 const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
 const canEdit = computed(() => !isSubAccount.value && !readonly.value)
+
+// 未认证 / 草稿 / 被驳回时，表单直接内联在页面上——这些状态下用户唯一要做的
+// 就是填表，没必要先点一次按钮再弹窗。已认证则只展示结果，需要改动走"重新认证"。
+const recertifying = ref(false)
+const showInlineForm = computed(() => {
+  if (isSubAccount.value) return false
+  if (recertifying.value) return true
+  if (!mainCert.value) return true
+  return mainCert.value.status === 'draft' || mainCert.value.status === 'rejected'
+})
+
+// 二次认证：企业更名或主体变更后重新提交，后端允许在已认证状态下新建草稿
+function startRecertify() {
+  if (isSubAccount.value) return
+  resetForm()
+  recertifying.value = true
+  // 预填现有企业名，多数情况下只是改个别字段
+  if (mainCert.value) {
+    form.enterpriseName = mainCert.value.enterpriseName || ''
+  }
+  requestAnimationFrame(() => {
+    document.querySelector('.cert-form-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
+function formatTime(value) {
+  if (!value) return ''
+  return String(value).replace('T', ' ').slice(0, 19)
+}
 const formReadonly = computed(() => readonly.value || isSubAccount.value)
 const panelTitle = computed(() => {
   if (isSubAccount.value) return '主账号企业认证信息'
@@ -267,6 +279,8 @@ async function loadDetail(id) {
     })
     const files = Array.isArray(data.fileList) ? data.fileList : []
     fileList.business_license = files.filter(file => file.fileType === 'business_license')
+    // 已落库的附件走鉴权接口取二进制
+    fileList.business_license.forEach(ensureBlob)
   } catch (error) {
     errorMsg.value = error?.msg || error?.message || '加载认证详情失败'
   } finally {
@@ -305,15 +319,33 @@ function closePanel() {
   panelVisible.value = false
 }
 
+// 营业执照不再走 /profile/** 静态路径（那条路径免鉴权，猜到文件名就能下），
+// 已落库的附件一律通过带归属校验的接口取二进制，转成 blob 地址渲染。
+// 刚上传还没保存的文件没有 id，用本地 File 的 objectURL 直接预览。
+const blobUrls = reactive({})
+
 function fileUrl(file) {
-  const path = file?.filePath || ''
-  if (!path) return ''
-  if (/^(https?:)?\/\//i.test(path)) return path
-  const base = import.meta.env.VITE_APP_BASE_API || ''
-  let p = String(path).trim()
-  if (base && p.startsWith(base)) return `${base}${encodePath(p.slice(base.length) || '/')}`.replace(/([^:]\/)\/+/g, '$1')
-  if (!p.startsWith('/')) p = `/${p}`
-  return `${base}${encodePath(p)}`.replace(/([^:]\/)\/+/g, '$1')
+  if (!file) return ''
+  if (file.localPreview) return file.localPreview
+  if (file.id) return blobUrls[file.id] || ''
+  return ''
+}
+
+async function ensureBlob(file) {
+  if (!file?.id || blobUrls[file.id]) return
+  try {
+    const blob = await fetchEnterpriseCertFile(file.id)
+    blobUrls[file.id] = URL.createObjectURL(blob)
+  } catch (err) {
+    // 取不到就留空，界面显示破图占位好过抛错中断整页
+  }
+}
+
+function releaseBlobs() {
+  Object.keys(blobUrls).forEach(key => {
+    try { URL.revokeObjectURL(blobUrls[key]) } catch (e) {}
+    delete blobUrls[key]
+  })
 }
 
 function encodePath(path) {
@@ -327,7 +359,8 @@ function encodePath(path) {
   }).join('/')
 }
 
-function previewFile(file) {
+async function previewFile(file) {
+  await ensureBlob(file)
   const url = fileUrl(file)
   if (url) window.open(url, '_blank', 'noopener,noreferrer')
 }
@@ -350,7 +383,8 @@ async function handleFileChange(event) {
       fileName: res.fileName || res.data?.fileName || file.name,
       fileType: 'business_license'
     }
-    if (!uploaded.filePath) throw new Error('上传接口未返回文件路径')
+    if (!uploaded.filePath) throw new Error('上传接口未返回文件路径')    // 尚未保存的文件没有 id，用本地 objectURL 预览，避免去请求还不存在的记录
+    uploaded.localPreview = URL.createObjectURL(file)
     fileList.business_license = [uploaded]
   } catch (error) {
     errorMsg.value = error?.msg || error?.message || '营业执照上传失败'
@@ -367,7 +401,7 @@ async function removeLocalFile(file) {
   if (file.id) {
     if (!window.confirm('确定删除该附件？')) return
     try { await deleteEnterpriseCertFile(file.id) } catch (error) {
-      errorMsg.value = error?.msg || error?.message || '删除附件失败'
+      errorMsg.value = error?.msg || error?.message || '删除附件失败，请稍后重试'
       return
     }
   }
@@ -430,7 +464,7 @@ async function saveDraft() {
     await loadList()
     if (currentId.value) await loadDetail(currentId.value)
   } catch (error) {
-    errorMsg.value = error?.msg || error?.message || '保存失败'
+    errorMsg.value = error?.msg || error?.message || '保存失败，请稍后重试'
   } finally {
     saving.value = false
   }
@@ -462,10 +496,11 @@ async function submitAudit() {
     if (!currentId.value) throw new Error('未获取到认证申请ID')
     await submitEnterpriseCert(currentId.value)
     successMsg.value = '提交成功，请等待审核'
+    recertifying.value = false
     await loadList()
     window.setTimeout(closePanel, 1000)
   } catch (error) {
-    errorMsg.value = error?.msg || error?.message || '提交失败'
+    errorMsg.value = error?.msg || error?.message || '提交失败，请稍后重试'
   } finally {
     saving.value = false
   }
@@ -480,17 +515,43 @@ async function loadProfile() {
   } catch (error) {}
 }
 
+onUnmounted(releaseBlobs)
+
 onMounted(async () => {
   await loadProfile()
   await loadList()
 })
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(loadList)
 </script>
 
 <style scoped>
 /* 整体布局：状态卡片与认证记录更均衡的两栏 */
+/* 内容驱动：没有历史记录时单列（未认证是最常见状态），
+   有记录才两栏。原先固定两栏会让空的「认证记录」白占一半版面。 */
 .cert-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  max-width: 760px;
+}
+
+/* 有内联表单时单列：表单是页面主体，不能被挤进侧栏 */
+.cert-layout:has(.cert-form-card) {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 1040px;   /* 表单是页面主体，720px 在宽屏上右侧空掉一半 */
+}
+
+.cert-layout:has(.cert-history-card) {
   grid-template-columns: minmax(360px, .82fr) minmax(0, 1.18fr);
-  align-items: stretch;
+  max-width: none;
+}
+
+@media (max-width: 900px) {
+  .cert-layout,
+  .cert-layout:has(.cert-history-card) {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+  }
 }
 
 .cert-status-card,
@@ -534,79 +595,15 @@ onMounted(async () => {
 }
 
 /* 认证流程步骤 */
-.cert-steps {
-  margin-top: 26px;
-  padding-top: 22px;
-  border-top: 1px solid var(--line);
-}
 
-.cert-step-title {
-  margin-bottom: 16px;
-  color: #101828;
-  font-size: 15px;
-  font-weight: 800;
-}
 
-.cert-steps ol {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
 
-.cert-steps li {
-  position: relative;
-  display: flex;
-  gap: 14px;
-  padding-bottom: 20px;
-}
 
-.cert-steps li:last-child {
-  padding-bottom: 0;
-}
 
 /* 连接竖线 */
-.cert-steps li:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  left: 13px;
-  top: 30px;
-  bottom: 2px;
-  width: 2px;
-  background: #e6edf5;
-}
 
-.cs-num {
-  position: relative;
-  z-index: 1;
-  width: 28px;
-  height: 28px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  color: var(--blue);
-  background: #eaf1ff;
-  font-size: 13px;
-  font-weight: 800;
-}
 
-.cert-steps strong {
-  display: block;
-  color: #101828;
-  font-size: 14px;
-}
 
-.cert-steps em {
-  display: block;
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: 13px;
-  font-style: normal;
-  line-height: 1.6;
-}
 
 /* 认证记录项：左图标 + 信息 + 状态徽章 */
 .cert-list-item {
@@ -674,5 +671,92 @@ onMounted(async () => {
   .cert-layout {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---- 已认证时的认证明细 ---- */
+.cert-facts {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.cert-facts > div {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.cert-facts dt {
+  flex: 0 0 72px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.cert-facts dd {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.link-btn {
+  margin-left: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ---- 内联表单卡 ---- */
+.cert-form-desc {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.cert-form-actions {
+  display: flex;
+  align-items: center;        /* 不写死会取 normal(=stretch)，两个按钮基线对不齐 */
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* 两个按钮同高同宽，且清掉别处带来的 margin —— 之前主按钮被顶下去 20px */
+.cert-form-actions > button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 108px;
+  height: 40px;
+  min-height: 0;   /* .primary-action 自带 min-height:42px，不清掉 height 压不动 */
+  margin: 0;
+  padding: 0 22px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .cert-form-actions { flex-direction: column-reverse; align-items: stretch; }
+  .cert-form-actions > button { width: 100%; }
+}
+
+@media (max-width: 768px) {
+  .cert-facts > div { flex-direction: column; gap: 2px; }
+  .cert-facts dt { flex: none; }
+  .cert-form-actions { flex-direction: column-reverse; }
+  .cert-form-actions button { width: 100%; }
 }
 </style>

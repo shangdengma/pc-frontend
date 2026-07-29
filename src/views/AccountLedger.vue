@@ -2,27 +2,9 @@
   <div class="account-ledger-page">
     <header class="page-header">
       <div>
-        <button class="back-link" type="button" @click="router.push('/recharge')">
-          <ArrowLeft :size="17" :stroke-width="2" />
-          返回账户充值
-        </button>
         <h2>资金流水</h2>
-        <p>查看账户充值、扣费、退款、冻结及释放记录。</p>
       </div>
-      <button class="refresh-btn" type="button" :disabled="loading" @click="refreshPage">
-        <RefreshCw :size="17" :stroke-width="1.9" />
-        刷新
-      </button>
     </header>
-
-    <section class="balance-summary">
-      <div class="balance-icon"><WalletCards :size="24" :stroke-width="1.8" /></div>
-      <div>
-        <span>当前可用余额</span>
-        <strong>&yen;{{ yuanFromFen(balance) }}</strong>
-      </div>
-      <p>资金金额统一按元展示，数据来自账户资金流水。</p>
-    </section>
 
     <section class="ledger-workspace">
       <div class="filter-bar">
@@ -83,13 +65,13 @@
             </tr>
             <template v-else>
               <tr v-for="row in rows" :key="row.id">
-                <td class="time-cell">{{ formatTime(row.createdAt) }}</td>
-                <td><span :class="['type-badge', typeMeta(row).tone]">{{ typeMeta(row).label }}</span></td>
-                <td :class="['numeric', 'amount-cell', amountTone(row)]">{{ amountText(row) }}</td>
-                <td class="numeric">{{ balanceText(row.beforeMoney) }}</td>
-                <td class="numeric">{{ balanceText(row.afterMoney) }}</td>
-                <td class="reason-cell" :title="row.reason || '-'">{{ row.reason || '-' }}</td>
-                <td class="trade-cell" :title="row.outTradeNo || '-'">{{ row.outTradeNo || '-' }}</td>
+                <td data-label="发生时间" class="time-cell">{{ formatTime(row.createdAt) }}</td>
+                <td data-label="流水类型"><span :class="['type-badge', typeMeta(row).tone]">{{ typeMeta(row).label }}</span></td>
+                <td data-label="变动金额" :class="['numeric', 'amount-cell', amountTone(row)]">{{ amountText(row) }}</td>
+                <td data-label="变动前余额" class="numeric">{{ balanceText(row.beforeMoney) }}</td>
+                <td data-label="变动后余额" class="numeric">{{ balanceText(row.afterMoney) }}</td>
+                <td data-label="变动原因" class="reason-cell" :title="row.reason || '-'">{{ row.reason || '-' }}</td>
+                <td data-label="业务流水号" class="trade-cell" :title="row.outTradeNo || '-'">{{ row.outTradeNo || '-' }}</td>
               </tr>
             </template>
           </tbody>
@@ -116,17 +98,13 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ArrowLeft, CircleAlert, ReceiptText, RefreshCw, Search, WalletCards } from '@lucide/vue'
+import { CircleAlert, ReceiptText, Search } from '@lucide/vue'
 import { listMyAccountLedger } from '../api/accountLedger'
-import { getUserBalance, getUserProfile } from '../api/user'
 import { yuanFromFen } from '../utils/format'
 
-const router = useRouter()
 const rows = ref([])
-const balance = ref(0)
-const userId = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 const filters = reactive({ changeStyle: '', outTradeNo: '' })
@@ -186,21 +164,6 @@ function formatTime(value) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-async function loadBalance() {
-  try {
-    const profile = await getUserProfile()
-    const user = profile.data || {}
-    userId.value = user.userId || user.id || ''
-    balance.value = user.money || 0
-    if (userId.value) {
-      const result = await getUserBalance(userId.value)
-      balance.value = result.data || 0
-    }
-  } catch (error) {
-    console.warn('[account-ledger] load balance failed', error)
-  }
-}
-
 async function loadLedger() {
   loading.value = true
   errorMessage.value = ''
@@ -248,93 +211,175 @@ function changePageSize() {
 }
 
 function refreshPage() {
-  Promise.all([loadBalance(), loadLedger()])
+  // 必须把 Promise 交出去：下拉刷新要靠它判断何时收起指示器
+  return loadLedger()
 }
 
 onMounted(refreshPage)
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(refreshPage)
 </script>
 
 <style scoped>
 .account-ledger-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: #172033; }
-.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid #dfe6ef; }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid var(--line); }
 .page-header h2 { margin: 10px 0 0; font-size: 25px; line-height: 1.3; letter-spacing: 0; }
-.page-header p { margin: 6px 0 0; color: #6b778c; font-size: 14px; }
-.back-link { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; color: #2f6fe4; background: transparent; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.refresh-btn { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; border: 1px solid #d6dfeb; border-radius: 7px; color: #344054; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.page-header p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.back-link { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; color: var(--blue); background: transparent; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.refresh-btn { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; border: 1px solid var(--line); border-radius: 7px; color: var(--text-secondary); background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .refresh-btn:hover:not(:disabled) { border-color: #9fb4cf; background: #f8fafc; }
 .refresh-btn:disabled { opacity: .55; cursor: not-allowed; }
 
-.balance-summary { min-height: 108px; display: flex; align-items: center; gap: 16px; padding: 20px 24px; border: 1px solid #dce5f0; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
-.balance-icon { width: 48px; height: 48px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 8px; color: #2467dc; background: #eaf1ff; }
-.balance-summary span { display: block; margin-bottom: 6px; color: #6b778c; font-size: 13px; }
-.balance-summary strong { font-size: 26px; font-variant-numeric: tabular-nums; }
-.balance-summary p { margin: 0 0 0 auto; color: #7b8799; font-size: 13px; }
 
-.ledger-workspace { overflow: hidden; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
-.filter-bar { display: flex; align-items: flex-end; gap: 14px; padding: 18px 20px; border-bottom: 1px solid #e3e9f1; background: #fbfcfe; }
+.ledger-workspace { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
+.filter-bar { display: flex; align-items: flex-end; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
 .filter-bar label { display: grid; gap: 7px; }
-.filter-bar label > span { color: #526077; font-size: 12px; font-weight: 700; }
+.filter-bar label > span { color: var(--muted); font-size: 12px; font-weight: 700; }
 .filter-bar select, .filter-bar input { height: 40px; border: 1px solid #d5deea; border-radius: 7px; outline: none; color: #273449; background: #fff; font: inherit; font-size: 13px; }
 .filter-bar select { min-width: 185px; padding: 0 34px 0 12px; }
 .filter-bar input { width: min(420px, 36vw); padding: 0 12px; }
 .filter-bar select:focus, .filter-bar input:focus { border-color: #4f83e4; box-shadow: 0 0 0 3px rgba(47, 111, 228, .1); }
 .filter-actions { display: flex; gap: 8px; }
 .query-btn, .reset-btn { height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.query-btn { border: 1px solid #2f6fe4; color: #fff; background: #2f6fe4; }
-.reset-btn { border: 1px solid #d6dfeb; color: #526077; background: #fff; }
+.query-btn { border: 1px solid var(--blue); color: #fff; background: var(--blue); }
+.reset-btn { border: 1px solid var(--line); color: var(--muted); background: #fff; }
 .query-btn:disabled, .reset-btn:disabled { opacity: .55; cursor: not-allowed; }
 
 .error-banner { display: flex; align-items: center; gap: 9px; margin: 16px 20px 0; padding: 11px 12px; border: 1px solid #f0c9c9; border-radius: 6px; color: #b42318; background: #fff7f7; font-size: 13px; }
 .error-banner span { flex: 1; }
 .error-banner button { border: 0; color: #b42318; background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
 .table-wrap { overflow-x: auto; }
-.ledger-table { width: 100%; min-width: 1180px; border-collapse: collapse; table-layout: fixed; }
+.ledger-table { width: 100%; min-width: 1000px; border-collapse: collapse; table-layout: fixed; }
 .ledger-table th { padding: 12px 14px; border-bottom: 1px solid #dfe6ee; color: #637087; background: #f6f8fb; text-align: left; font-size: 12px; font-weight: 700; }
-.ledger-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: #344054; font-size: 13px; vertical-align: middle; }
+.ledger-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: var(--text-secondary); font-size: 13px; vertical-align: middle; }
 .ledger-table tbody tr:last-child td { border-bottom: 0; }
 .ledger-table tbody tr:hover { background: #f9fbfd; }
-.ledger-table th:nth-child(1) { width: 155px; }
-.ledger-table th:nth-child(2) { width: 130px; }
-.ledger-table th:nth-child(3), .ledger-table th:nth-child(4), .ledger-table th:nth-child(5) { width: 145px; }
-.ledger-table th:nth-child(6) { width: 260px; }
-.ledger-table th:nth-child(7) { width: 250px; }
+/* 各列宽度之和原为 1230px，而工作区容器只有 1136px，桌面端一直在横向溢出。
+   收紧固定列，把「变动原因」留成弹性列吃掉剩余宽度。 */
+.ledger-table th:nth-child(1) { width: 150px; }
+.ledger-table th:nth-child(2) { width: 116px; }
+.ledger-table th:nth-child(3), .ledger-table th:nth-child(4), .ledger-table th:nth-child(5) { width: 128px; }
+.ledger-table th:nth-child(7) { width: 190px; }
 .numeric { text-align: right !important; font-variant-numeric: tabular-nums; }
 .amount-cell { font-weight: 800; }
 .amount-cell.income { color: #16875d; }
 .amount-cell.expense { color: #c2413b; }
 .amount-cell.frozen { color: #b35c00; }
-.amount-cell.neutral { color: #2f6fe4; }
+.amount-cell.neutral { color: var(--blue); }
 .type-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border-radius: 5px; font-size: 12px; font-weight: 700; }
 .type-badge.income { color: #137a54; background: #e9f8f0; }
 .type-badge.expense { color: #b93832; background: #fff0ef; }
 .type-badge.adjust { color: #75531a; background: #fff6df; }
-.type-badge.frozen { color: #245fc8; background: #eaf1ff; }
+.type-badge.frozen { color: #245fc8; background: var(--line-soft); }
 .type-badge.released { color: #5d6675; background: #eef1f5; }
 .time-cell { white-space: nowrap; }
 .reason-cell, .trade-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trade-cell { color: #5f6d82; font-family: Consolas, 'Courier New', monospace; font-size: 12px !important; }
 .loading-row td { height: 210px; text-align: center; }
-.loading-row span { width: 28px; height: 28px; display: inline-block; border: 3px solid #dce6f6; border-top-color: #2f6fe4; border-radius: 50%; animation: spin .8s linear infinite; }
+.loading-row span { width: 28px; height: 28px; display: inline-block; border: 3px solid #dce6f6; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
 .empty-row { height: 230px; text-align: center; color: #8390a3 !important; }
 .empty-row svg, .empty-row strong, .empty-row span { display: block; margin: 0 auto; }
 .empty-row strong { margin-top: 10px; color: #5b687c; font-size: 14px; }
 .empty-row span { margin-top: 5px; font-size: 12px; }
-.pagination-bar { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 20px; border-top: 1px solid #e3e9f1; color: #68758a; font-size: 13px; }
+.pagination-bar { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 20px; border-top: 1px solid var(--line); color: #68758a; font-size: 13px; }
 .pagination-bar > div { display: flex; align-items: center; gap: 12px; }
-.pagination-bar select, .page-controls button { height: 34px; border: 1px solid #d6dfeb; border-radius: 6px; color: #455269; background: #fff; font: inherit; font-size: 12px; }
+.pagination-bar select, .page-controls button { height: 34px; border: 1px solid var(--line); border-radius: 6px; color: var(--text-secondary); background: #fff; font: inherit; font-size: 12px; }
 .pagination-bar select { padding: 0 28px 0 10px; }
 .page-controls button { min-width: 66px; padding: 0 12px; cursor: pointer; }
 .page-controls button:disabled { color: #a8b2c1; background: #f7f9fb; cursor: not-allowed; }
-.page-controls strong { min-width: 62px; color: #455269; text-align: center; font-size: 12px; }
+.page-controls strong { min-width: 62px; color: var(--text-secondary); text-align: center; font-size: 12px; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 900px) {
   .page-header { align-items: flex-start; }
-  .balance-summary { align-items: flex-start; flex-wrap: wrap; }
-  .balance-summary p { width: 100%; margin: 0; }
   .filter-bar { align-items: stretch; flex-direction: column; }
   .filter-bar input, .filter-bar select { width: 100%; }
   .filter-actions { justify-content: flex-end; }
+}
+
+/* 移动端：筛选与汇总单列 */
+@media (max-width: 768px) {
+  .ledger-filters, .ledger-summary { grid-template-columns: minmax(0, 1fr) !important; }
+  .ledger-filters input, .ledger-filters select, .ledger-filters button { width: 100%; }
+}
+
+/* 移动端：表格改为堆叠行。
+   横向滚动在手机上等于把「金额」这一最关键的信息推到屏幕外，
+   所以这里不是缩小表格，而是把每条流水重排成一张两列的小卡片。 */
+@media (max-width: 768px) {
+  .ledger-table {
+    /* 这三条必须一起去掉：min-width 和 fixed 布局会让列宽在 display:block 后依然生效 */
+    min-width: 0;
+    table-layout: auto;
+    display: block;
+  }
+  .ledger-table thead { display: none; }
+  .ledger-table tbody { display: block; }
+  .ledger-table th { width: auto !important; }
+
+  .ledger-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "type   amount"
+      "time   after"
+      "reason reason"
+      "trade  trade";
+    gap: 4px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .ledger-table tbody tr:last-child { border-bottom: 0; }
+
+  .ledger-table tbody td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .ledger-table td[data-label="流水类型"] { grid-area: type; }
+  .ledger-table td[data-label="变动金额"] {
+    grid-area: amount;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: right;
+  }
+  .ledger-table td[data-label="发生时间"] {
+    grid-area: time;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .ledger-table td[data-label="变动后余额"] {
+    grid-area: after;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: right;
+  }
+  .ledger-table td[data-label="变动后余额"]::before { content: "余额 "; }
+
+  /* 变动前余额可由「金额 + 变动后余额」推出，小屏上是纯噪音 */
+  .ledger-table td[data-label="变动前余额"] { display: none; }
+
+  .ledger-table td[data-label="变动原因"] {
+    grid-area: reason;
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    white-space: normal;
+  }
+  .ledger-table td[data-label="业务流水号"] {
+    grid-area: trade;
+    color: #8a94a6;
+    font-size: 11px;
+    word-break: break-all;
+    white-space: normal;
+  }
+  .ledger-table td[data-label="业务流水号"]::before { content: "流水号 "; }
+
+  /* 空态与加载态是 colspan 单元格，不参与上面的分区 */
+  .ledger-table .loading-row, .ledger-table .empty-row { display: block; }
+  .ledger-table .loading-row td, .ledger-table .empty-row { display: block; text-align: center; }
 }
 </style>

@@ -5,9 +5,6 @@
         <p class="eyebrow">消息中心</p>
         <h2>消息通知</h2>
       </div>
-      <button class="ghost-light-btn" :disabled="loading" @click="loadMessages">
-        {{ loading ? '刷新中...' : '刷新' }}
-      </button>
     </div>
 
     <div class="message-tabs">
@@ -19,20 +16,21 @@
     <div class="messages-panel">
       <div v-if="loading" class="state-box">正在加载消息...</div>
       <div v-else-if="filteredMessages.length === 0" class="state-box">暂无消息通知</div>
+      <!-- 两行结构：标题+时间 / 摘要+操作。
+           去掉了原来的「站内信」标签（用户就在站内信页里，是废话）
+           和「已读/未读」标签（左侧圆点已经表达） -->
       <article v-for="item in filteredMessages" :key="item.id" class="message-card" :class="{ unread: !isRead(item) }" @click="openDetail(item)">
-        <div class="message-status-dot"></div>
+        <span class="message-status-dot" :title="isRead(item) ? '已读' : '未读'"></span>
         <div class="message-main">
-          <div class="message-title-row">
+          <div class="message-line-1">
             <h3>{{ item.title || '消息通知' }}</h3>
-            <span class="message-time">{{ formatTime(item.createTime) }}</span>
+            <time>{{ formatTime(item.createTime) }}</time>
           </div>
-          <p>{{ item.content || '-' }}</p>
-          <div class="message-meta">
-            <span v-for="channel in channelLabels(item.badge)" :key="channel" class="channel-tag">{{ channel }}</span>
-            <span class="read-tag" :class="{ unread: !isRead(item) }">{{ isRead(item) ? '已读' : '未读' }}</span>
+          <div class="message-line-2">
+            <p>{{ item.content || '-' }}</p>
+            <button v-if="!isRead(item)" class="msg-read-btn" type="button" @click.stop="markRead(item)">标记已读</button>
           </div>
         </div>
-        <button v-if="!isRead(item)" class="text-btn" type="button" @click.stop="markRead(item)">标记已读</button>
       </article>
     </div>
 
@@ -62,6 +60,7 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, ref } from 'vue'
 import AppModal from '../components/AppModal.vue'
 import { getUserNotices, markNoticeRead } from '../api/notice'
@@ -121,6 +120,8 @@ async function markRead(item) {
 }
 
 onMounted(loadMessages)
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(loadMessages)
 </script>
 
 <style scoped>
@@ -171,39 +172,54 @@ onMounted(loadMessages)
   font-weight: 700;
 }
 
+/* 下划线式切换，去掉胶囊底色块 */
 .message-tabs {
   display: flex;
-  gap: 0;
-  margin: 16px 0 12px;
-  padding: 3px;
-  width: fit-content;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  background: #f6f8fb;
+  gap: 24px;
+  margin: 14px 0 0;
+  padding: 0;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
 }
 
 .message-tabs button {
-  min-width: 82px;
-  height: 36px;
+  position: relative;
+  min-width: 0;
+  height: 34px;
+  padding: 0;
   border: 0;
-  border-radius: 6px;
-  color: #667085;
+  border-radius: 0;
+  color: var(--muted);
   background: transparent;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .message-tabs button.active {
-  color: var(--blue);
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+  color: var(--text);
+  background: transparent;
+  font-weight: 600;
+  box-shadow: none;
+}
+.message-tabs button.active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--text);
 }
 
+/* 一整块面 + 细线分行，而不是一条消息一张卡 */
 .messages-panel {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: var(--shadow-panel);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: none;
 }
 
 .state-box {
@@ -220,8 +236,7 @@ onMounted(loadMessages)
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  min-height: 92px;
-  padding: 18px 20px;
+  padding: 13px 18px;
   border: 0;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
@@ -231,88 +246,22 @@ onMounted(loadMessages)
 }
 
 .message-card:hover {
-  background: #f8fbff;
+  background: var(--line-soft);
 }
 
 .message-card:last-child { border-bottom: 0; }
 
-.message-status-dot {
-  width: 10px;
-  height: 10px;
-  margin-top: 8px;
-  border-radius: 50%;
-  background: #cbd5e1;
-}
 
-.message-card.unread .message-status-dot {
-  background: var(--blue);
-  box-shadow: 0 0 0 4px #eaf1ff;
-}
 
-.message-main {
-  flex: 1;
-  min-width: 0;
-}
 
-.message-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-}
 
-.message-title-row h3 {
-  margin: 0;
-  color: #101828;
-  font-size: 17px;
-}
 
-.message-time {
-  flex: none;
-  color: #98a2b3;
-  font-size: 13px;
-}
 
-.message-main p {
-  display: -webkit-box;
-  overflow: hidden;
-  margin: 8px 0 0;
-  color: #667085;
-  line-height: 1.7;
-  white-space: normal;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
 
-.message-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
 
-.channel-tag,
-.read-tag {
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 9px;
-  border-radius: 999px;
-  color: #175cd3;
-  background: #eff8ff;
-  font-size: 12px;
-  font-weight: 700;
-}
+/* 标签退化为纯文字：一行里堆两三个彩色胶囊，整列看下来就是密密麻麻的色块 */
 
-.read-tag {
-  color: #667085;
-  background: #f2f4f7;
-}
 
-.read-tag.unread {
-  color: #b54708;
-  background: #fffaeb;
-}
 
 .text-btn {
   border: 0;
@@ -348,5 +297,120 @@ onMounted(loadMessages)
   .ghost-light-btn { width: 100%; }
   .message-title-row { align-items: flex-start; flex-direction: column; gap: 6px; }
   .message-card { padding: 16px; }
+}
+
+/* 移动端：公告列表与正文改为上下排列 */
+@media (max-width: 768px) {
+  .messages-hero { flex-direction: column; align-items: stretch; gap: 10px; }
+  .messages-layout { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ---- 消息行：两行结构，密度优先 ---- */
+.message-card {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.message-status-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.message-card.unread .message-status-dot {
+  background: var(--cinnabar);
+}
+
+.message-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-line-1 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.message-line-1 h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-card.unread .message-line-1 h3 {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.message-line-1 time {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.message-line-2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+/* 摘要只占一行，超出省略——列表是用来扫的，细节点进去看 */
+.message-line-2 p {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-read-btn {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12.5px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .14s ease, color .14s ease;
+}
+
+/* 「标记已读」平时隐藏，悬停整行才出现，避免每行都挂个按钮 */
+.message-card:hover .msg-read-btn { opacity: 1; }
+.msg-read-btn:hover { color: var(--text); }
+
+@media (max-width: 768px) {
+  /* 手机没有 hover，按钮只能常驻；但常驻后它是无边框纯文字、又落在正文正下方，
+     读起来像正文的最后一行，所以这里给它明确的按钮外观并靠右站开 */
+  .msg-read-btn {
+    opacity: 1;
+    align-self: flex-end;
+    margin-top: 2px;
+    padding: 5px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    background: #fff;
+  }
+
+  .message-line-1 { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .message-line-2 { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .message-line-2 p { white-space: normal; }
 }
 </style>

@@ -4,19 +4,28 @@
       <div>
         <h2>查询记录</h2>
       </div>
-      <router-link class="primary-btn" to="/query/create">{{ canOnlineTest ? '在线测试' : '发起查询' }}</router-link>
+      <div class="records-head-actions">
+        <button class="ghost-btn" type="button" :disabled="exporting || !records.length" @click="exportCsv">
+          {{ exporting ? '导出中…' : '导出' }}
+        </button>
+        <router-link class="primary-btn" to="/query/create">{{ canOnlineTest ? '在线测试' : '发起背调' }}</router-link>
+      </div>
     </div>
+
+    <!-- 状态放 Tab 而不是下拉：进这一页最常见的动作就是「看哪些在跑 / 哪些出了」，
+         一次点击就该到位，也让各状态一眼可见 -->
+    <nav class="status-tabs" aria-label="按状态筛选">
+      <button
+        v-for="tab in STATUS_TABS"
+        :key="tab.value"
+        type="button"
+        :class="{ active: filters.status === tab.value }"
+        @click="selectStatus(tab.value)"
+      >{{ tab.label }}</button>
+    </nav>
 
     <div class="toolbar">
       <input v-model.trim="filters.keyword" placeholder="搜索姓名 / 身份证号" @keyup.enter="search">
-      <select v-model="filters.status" @change="search">
-        <option value="">全部状态</option>
-        <option v-for="opt in DISPLAY_STATUS_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-      </select>
-      <span class="toolbar-label">提交时间</span>
-      <input v-model="filters.beginTime" type="date" @change="search">
-      <span class="toolbar-sep">—</span>
-      <input v-model="filters.endTime" type="date" @change="search">
       <button class="ghost-btn" @click="search">查询</button>
       <button v-if="hasFilters" class="text-btn" @click="resetFilters">重置</button>
     </div>
@@ -38,19 +47,23 @@
         <tbody>
           <tr v-if="loading" class="skeleton-table-row"><td colspan="7"><span></span></td></tr>
           <tr v-else-if="records.length === 0"><td colspan="7" class="table-empty">暂无符合条件的查询记录</td></tr>
-          <tr v-for="item in records" :key="item.id">
-            <td class="record-name"><strong>{{ item.name }}</strong></td>
-            <td class="record-type">{{ item.type }}</td>
-            <td class="record-identity">{{ maskIdCard(item.idCard) }}</td>
-            <td class="record-phone">{{ maskPhone(item.phone) }}</td>
-            <td class="record-time">{{ formatDateTime(item.time) }}</td>
-            <td>
+          <tr v-for="item in records" :key="item.id" :class="{ 'row-expanded': expandedRows[item.id] }">
+            <td data-label="姓名" class="record-name"><strong>{{ item.name }}</strong></td>
+            <td data-label="查询类型" class="record-type">{{ item.type }}</td>
+            <td data-label="身份证号" class="record-identity">{{ maskIdCard(item.idCard) }}</td>
+            <td data-label="手机号" class="record-phone">{{ maskPhone(item.phone) }}</td>
+            <td data-label="提交时间" class="record-time">{{ formatDateTime(item.time) }}</td>
+            <td data-label="状态">
               <div class="record-status-cell">
                 <span class="status-pill" :class="statusClass(item.displayStatus)">{{ statusText(item.displayStatus, item.displayStatusText) }}</span>
                 <div v-if="item.statusReason" class="record-status-reason">{{ item.statusReason }}</div>
               </div>
             </td>
-            <td class="actions-cell">
+            <td data-label="操作" class="actions-cell">
+              <!-- 仅窄屏出现：手机上默认只展示姓名/时间/状态，其余字段折叠 -->
+              <button class="text-btn mobile-only-btn" @click="toggleRow(item.id)">
+                {{ expandedRows[item.id] ? '收起' : '详情' }}
+              </button>
               <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="openReport(item)">查看报告</button>
               <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="downloadPdf(item)">下载PDF</button>
             </td>
@@ -76,25 +89,46 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { listData } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserProfile } from '../api/user'
-import { DISPLAY_STATUS_OPTIONS, formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
+import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
 
 const router = useRouter()
+
+// 六个后端状态压成五个 Tab：无结果 / 查询失败 / 已退款 对用户是同一件事
+// ——没拿到报告、钱已退回，分成三个 Tab 只会把高频的三项挤窄。
+// 'unfinished' 由后端 FormDataMapper 的同名分支取这三者的并集。
+const STATUS_TABS = [
+  { value: '', label: '全部' },
+  { value: 'waiting_auth', label: '待授权' },
+  { value: 'processing', label: '处理中' },
+  { value: 'success', label: '已完成' },
+  { value: 'unfinished', label: '未出结果' }
+]
+
 const loading = ref(false)
+const exporting = ref(false)
 const records = ref([])
 const total = ref(0)
+// 手机端记录卡默认只显示姓名/提交时间/状态/操作，
+// 查询类型、身份证号、手机号折叠起来——扫列表时看的是"谁的、什么状态"，
+// 脱敏后的证件号在列表里参考价值低却各占一行。
+const expandedRows = ref({})
+function toggleRow(id) {
+  expandedRows.value = { ...expandedRows.value, [id]: !expandedRows.value[id] }
+}
 const queryTypeMap = ref({})
 const message = ref('')
 const messageType = ref('info')
 const profile = ref({})
-const filters = reactive({ pageNum: 1, pageSize: 10, keyword: '', status: '', beginTime: '', endTime: '' })
+const filters = reactive({ pageNum: 1, pageSize: 10, keyword: '', status: '' })
 
 const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / filters.pageSize)))
-const hasFilters = computed(() => !!(filters.keyword || filters.status || filters.beginTime || filters.endTime))
+const hasFilters = computed(() => !!(filters.keyword || filters.status))
 const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
 
 function search() {
@@ -102,11 +136,83 @@ function search() {
   loadRecords()
 }
 
+function selectStatus(value) {
+  if (filters.status === value) return
+  filters.status = value
+  search()
+}
+
+/* ---- 导出 ----
+   导出的是当前筛选条件下的全部记录，不是当前这一页——
+   HR 拿它做入职台账或跟财务对账，只给一页没有意义。
+   证件号和手机号按列表同样的规则脱敏后再写入：
+   导出的文件会离开系统（发邮件、存网盘），不该比页面上看到的更敏感。 */
+const EXPORT_PAGE_SIZE = 200
+const EXPORT_MAX_PAGES = 25
+
+function csvCell(value) {
+  const text = value === null || value === undefined ? '' : String(value)
+  // 前导 = + - @ 会被 Excel 当公式执行，补一个单引号打断
+  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text
+  return `"${safe.replace(/"/g, '""')}"`
+}
+
+async function exportCsv() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    const base = { pageSize: EXPORT_PAGE_SIZE }
+    if (filters.keyword) base.idCard = filters.keyword
+    if (filters.status) base.displayStatusFilter = filters.status
+
+    const all = []
+    for (let page = 1; page <= EXPORT_MAX_PAGES; page += 1) {
+      const res = await listData({ ...base, pageNum: page })
+      const rows = res.rows || []
+      all.push(...rows.map(item => mapRecord(item, queryTypeMap.value)))
+      if (all.length >= (res.total || 0) || rows.length < EXPORT_PAGE_SIZE) break
+    }
+
+    if (!all.length) {
+      show('当前条件下没有可导出的记录', 'error')
+      return
+    }
+
+    const header = ['姓名', '查询类型', '身份证号', '手机号', '提交时间', '状态']
+    const lines = [header.map(csvCell).join(',')]
+    all.forEach(item => {
+      lines.push([
+        item.name,
+        item.type,
+        maskIdCard(item.idCard),
+        maskPhone(item.phone),
+        formatDateTime(item.time),
+        statusText(item.displayStatus, item.displayStatusText)
+      ].map(csvCell).join(','))
+    })
+
+    // BOM 必须有，否则 Excel 按 GBK 解析这份 UTF-8 文件，中文全是乱码
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    const stamp = new Date().toISOString().slice(0, 10)
+    link.download = `背调查询记录_${stamp}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    show(`已导出 ${all.length} 条记录`)
+  } catch (err) {
+    show(err?.msg || '导出失败，请稍后重试', 'error')
+  } finally {
+    exporting.value = false
+  }
+}
+
 function resetFilters() {
   filters.keyword = ''
   filters.status = ''
-  filters.beginTime = ''
-  filters.endTime = ''
   search()
 }
 
@@ -143,21 +249,27 @@ async function loadQueryTypes() {
   }
 }
 
+// 连续切换状态 Tab 会同时挂起多个请求，而这个接口并不快。
+// 没有序号的话，先发的请求后返回就会覆盖掉后发的结果——
+// 表现为「点了已完成，列表里却是待授权的数据」。只认最后一次发出的请求。
+let loadSeq = 0
+
 async function loadRecords() {
+  const seq = ++loadSeq
   loading.value = true
   try {
     const params = { pageNum: filters.pageNum, pageSize: filters.pageSize }
     if (filters.keyword) params.idCard = filters.keyword
     if (filters.status) params.displayStatusFilter = filters.status
-    if (filters.beginTime) params['params[beginTime]'] = `${filters.beginTime} 00:00:00`
-    if (filters.endTime) params['params[endTime]'] = `${filters.endTime} 23:59:59`
     const res = await listData(params)
+    if (seq !== loadSeq) return
     total.value = res.total || 0
     records.value = (res.rows || []).map(item => mapRecord(item, queryTypeMap.value))
   } catch (err) {
+    if (seq !== loadSeq) return
     show(err?.msg || '查询记录加载失败', 'error')
   } finally {
-    loading.value = false
+    if (seq === loadSeq) loading.value = false
   }
 }
 
@@ -167,7 +279,7 @@ function changePage(delta) {
 }
 
 function openReport(item) {
-  if (String(item.displayStatus) !== 'success') return show('当前状态不能查看报告', 'error')
+  if (String(item.displayStatus) !== 'success') return show('该记录尚未生成报告，暂时无法查看', 'error')
   router.push(`/report/${item.id}`)
 }
 
@@ -204,5 +316,7 @@ onMounted(async () => {
   await Promise.all([loadQueryTypes(), profilePromise])
   await loadRecords()
 })
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(loadRecords)
 </script>
 

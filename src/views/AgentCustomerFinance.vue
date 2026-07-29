@@ -9,10 +9,6 @@
         <h2>客户资金明细</h2>
         <p>独立查看该客户的充值和消费流水，数据按时间倒序展示。</p>
       </div>
-      <button class="refresh-btn" type="button" :disabled="loadingCustomer || loadingRows" @click="refreshAll">
-        <RefreshCw :size="17" :stroke-width="1.9" />
-        刷新
-      </button>
     </header>
 
     <section v-if="loadingCustomer" class="customer-summary summary-loading" aria-label="正在加载客户信息">
@@ -49,7 +45,7 @@
       <header class="ledger-toolbar">
         <div>
           <h3>资金流水</h3>
-          <p>每页仅加载当前所需记录，流水较多时不会拖慢客户列表。</p>
+          <p>按时间倒序展示该客户的充值与消费明细。</p>
         </div>
         <div class="ledger-tabs" role="tablist" aria-label="资金流水类型">
           <button type="button" :class="{ active: activeType === 'recharge' }" @click="switchType('recharge')">
@@ -86,13 +82,13 @@
             <tr v-else-if="!rows.length"><td colspan="7" class="empty-row">暂无{{ activeType === 'recharge' ? '充值' : '消费' }}流水</td></tr>
             <template v-else>
               <tr v-for="row in rows" :key="row.id">
-                <td>{{ formatTime(row.createdAt) }}</td>
-                <td><span :class="['type-badge', activeType]">{{ activeType === 'recharge' ? (row.businessType || '充值') : '消费' }}</span></td>
-                <td class="numeric amount" :class="activeType">{{ activeType === 'recharge' ? '+' : '-' }}&yen;{{ money(row.changeAmount) }}</td>
-                <td class="numeric">{{ balanceText(row.beforeAmount) }}</td>
-                <td class="numeric">{{ balanceText(row.afterAmount) }}</td>
-                <td class="reason-cell">{{ row.reason || '-' }}</td>
-                <td class="trade-number" :title="row.outTradeNo || '-'">{{ row.outTradeNo || '-' }}</td>
+                <td data-label="发生时间">{{ formatTime(row.createdAt) }}</td>
+                <td data-label="流水类型"><span :class="['type-badge', activeType]">{{ activeType === 'recharge' ? (row.businessType || '充值') : '消费' }}</span></td>
+                <td data-label="变动金额" class="numeric amount" :class="activeType">{{ activeType === 'recharge' ? '+' : '-' }}&yen;{{ money(row.changeAmount) }}</td>
+                <td data-label="变动前余额" class="numeric">{{ balanceText(row.beforeAmount) }}</td>
+                <td data-label="变动后余额" class="numeric">{{ balanceText(row.afterAmount) }}</td>
+                <td data-label="变动原因" class="reason-cell">{{ row.reason || '-' }}</td>
+                <td data-label="业务流水号" class="trade-number" :title="row.outTradeNo || '-'">{{ row.outTradeNo || '-' }}</td>
               </tr>
             </template>
           </tbody>
@@ -119,9 +115,10 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, CircleAlert, CircleMinus, CirclePlus, RefreshCw } from '@lucide/vue'
+import { ArrowLeft, CircleAlert, CircleMinus, CirclePlus } from '@lucide/vue'
 import { getAgentCustomer, listAgentCustomerConsumptions, listAgentCustomerRecharges } from '../api/agent'
 
 const route = useRoute()
@@ -221,6 +218,8 @@ function refreshAll() {
 }
 
 onMounted(refreshAll)
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(refreshAll)
 </script>
 
 <style scoped>
@@ -263,16 +262,16 @@ onMounted(refreshAll)
 .ledger-tabs button.active { color: #245fc8; background: #fff; box-shadow: 0 1px 4px rgba(31, 50, 81, .1); }
 .ledger-error { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 16px 20px 0; padding: 10px 12px; border: 1px solid #f0c9c9; border-radius: 6px; color: #b42318; background: #fff7f7; font-size: 13px; }
 .ledger-table-wrap { overflow: auto; }
-.ledger-table { width: 100%; min-width: 1180px; border-collapse: collapse; table-layout: fixed; }
+.ledger-table { width: 100%; min-width: 1000px; border-collapse: collapse; table-layout: fixed; }
 .ledger-table th { padding: 12px 14px; border-bottom: 1px solid #dfe6ee; color: #637087; background: #f6f8fb; text-align: left; font-size: 12px; font-weight: 700; }
 .ledger-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: #344054; font-size: 13px; vertical-align: middle; }
 .ledger-table tbody tr:last-child td { border-bottom: 0; }
 .ledger-table tbody tr:hover { background: #f9fbfd; }
-.ledger-table th:nth-child(1) { width: 155px; }
+/* 与资金流水同因：列宽合计 1195px 超出容器，「变动原因」改为弹性列 */
+.ledger-table th:nth-child(1) { width: 150px; }
 .ledger-table th:nth-child(2) { width: 90px; }
-.ledger-table th:nth-child(3), .ledger-table th:nth-child(4), .ledger-table th:nth-child(5) { width: 145px; }
-.ledger-table th:nth-child(6) { width: 260px; }
-.ledger-table th:nth-child(7) { width: 250px; }
+.ledger-table th:nth-child(3), .ledger-table th:nth-child(4), .ledger-table th:nth-child(5) { width: 128px; }
+.ledger-table th:nth-child(7) { width: 190px; }
 .numeric { text-align: right !important; font-variant-numeric: tabular-nums; }
 .amount { font-weight: 800; }
 .amount.recharge { color: #16875d; }
@@ -309,5 +308,49 @@ onMounted(refreshAll)
   .ledger-tabs { width: 100%; }
   .ledger-tabs button { flex: 1; justify-content: center; }
   .ledger-pagination > div { justify-content: space-between; }
+}
+
+/* 移动端：客户资金页头与汇总单列 */
+@media (max-width: 768px) {
+  .finance-page-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .finance-summary, .ledger-filters { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* 移动端：流水表改堆叠行，与「资金流水」页保持同一种读法 */
+@media (max-width: 768px) {
+  .ledger-table {
+    min-width: 0;
+    table-layout: auto;
+    display: block;
+  }
+  .ledger-table thead { display: none; }
+  .ledger-table tbody { display: block; }
+  .ledger-table th { width: auto !important; }
+
+  .ledger-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "type   amount"
+      "time   after"
+      "reason reason"
+      "trade  trade";
+    gap: 4px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9edf3;
+  }
+  .ledger-table tbody tr:last-child { border-bottom: 0; }
+
+  .ledger-table tbody td { display: block; padding: 0; border: 0; min-width: 0; }
+
+  .ledger-table td[data-label="流水类型"] { grid-area: type; }
+  .ledger-table td[data-label="变动金额"] { grid-area: amount; font-size: 16px; font-weight: 700; text-align: right; }
+  .ledger-table td[data-label="发生时间"] { grid-area: time; color: var(--muted); font-size: 12px; }
+  .ledger-table td[data-label="变动后余额"] { grid-area: after; color: var(--muted); font-size: 12px; text-align: right; }
+  .ledger-table td[data-label="变动后余额"]::before { content: "余额 "; }
+  .ledger-table td[data-label="变动前余额"] { display: none; }
+  .ledger-table td[data-label="变动原因"] { grid-area: reason; margin-top: 6px; font-size: 12.5px; white-space: normal; }
+  .ledger-table td[data-label="业务流水号"] { grid-area: trade; color: #8a94a6; font-size: 11px; word-break: break-all; white-space: normal; }
+  .ledger-table td[data-label="业务流水号"]::before { content: "流水号 "; }
 }
 </style>

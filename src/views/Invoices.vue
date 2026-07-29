@@ -55,9 +55,6 @@
         <div>
           <h3>开票记录</h3>
         </div>
-        <button class="ghost-btn" :disabled="loading" @click="fetchInvoices">
-          {{ loading ? '刷新中...' : '刷新' }}
-        </button>
       </div>
 
       <div class="invoice-table-wrap">
@@ -74,22 +71,22 @@
           </thead>
           <tbody v-if="invoiceList.length">
             <tr v-for="item in invoiceList" :key="item.id">
-              <td>{{ item.createdate || '-' }}</td>
-              <td class="title-cell">{{ item.title || '-' }}</td>
-              <td class="amount-cell">{{ formatAmount(item.amount) }}</td>
-              <td>
+              <td data-label="申请时间">{{ item.createdate || '-' }}</td>
+              <td data-label="发票抬头" class="title-cell">{{ item.title || '-' }}</td>
+              <td data-label="发票金额" class="amount-cell">{{ formatAmount(item.amount) }}</td>
+              <td data-label="开票状态">
                 <span class="invoice-status" :class="statusMeta(item.status).className">
                   {{ statusMeta(item.status).label }}
                 </span>
               </td>
-              <td>
+              <td data-label="发票详情">
                 <div class="detail-lines">
                   <span>{{ typeLabel(item.types) }}</span>
                   <span v-if="item.taxno">税号：{{ item.taxno }}</span>
                   <span v-if="item.remark">备注：{{ item.remark }}</span>
                 </div>
               </td>
-              <td>
+              <td data-label="操作">
                 <button class="text-btn" @click="showDetail(item)">查看详情</button>
               </td>
             </tr>
@@ -101,7 +98,7 @@
             <span></span>
           </div>
           <strong>{{ loading ? '正在加载发票记录' : '暂无开票记录' }}</strong>
-          <p>{{ isSubAccount ? '子账号无权申请发票，请联系主账号开票。' : '需要开票时，点击右上角“我要开票”提交申请。' }}</p>
+          <p>{{ isSubAccount ? '子账号无权申请发票，请联系主账号开票。' : '需要开票时，点击上方“我要开票”提交申请。' }}</p>
         </div>
       </div>
     </div>
@@ -184,6 +181,7 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { BadgeCheck, CircleX, Clock3, FileText } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
@@ -308,7 +306,7 @@ async function submitInvoice() {
     applyVisible.value = false
   } catch (err) {
     messageType.value = 'error'
-    message.value = err?.msg || '提交发票申请失败'
+    message.value = err?.msg || '提交发票申请失败，请稍后重试'
   } finally {
     submitting.value = false
   }
@@ -331,6 +329,8 @@ onMounted(async () => {
   await loadProfile()
   await fetchInvoices()
 })
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(fetchInvoices)
 </script>
 
 <style scoped>
@@ -736,13 +736,87 @@ onMounted(async () => {
     width: 100%;
   }
 
+  /* 四个统计原先在小屏拉成单列，四个数字占掉四屏高度。
+     改 2×2 后一屏看完，同时去掉装饰图标腾出字宽。 */
   .invoice-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .stat-card {
+    padding: 14px 16px;
+    border-bottom: 1px solid #edf1f6;
+  }
+
+  .stat-card:nth-child(2n) { border-right: 0; }
+  .stat-card:nth-last-child(-n + 2) { border-bottom: 0; }
+  .stat-card .stat-icon { display: none; }
+  .stat-card strong { margin-top: 6px; }
 
   .invoice-form {
     grid-template-columns: 1fr;
   }
 
+}
+
+/* 移动端：发票表格改为堆叠行。
+   六列 980px 在手机上要横拖两屏半，抬头和金额都看不全。 */
+@media (max-width: 768px) {
+  .invoice-table-wrap { min-height: 0; overflow-x: visible; }
+  .invoice-table {
+    /* min-width 与 fixed 布局必须一起解除，否则 display:block 后列宽仍生效 */
+    min-width: 0;
+    table-layout: auto;
+    display: block;
+  }
+  .invoice-table thead { display: none; }
+  .invoice-table tbody { display: block; }
+
+  .invoice-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "title  amount"
+      "time   status"
+      "detail detail"
+      "action action";
+    gap: 4px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .invoice-table tbody tr:last-child { border-bottom: 0; }
+
+  .invoice-table tbody td {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .invoice-table td[data-label="发票抬头"] {
+    grid-area: title;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .invoice-table td[data-label="发票金额"] {
+    grid-area: amount;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: right;
+  }
+  .invoice-table td[data-label="申请时间"] {
+    grid-area: time;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .invoice-table td[data-label="开票状态"] { grid-area: status; text-align: right; }
+  .invoice-table td[data-label="发票详情"] { grid-area: detail; margin-top: 6px; }
+  .invoice-table td[data-label="发票详情"] .detail-lines { font-size: 12px; }
+  .invoice-table td[data-label="操作"] { grid-area: action; margin-top: 8px; }
+  .invoice-table td[data-label="操作"] .text-btn { padding: 0; }
+
+  .invoice-hero { flex-direction: column; align-items: stretch; gap: 12px; }
+  .invoice-hero .primary-btn { width: 100%; justify-content: center; }
+  .invoice-form-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
 </style>

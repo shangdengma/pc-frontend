@@ -9,6 +9,10 @@
       <button v-if="!isSubAccount" class="primary-btn" type="button" @click="openCreate"><Plus :size="17" />{{ labels.addSub }}</button>
     </section>
 
+    <!-- 页面级提示：弹窗里的 message 只在弹窗打开时可见，
+         而删除是在列表上直接触发的，失败信息必须有地方落 -->
+    <div v-if="pageMessage" class="form-message" :class="pageMessageType">{{ pageMessage }}</div>
+
     <section v-if="isSubAccount" class="sub-card no-permission-card">
       <div class="no-permission-icon"><ShieldAlert :size="23" :stroke-width="1.8" /></div>
       <h3>子账号无权管理子账号</h3>
@@ -30,7 +34,6 @@
     <section v-if="!isSubAccount" class="sub-card">
       <div class="card-head">
         <div><h3>{{ labels.subList }}</h3><p>{{ labels.listDesc }}</p></div>
-        <button class="ghost-btn" type="button" @click="loadList">{{ labels.refresh }}</button>
       </div>
       <div v-if="loading" class="empty-state">{{ labels.loading }}</div>
       <div v-else-if="!accounts.length" class="empty-state">{{ labels.empty }}</div>
@@ -94,11 +97,11 @@
               <tr v-if="detailLoading"><td colspan="6">正在加载...</td></tr>
               <tr v-else-if="!detailRows.length"><td colspan="6">暂无查询记录</td></tr>
               <tr v-for="row in detailRows" :key="row.id">
-                <td><strong>{{ row.name || '-' }}</strong></td>
-                <td>{{ getQueryTypeName(row.searchType) }}</td>
-                <td>{{ maskPhone(row.phoneNumber) }}</td>
-                <td>{{ formatDateTime(row.createTime) }}</td>
-                <td><span class="status-pill" :class="statusClass(row.displayStatus)">{{ statusText(row.displayStatus, row.displayStatusText) }}</span></td>
+                <td data-label="姓名"><strong>{{ row.name || '-' }}</strong></td>
+                <td data-label="查询类型">{{ getQueryTypeName(row.searchType) }}</td>
+                <td data-label="手机号">{{ maskPhone(row.phoneNumber) }}</td>
+                <td data-label="提交时间">{{ formatDateTime(row.createTime) }}</td>
+                <td data-label="状态"><span class="status-pill" :class="statusClass(row.displayStatus)">{{ statusText(row.displayStatus, row.displayStatusText) }}</span></td>
                 <td>{{ row.outTradeNo || '-' }}</td>
               </tr>
             </tbody>
@@ -109,13 +112,13 @@
               <tr v-if="detailLoading"><td colspan="7">正在加载...</td></tr>
               <tr v-else-if="!detailRows.length"><td colspan="7">暂无流水记录</td></tr>
               <tr v-for="row in detailRows" :key="row.id">
-                <td>{{ formatDateTime(row.createdAt) }}</td>
-                <td>{{ row.outTradeNo || '-' }}</td>
-                <td :class="['amount', String(row.changeStyle) === '7' ? 'frozen' : Number(row.changeCent) >= 0 ? 'plus' : 'minus']">{{ formatSignedFen(row.changeCent, row.changeStyle) }}</td>
-                <td>{{ logTypeText(row.changeStyle) }}</td>
-                <td>&yen;{{ yuanFromFen(row.beforeMoney) }}</td>
-                <td>&yen;{{ yuanFromFen(row.afterMoney) }}</td>
-                <td>{{ row.reason || '-' }}</td>
+                <td data-label="订单号">{{ formatDateTime(row.createdAt) }}</td>
+                <td data-label="时间">{{ row.outTradeNo || '-' }}</td>
+                <td data-label="订单/流水号" :class="['amount', String(row.changeStyle) === '7' ? 'frozen' : Number(row.changeCent) >= 0 ? 'plus' : 'minus']">{{ formatSignedFen(row.changeCent, row.changeStyle) }}</td>
+                <td data-label="金额">{{ logTypeText(row.changeStyle) }}</td>
+                <td data-label="类型">&yen;{{ yuanFromFen(row.beforeMoney) }}</td>
+                <td data-label="变动前">&yen;{{ yuanFromFen(row.afterMoney) }}</td>
+                <td data-label="变动后">{{ row.reason || '-' }}</td>
               </tr>
             </tbody>
           </table>
@@ -133,6 +136,7 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus, ShieldAlert } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
@@ -153,7 +157,6 @@ const labels = {
   totalUsed: '\u5df2\u6d88\u8d39\u989d\u5ea6',
   subList: '\u5b50\u8d26\u53f7\u5217\u8868',
   listDesc: '\u67e5\u770b\u5b50\u8d26\u53f7\u989d\u5ea6\u3001\u67e5\u8be2\u8bb0\u5f55\u548c\u8d26\u6237\u6d41\u6c34\u3002',
-  refresh: '\u5237\u65b0',
   loading: '\u6b63\u5728\u52a0\u8f7d\u5b50\u8d26\u53f7...',
   empty: '\u6682\u65e0\u5b50\u8d26\u53f7',
   quota: '\u5206\u914d\u603b\u989d\u5ea6',
@@ -192,6 +195,16 @@ const saving = ref(false)
 const dialogVisible = ref(false)
 const editing = ref(null)
 const message = ref('')
+const pageMessage = ref('')
+const pageMessageType = ref('info')
+let pageMessageTimer = null
+
+function notify(text, type = 'info') {
+  pageMessage.value = text
+  pageMessageType.value = type
+  clearTimeout(pageMessageTimer)
+  pageMessageTimer = setTimeout(() => { pageMessage.value = '' }, 3000)
+}
 const form = reactive({ userName: '', nickName: '', phonenumber: '', password: '', subAccountQuota: '' })
 const queryTypeMap = ref({})
 const detailVisible = ref(false)
@@ -306,7 +319,13 @@ async function submit() {
 async function remove(item) {
   const name = item.nickName || item.userName
   if (!window.confirm(`${labels.deleteConfirmPrefix}${name}${labels.deleteConfirmSuffix}`)) return
-  await deleteSubAccount(item.userId)
+  try {
+    await deleteSubAccount(item.userId)
+    notify(`已删除子账号「${name}」`)
+  } catch (err) {
+    // 后端可能因该子账号仍有未结订单而拒绝；不提示的话用户会以为删掉了
+    notify(err?.msg || err?.message || '删除失败，请稍后重试', 'error')
+  }
   await loadList()
 }
 
@@ -358,6 +377,8 @@ onMounted(async () => {
   await Promise.all([loadQueryTypes(), loadProfile()])
   if (!isSubAccount.value) await loadList()
 })
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(loadList)
 </script>
 
 <style scoped>
@@ -365,22 +386,22 @@ onMounted(async () => {
 .no-permission-card { padding: 52px 40px; text-align: center; color: #52627a; }
 .no-permission-card h3 { margin: 14px 0 8px; color: #07162d; font-size: 24px; }
 .no-permission-card p { margin: 0 auto; max-width: 560px; line-height: 1.8; }
-.no-permission-icon { width: 52px; height: 52px; margin: 0 auto; border-radius: 8px; display: grid; place-items: center; color: #2168f3; background: #eaf2ff; font-size: 24px; font-weight: 900; }
+.no-permission-icon { width: 52px; height: 52px; margin: 0 auto; border-radius: 8px; display: grid; place-items: center; color: var(--blue); background: #eaf2ff; font-size: 24px; font-weight: 900; }
 .sub-quota-view { margin: 26px auto 0; max-width: 760px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; text-align: left; }
 .sub-quota-view div { padding: 18px 20px; border: 1px solid #e4ebf5; border-radius: 8px; background: #f8fbff; }
 .sub-quota-view span { display: block; color: #66758c; font-size: 14px; }
 .sub-quota-view strong { display: block; margin-top: 8px; color: #07162d; font-size: 24px; }
 .sub-quota-view div:last-child strong { color: #0b9f62; }
-.sub-hero { min-height: auto; padding: 0 0 18px; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; color: #101828; background: transparent; box-shadow: none; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.sub-hero { min-height: auto; padding: 0 0 18px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; color: #101828; background: transparent; box-shadow: none; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
 .sub-hero p { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
 .sub-hero h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
 .sub-hero span { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
 .primary-btn, .ghost-btn { border: 0; border-radius: 7px; font-weight: 700; cursor: pointer; }
-.primary-btn { min-height: 42px; background: #2168f3; color: #fff; padding: 0 18px; box-shadow: none; }
+.primary-btn { min-height: 42px; background: var(--blue); color: #fff; padding: 0 18px; box-shadow: none; }
 .primary-btn:disabled { opacity: .55; cursor: not-allowed; }
-.ghost-btn { background: #f4f7fb; color: #2168f3; padding: 10px 16px; border: 1px solid #dce6f5; }
-.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
-.sub-summary > div, .sub-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.ghost-btn { background: #f4f7fb; color: var(--blue); padding: 10px 16px; border: 1px solid #dce6f5; }
+.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.sub-summary > div, .sub-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
 .sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
 .sub-summary > div:last-child { border-right: 0; }
 .sub-summary span, .quota-block span { color: #66758c; font-size: 14px; }
@@ -393,28 +414,28 @@ onMounted(async () => {
 .account-row { min-height: 88px; padding: 16px 20px; border-bottom: 1px solid #edf1f7; display: grid; grid-template-columns: minmax(200px, 1.25fr) repeat(3, 118px) minmax(280px, auto); gap: 14px; align-items: center; }
 .account-row:last-child { border-bottom: 0; }
 .account-main { display: flex; align-items: center; gap: 14px; }
-.account-avatar { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: #eaf2ff; color: #2168f3; font-size: 18px; font-weight: 800; }
+.account-avatar { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: #eaf2ff; color: var(--blue); font-size: 18px; font-weight: 800; }
 .account-main h4 { margin: 0 0 6px; font-size: 18px; }
 .account-main p { margin: 0; color: #6c7a91; }
 .quota-block strong { display: block; margin-top: 6px; color: #07162d; font-size: 20px; }
 .quota-block.remain strong { color: #0b9f62; }
 .row-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.row-actions button { min-height: 34px; border: 1px solid #dbe6f6; background: #fff; color: #2168f3; border-radius: 6px; padding: 0 11px; font-weight: 700; cursor: pointer; }
+.row-actions button { min-height: 34px; border: 1px solid var(--line); background: #fff; color: var(--blue); border-radius: 6px; padding: 0 11px; font-weight: 700; cursor: pointer; }
 .row-actions .danger { color: #e24a4a; background: #fff7f7; border-color: #ffdada; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .form-grid label { display: grid; gap: 9px; color: #24344d; font-weight: 800; }
-.form-grid input { height: 42px; border: 1px solid #dbe3ef; border-radius: 6px; padding: 0 12px; font-size: 14px; outline: none; }
-.form-grid input:focus { border-color: #2168f3; box-shadow: 0 0 0 3px rgba(33,104,243,.12); }
+.form-grid input { height: 42px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; font-size: 14px; outline: none; }
+.form-grid input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22, 24, 29, .07); }
 .quota-field small { color: #66758c; font-size: 12px; font-weight: 500; }
 .form-message { margin: 8px 0 0; color: #e24a4a; }
 .detail-tabs { margin: 0; padding: 14px 24px 12px; border-bottom: 1px solid #edf1f7; display: flex; gap: 10px; background: #fff; }
-.detail-tabs button { height: 38px; padding: 0 18px; border-radius: 6px; border: 1px solid #dbe6f6; background: #fff; color: #64748b; font-weight: 700; cursor: pointer; }
-.detail-tabs .active { color: #2168f3; border-color: #2168f3; background: #eef5ff; }
+.detail-tabs button { height: 38px; padding: 0 18px; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: #64748b; font-weight: 700; cursor: pointer; }
+.detail-tabs .active { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
 .detail-body { overflow: auto; max-height: 56vh; padding: 0; }
 .detail-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .detail-table th { position: sticky; top: 0; background: #f6f8fb; color: #52627a; text-align: left; padding: 14px 12px; border-bottom: 1px solid #e5ebf4; white-space: nowrap; }
 .detail-table td { padding: 15px 12px; border-bottom: 1px solid #edf1f7; color: #17233c; vertical-align: top; }
-.status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; background: #eef4ff; color: #2168f3; white-space: nowrap; }
+.status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; background: #eef4ff; color: var(--blue); white-space: nowrap; }
 .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .status-pill.success { background: #e8f8ef; color: #0b9f62; }
 .status-pill.warning { background: #fff4df; color: #d67a00; }
@@ -426,4 +447,38 @@ onMounted(async () => {
 .pager { margin: 0; padding: 0; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-radius: 0; color: #64748b; }
 @media (max-width: 1180px) { .account-row { grid-template-columns: 1fr 1fr; } .row-actions { justify-content: flex-start; } .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .sub-quota-view, .sub-summary, .form-grid { grid-template-columns: 1fr; } .sub-hero { align-items: stretch; flex-direction: column; } }
+
+/* 移动端：四个额度指标两列排布 —— 原先 720px 断点把它压成单列，
+   四条信息竖着占掉整整一屏，纵向浪费严重 */
+@media (max-width: 768px) {
+  .sub-hero { flex-direction: column; align-items: stretch; gap: 12px; }
+  .sub-hero .primary-btn { width: 100%; justify-content: center; height: 42px; }
+
+  .sub-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0;
+  }
+  .sub-summary > div {
+    padding: 12px 14px;
+    border-radius: 0;
+    border-right: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .sub-summary > div:nth-child(2n) { border-right: 0; }
+  .sub-summary > div:nth-last-child(-n+2) { border-bottom: 0; }
+  .sub-summary span { font-size: 12px; }
+  .sub-summary strong { font-size: 19px; }
+
+  /* 卡片头里的「刷新」被压成两行 */
+  .sub-card .ghost-btn,
+  .detail-tabs button,
+  .row-actions button { white-space: nowrap; }
+
+  .sub-card { padding: 14px; }
+  .sub-quota-view, .form-grid { grid-template-columns: minmax(0, 1fr); }
+
+  /* 明细弹层里的表格横向可滚，不硬挤 */
+  .detail-body { max-height: 62vh; }
+  .detail-table { min-width: 520px; }
+}
 </style>

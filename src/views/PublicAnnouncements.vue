@@ -6,10 +6,6 @@
         <h2>平台公告</h2>
         <p>查看系统公告、政策动态、平台活动和服务通知。</p>
       </div>
-      <button class="ghost-light-btn refresh-btn" type="button" :disabled="loading" @click="loadAnnouncements">
-        <RefreshCw :size="16" :class="{ spinning: loading }" />
-        {{ loading ? '刷新中' : '刷新' }}
-      </button>
     </header>
 
     <nav class="announcement-tabs" aria-label="公告分类">
@@ -86,9 +82,10 @@
 </template>
 
 <script setup>
+import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { CalendarDays, CircleAlert, Megaphone, Pin, RefreshCw } from '@lucide/vue'
+import { CalendarDays, CircleAlert, Megaphone, Pin } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
 import { getAnnouncements } from '../api/notice'
 
@@ -179,6 +176,8 @@ async function loadAnnouncements() {
 
 watch(() => route.query.noticeId, openRouteAnnouncement)
 onMounted(loadAnnouncements)
+// 移动端下拉刷新复用同一个加载函数
+useRefresh(loadAnnouncements)
 </script>
 
 <style scoped>
@@ -436,22 +435,57 @@ onMounted(loadAnnouncements)
 
   .announcement-tabs {
     width: 100%;
+    /* 五个分类在 375px 上正好平分；overflow 是将来加分类时的兜底 */
     overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
+
+  .announcement-tabs::-webkit-scrollbar { display: none; }
 
   .announcement-tabs button {
-    flex: 1 0 68px;
+    /* 桌面端的 min-width:72px 会把容器撑到 368px 超出屏宽，必须解除 */
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 13px;
+    white-space: nowrap;
   }
 
+  /* 分类徽章原先独占左侧一列，把标题挤到只剩半屏、必然截断。
+     改成徽章与日期共用顶行，标题拿到整行宽度并允许折两行。 */
   .announcement-row {
-    grid-template-columns: 54px minmax(0, 1fr);
-    gap: 12px;
-    padding: 15px 16px;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "tag  date"
+      "body body";
+    align-items: center;
+    gap: 8px 10px;
+    padding: 14px 16px;
+    min-height: 0;
   }
+
+  .announcement-tag { grid-area: tag; }
 
   .announcement-date {
-    grid-column: 2;
-    justify-content: flex-start;
+    grid-area: date;
+    justify-content: flex-end;
+    font-size: 12px;
   }
+
+  .announcement-content { grid-area: body; }
+
+  .announcement-content strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+    font-size: 14.5px;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 768px) {
+  .public-layout, .messages-layout { grid-template-columns: minmax(0, 1fr) !important; }
 }
 </style>
