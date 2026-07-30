@@ -1,5 +1,6 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 import { getToken, removeToken } from './auth'
+import { mockRequest, shouldUseMockApi } from '../mock/api'
 
 const service = axios.create({
   baseURL: import.meta.env.VITE_APP_BASE_API,
@@ -33,4 +34,7 @@ service.interceptors.response.use(
   error => Promise.reject(error)
 )
 
-export default service
+export default function request(config) {
+  if (shouldUseMockApi()) return mockRequest(config)
+  return service(config)
+}

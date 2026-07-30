@@ -1,356 +1,845 @@
 <template>
-  <div class="agent-page">
-    <header class="page-header">
-      <div>
-        <p class="page-eyebrow">渠道运营</p>
-        <h2>代理中心</h2>
-        <p class="page-description">管理邀请渠道、下级客户及账户额度。</p>
-      </div>
-      <div class="page-actions">
-        <button class="secondary-btn" type="button" :disabled="loading" @click="loadAll">
-          <RefreshCw :size="17" :stroke-width="1.9" />
-          刷新
-        </button>
-        <button class="primary-btn" type="button" :disabled="!isAgent" @click="openCreate">
-          <Plus :size="17" :stroke-width="2" />
-          新建邀请码
-        </button>
-      </div>
-    </header>
+  <main ref="pageRef" class="main-content agent-center-page">
+    <TopSlideNotice
+      v-model="noticeVisible"
+      :type="noticeType"
+      :title="noticeTitle"
+      :message="noticeMessage"
+    />
 
-    <section v-if="!isAgent && !loading" class="no-permission">
-      <span class="empty-icon"><ShieldAlert :size="25" :stroke-width="1.8" /></span>
-      <h3>当前账号未开通代理权限</h3>
-      <p>请联系平台管理员完成代理身份配置。</p>
-    </section>
+    <nav v-if="isAgent" class="agent-depth-nav">
+      <button
+        v-for="item in sectionTabs"
+        :key="item.key"
+        type="button"
+        class="agent-depth-tab"
+        :class="{ active: activeTab === item.key }"
+        @click="switchAgentSection(item.key)"
+      >
+        <strong>{{ item.title }}</strong>
+      </button>
+    </nav>
+
+    <div v-if="isAgent && activeTab === 'overview'" class="stat-row agent-stat-row">
+      <div v-for="item in overviewStats" :key="item.label" class="stat-cell">
+        <span class="stat-cell-label">{{ item.label }}</span>
+        <span class="stat-cell-main">
+          <span class="stat-cell-value" :class="{ primary: item.primary }">{{ item.value }}</span>
+          <span v-if="item.trend" class="stat-trend" :class="item.trend.type">
+            <svg viewBox="0 0 12 12" aria-hidden="true">
+              <path
+                v-if="item.trend.type === 'up'"
+                d="M6 2.2v7.6M6 2.2 2.8 5.4M6 2.2l3.2 3.2"
+              />
+              <path
+                v-else
+                d="M6 9.8V2.2M6 9.8 2.8 6.6M6 9.8l3.2-3.2"
+              />
+            </svg>
+            {{ item.trend.text }}
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div v-if="!isAgent && !loading" class="card permission-card">
+      当前账号未开通代理权限，请联系平台管理员完成配置。
+    </div>
 
     <template v-else>
-      <section class="overview-band" aria-label="代理经营概览">
-        <div class="balance-overview">
-          <span class="metric-icon"><WalletCards :size="21" :stroke-width="1.8" /></span>
+    <div v-if="activeTab === 'overview'" class="agent-ops-grid agent-depth-pane">
+      <section class="agent-panel follow-panel">
+        <div class="agent-panel-head">
           <div>
-            <span>可分配余额</span>
-            <strong>&yen;{{ money(agentAvailableBalance) }}</strong>
-            <small>当前分成比例 {{ rateText(commissionRate) }}%</small>
+            <h2>客户待跟进</h2>
           </div>
         </div>
-        <dl class="overview-metrics">
-          <div><dt>下级客户</dt><dd>{{ customerPage.total }}<span>人</span></dd></div>
-          <div><dt>客户累计充值</dt><dd>&yen;{{ money(totalRecharge) }}</dd></div>
-          <div><dt>已分成金额</dt><dd>&yen;{{ money(settledCommission) }}</dd></div>
-          <div><dt>未分成金额</dt><dd>&yen;{{ money(unsettledCommission) }}</dd></div>
-        </dl>
+        <div class="follow-list">
+          <button
+            v-for="item in followUpItems"
+            :key="item.key"
+            type="button"
+            class="follow-item"
+            :class="{ empty: item.count === 0 }"
+            @click="focusFollowUp(item)"
+          >
+            <span class="follow-count" :class="{ zero: item.count === 0 }">{{ item.count }}</span>
+            <span class="follow-text">{{ item.title }}</span>
+          </button>
+        </div>
       </section>
 
-      <section class="workspace-shell">
-        <nav class="workspace-tabs" aria-label="代理中心功能">
-          <button type="button" :class="{ active: workspaceTab === 'customers' }" @click="workspaceTab = 'customers'">
-            <UsersRound :size="17" :stroke-width="1.9" />
-            客户管理
-            <span>{{ customerPage.total }}</span>
-          </button>
-          <button type="button" :class="{ active: workspaceTab === 'codes' }" @click="workspaceTab = 'codes'">
-            <TicketCheck :size="17" :stroke-width="1.9" />
-            邀请码管理
-            <span>{{ inviteCodes.length }}</span>
-          </button>
-        </nav>
+      <section class="agent-panel conversion-panel">
+        <div class="agent-panel-head">
+          <div>
+            <h2>邀请转化分析</h2>
+          </div>
+        </div>
+        <div ref="conversionChartRef" class="conversion-chart" aria-label="邀请转化柱状图"></div>
+        <div class="conversion-summary">
+          <span>邀请码使用率 <b>{{ inviteUsageRate }}%</b></span>
+          <span>客户活跃率 <b>{{ customerActiveRate }}%</b></span>
+        </div>
+      </section>
+    </div>
 
-        <div v-if="workspaceTab === 'customers'" class="workspace-content">
-          <div class="section-toolbar">
-            <div>
-              <h3>下级客户</h3>
-              <p>查看客户账户余额、充值及消费情况。</p>
-            </div>
-            <label class="search-box">
-              <Search :size="17" :stroke-width="1.8" />
-              <input v-model.trim="customerKeyword" placeholder="搜索客户名称、账号或手机号" />
-            </label>
+    <section v-if="activeTab === 'finance'" class="agent-panel finance-panel agent-depth-pane">
+      <div class="agent-panel-head finance-head">
+        <div>
+          <h2>资金与分成概览</h2>
+          <p>沉淀代理余额、客户资金和分成结算的关键入口</p>
+        </div>
+        <div class="finance-entry-actions">
+          <button type="button" class="btn-outline" @click="openSettlementHistory">历史结算记录</button>
+          <button type="button" class="btn-primary" @click="openFinanceSummary">资金与分成明细</button>
+        </div>
+      </div>
+      <div class="finance-metric-grid">
+        <div v-for="item in financeMetrics" :key="item.label" class="finance-metric">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      </div>
+      <div class="rank-board">
+        <div v-for="group in customerRankGroups" :key="group.title" class="rank-card">
+          <div class="rank-card-head">
+            <h3>{{ group.title }}</h3>
           </div>
+          <ol>
+            <li v-for="row in group.rows" :key="row.id" :class="{ top: row.rank === 1 }">
+              <span class="rank-index">{{ row.rank }}</span>
+              <span class="rank-main">
+                <strong>{{ row.name }}</strong>
+                <small>{{ row.meta }}</small>
+              </span>
+              <span class="rank-value">{{ row.value }}</span>
+            </li>
+            <li v-if="group.rows.length === 0" class="rank-empty">暂无客户数据</li>
+          </ol>
+        </div>
+      </div>
+    </section>
 
-          <div v-if="loading || customerLoading" class="loading-table" aria-label="正在加载">
-            <span v-for="item in 5" :key="item"></span>
-          </div>
-          <div v-else-if="!filteredCustomers.length" class="empty-state">
-            <UsersRound :size="31" :stroke-width="1.5" />
-            <strong>{{ customerKeyword ? '未找到匹配客户' : '暂无下级客户' }}</strong>
-            <span>{{ customerKeyword ? '请调整搜索关键词。' : '客户使用代理邀请码注册后将显示在这里。' }}</span>
-          </div>
-          <template v-else>
-            <div class="data-table-wrap">
-              <table class="data-table customer-table">
-                <thead>
-                  <tr>
-                    <th>客户</th>
-                    <th>企业名称</th>
-                    <th>注册时间</th>
-                    <th class="numeric">当前余额</th>
-                    <th class="numeric">累计充值</th>
-                    <th class="numeric">累计消费</th>
-                    <th class="actions-column">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="item in filteredCustomers"
-                    :key="item.invitedUserId"
+    <!-- 客户管理 -->
+    <div v-if="activeTab === 'customers'" class="table-section business-list-shell customer-business-list agent-depth-pane">
+      <div class="table-header">
+        <div class="customer-title-wrap">
+          <h2>客户列表</h2>
+          <button v-if="activeFollowItem" type="button" class="follow-filter-chip" @click="clearFollowFilter">
+            {{ activeFollowItem.title }} ×
+          </button>
+        </div>
+        <div class="customer-tools">
+          <input v-model.trim="customerKeyword" class="field-input customer-search" placeholder="搜索客户名称、账号或手机号" />
+          <span class="table-count">共 {{ customerDisplayTotal }} 个客户</span>
+        </div>
+      </div>
+      <div class="table-content">
+        <table class="business-list-table agent-customer-table">
+          <thead>
+            <tr>
+              <th style="width:18%">客户</th>
+              <th style="width:18%">企业名称</th>
+              <th style="width:14%">注册时间</th>
+              <th style="width:12%">当前余额</th>
+              <th style="width:12%">累计充值</th>
+              <th style="width:12%">累计消费</th>
+              <th style="width:14%">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="c in displayCustomers" :key="c.id">
+              <td>
+                <div class="agent-customer-cell">
+                  <span class="agent-customer-main">
+                    <strong>{{ c.customerLabel }}</strong>
+                    <small>{{ c.customerSub }}</small>
+                  </span>
+                </div>
+              </td>
+              <td class="td-name">{{ c.enterpriseName }}</td>
+              <td class="td-date">{{ c.time }}</td>
+              <td>¥{{ money(c.balance) }}</td>
+              <td>¥{{ money(c.totalRecharge) }}</td>
+              <td>¥{{ money(c.totalConsume) }}</td>
+              <td>
+                <div class="action-group">
+                  <router-link :to="`/agent-center/customers/${c.id}/finance`" class="action-link">资金明细</router-link>
+                  <span class="action-link" @click="allocCustomer = c">分配余额</span>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="displayCustomers.length===0"><td colspan="7" class="table-empty">暂无客户</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <BusinessTableFooter
+        v-if="customerDisplayTotal > 0"
+        :total="customerDisplayTotal"
+        :page="customerPage.pageNum"
+        :page-size="customerPage.pageSize"
+        :total-pages="customerDisplayPageCount"
+        :loading="customerLoading"
+        @update:page-size="changeCustomerPageSize"
+        @page-change="goCustomerPage"
+      />
+    </div>
+
+    <!-- 邀请码管理 -->
+    <div v-if="activeTab === 'invites'" class="table-section business-list-shell agent-depth-pane">
+      <div class="table-header">
+        <h2>邀请码列表</h2>
+        <button class="btn-mini invite-create-btn" type="button" @click="openCreate">新建邀请码</button>
+      </div>
+      <div class="table-content">
+        <table class="business-list-table agent-invite-table">
+          <thead>
+            <tr>
+              <th style="width:18%">邀请码</th>
+              <th style="width:11%">状态</th>
+              <th style="width:13%">注册赠送</th>
+              <th style="width:13%">使用情况</th>
+              <th style="width:16%">有效期</th>
+              <th style="width:15%">备注</th>
+              <th style="width:14%">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="inv in pagedInviteCodes" :key="inv.id">
+              <td class="td-name mono">{{ inv.code }}</td>
+              <td class="td-status">
+                <span class="invite-status-pill" :class="inv.statusClass">{{ inv.statusText }}</span>
+              </td>
+              <td>¥{{ inv.gift }}</td>
+              <td>{{ inv.usage }}</td>
+              <td class="td-date">{{ inv.expire }}</td>
+              <td class="invite-remark">{{ inv.remark || '-' }}</td>
+              <td>
+                <div class="action-group invite-actions">
+                  <span class="action-link" @click="copyInvite(inv)">复制</span>
+                  <span class="action-link" @click="openEdit(inv)">编辑</span>
+                  <button
+                    type="button"
+                    class="invite-switch"
+                    :class="{ active: inv.active }"
+                    :aria-pressed="inv.active"
+                    :disabled="togglingInviteId === inv.id || inv.statusLocked"
+                    @click="toggleInvite(inv)"
                   >
-                    <td>
-                      <div class="customer-cell">
-                        <span class="customer-avatar">{{ avatarText(item) }}</span>
-                        <div><strong>{{ item.nickName || item.userName || '-' }}</strong><small>{{ item.phonenumber || item.userName || '-' }}</small></div>
-                      </div>
-                    </td>
-                    <td>{{ item.enterpriseName || '-' }}</td>
-                    <td>{{ formatTime(item.invitedAt) }}</td>
-                    <td class="numeric money-value">&yen;{{ money(item.balanceAmount) }}</td>
-                    <td class="numeric">&yen;{{ money(item.rechargeAmount) }}</td>
-                    <td class="numeric">&yen;{{ money(item.consumeAmount) }}</td>
-                    <td class="row-actions">
-                      <button type="button" @click="openCustomerFinance(item)">资金明细</button>
-                      <button class="primary-link" type="button" @click="openCustomerAllocation(item)">分配余额</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="pagination-bar">
-              <span>共 {{ customerPage.total }} 位客户，每页 {{ customerPage.pageSize }} 位</span>
-              <div>
-                <button type="button" :disabled="customerPage.pageNum <= 1 || customerLoading" @click="changeCustomerPage(-1)">上一页</button>
-                <strong>{{ customerPage.pageNum }} / {{ customerPageCount }}</strong>
-                <button type="button" :disabled="customerPage.pageNum >= customerPageCount || customerLoading" @click="changeCustomerPage(1)">下一页</button>
-              </div>
-            </div>
-
-          </template>
-        </div>
-
-        <div v-else class="workspace-content">
-          <div class="section-toolbar">
-            <div>
-              <h3>邀请码管理</h3>
-              <p>配置注册赠送额度、使用次数和有效期。</p>
-            </div>
-            <button class="primary-btn compact" type="button" @click="openCreate">
-              <Plus :size="16" :stroke-width="2" />
-              新建邀请码
-            </button>
-          </div>
-
-          <div v-if="loading" class="loading-table" aria-label="正在加载">
-            <span v-for="item in 4" :key="item"></span>
-          </div>
-          <div v-else-if="!inviteCodes.length" class="empty-state">
-            <TicketCheck :size="31" :stroke-width="1.5" />
-            <strong>暂无邀请码</strong>
-            <span>创建邀请码后即可用于客户注册。</span>
-            <button class="primary-btn compact" type="button" @click="openCreate">新建邀请码</button>
-          </div>
-          <div v-else class="data-table-wrap">
-            <table class="data-table code-table">
-              <thead>
-                <tr><th>邀请码</th><th>状态</th><th class="numeric">注册赠送</th><th>使用情况</th><th>有效期</th><th>备注</th><th class="actions-column">操作</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in inviteCodes" :key="item.id" :class="{ muted: item.status !== 0 }">
-                  <td><strong class="invite-code">{{ item.inviteCode }}</strong></td>
-                  <td><span :class="['status-pill', item.status === 0 ? 'ok' : 'off']">{{ item.status === 0 ? '启用' : '停用' }}</span></td>
-                  <td class="numeric money-value">&yen;{{ money(item.giftAmount) }}</td>
-                  <td>{{ usageText(item) }}</td>
-                  <td>{{ item.expireTime ? formatTime(item.expireTime) : '长期有效' }}</td>
-                  <td class="remark-cell">{{ item.remark || '-' }}</td>
-                  <td class="icon-actions">
-                    <button type="button" title="复制邀请码" aria-label="复制邀请码" @click="copyCode(item.inviteCode)"><Copy :size="16" /></button>
-                    <button type="button" title="编辑邀请码" aria-label="编辑邀请码" @click="openEdit(item)"><Pencil :size="16" /></button>
-                    <button type="button" :title="item.status === 0 ? '停用邀请码' : '启用邀请码'" :aria-label="item.status === 0 ? '停用邀请码' : '启用邀请码'" @click="toggleStatus(item)">
-                      <Power :size="16" />
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+                    <span class="switch-knob"></span>
+                    <span class="switch-text">{{ inv.active ? 'ON' : 'OFF' }}</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="inviteCodes.length===0"><td colspan="7" class="table-empty">暂无邀请码</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <BusinessTableFooter
+        v-if="inviteCodes.length > 0"
+        :total="inviteCodes.length"
+        :page="invitePage.pageNum"
+        :page-size="invitePage.pageSize"
+        :total-pages="invitePageCount"
+        :loading="loading"
+        @update:page-size="changeInvitePageSize"
+        @page-change="goInvitePage"
+      />
+    </div>
     </template>
 
-    <AppModal
-      :open="codeDialog"
-      :title="editingCode ? '调整邀请码' : '生成邀请码'"
-      eyebrow="代理中心"
-      :description="editingCode ? '修改后仅影响后续注册使用' : '创建后可复制给客户注册使用'"
-      size="md"
-      @close="closeCodeDialog"
+    <!-- 新建邀请码弹窗 -->
+    <div
+      v-if="showInviteAdd"
+      class="modal-mask"
+      @pointerdown="agentBackdropGuard.pointerDown"
+      @click.self="agentBackdropGuard.click(closeInviteDialog)"
     >
-      <div class="notice-tip">注册赠送余额将从代理可用余额中扣除。余额不足时，新用户不会获得赠送额度。</div>
-
-        <div class="form-grid">
-          <label>赠送余额（元）<input v-model.trim="codeForm.giftAmount" type="number" min="0" step="0.01" placeholder="例如 50" /></label>
-          <label>最大使用次数<input v-model.trim="codeForm.maxUses" type="number" min="0" step="1" placeholder="0 表示不限" /></label>
-          <label>过期时间<input v-model="codeForm.expireTime" type="datetime-local" /></label>
-          <label>备注<input v-model.trim="codeForm.remark" placeholder="例如 7月活动渠道" /></label>
+      <div class="modal-card">
+        <h3 class="modal-title">{{ editingInvite ? '调整邀请码' : '新建邀请码' }}</h3>
+        <label class="field">
+          <span class="field-label">赠送额度 <span class="required">*</span></span>
+          <input v-model="inviteForm.giftAmount" class="field-input" type="number" placeholder="¥" />
+        </label>
+        <label class="field">
+          <span class="field-label">最大使用次数 <span class="required">*</span></span>
+          <input v-model="inviteForm.maxUses" class="field-input" type="number" placeholder="例如 50" />
+        </label>
+        <label class="field">
+          <span class="field-label">过期时间</span>
+          <DateRangePicker
+            single
+            start-placeholder="请选择过期时间"
+            v-model:start-date="inviteForm.expireTime"
+          />
+        </label>
+        <label class="field">
+          <span class="field-label">备注</span>
+          <input v-model="inviteForm.remark" class="field-input" placeholder="邀请码用途" />
+        </label>
+        <div class="modal-actions">
+          <button class="btn-outline" @click="closeInviteDialog">取消</button>
+          <button class="btn-primary" :disabled="saving" @click="onSaveInvite">{{ saving ? '提交中...' : '确认保存' }}</button>
         </div>
+        <FormAlert :message="formMessage" type="error" />
+      </div>
+    </div>
 
-      <p v-if="message" class="form-message">{{ message }}</p>
-      <template #footer>
-        <button class="ghost-btn" type="button" @click="closeCodeDialog">取消</button>
-        <button class="primary-btn" type="button" :disabled="saving" @click="saveCode">{{ saving ? '提交中...' : '确认保存' }}</button>
-      </template>
-    </AppModal>
-
-    <AppModal
-      :open="allocationDialog"
-      title="分配余额"
-      eyebrow="代理中心"
-      :description="selectedCustomer ? `向 ${selectedCustomer.nickName || selectedCustomer.userName} 划拨账户余额` : ''"
-      size="sm"
-      @close="closeAllocation"
+    <!-- 分配余额弹窗 -->
+    <div
+      v-if="allocCustomer"
+      class="modal-mask"
+      @pointerdown="agentBackdropGuard.pointerDown"
+      @click.self="agentBackdropGuard.click(closeAllocDialog)"
     >
-      <div class="allocation-summary">
-        <div><span>代理可用余额</span><strong>&yen;{{ money(agentAvailableBalance) }}</strong></div>
-        <ArrowRightLeft :size="18" :stroke-width="1.8" />
-        <div><span>客户当前余额</span><strong>&yen;{{ money(selectedCustomer?.balanceAmount) }}</strong></div>
+      <div class="modal-card">
+        <h3 class="modal-title">分配余额 - {{ allocCustomer.name }}</h3>
+        <label class="field">
+          <span class="field-label">客户当前余额</span>
+          <div class="field-input" style="line-height:44px;color:var(--text2)">¥{{ money(allocCustomer.balance) }}</div>
+        </label>
+        <label class="field">
+          <span class="field-label">分配金额 <span class="required">*</span></span>
+          <input v-model="allocAmount" class="field-input" type="number" placeholder="¥" />
+        </label>
+        <label class="field">
+          <span class="field-label">分配说明（选填）</span>
+          <input v-model.trim="allocRemark" class="field-input" maxlength="100" placeholder="例如：业务测试额度" />
+        </label>
+        <FormAlert :message="allocationMessage" type="error" />
+        <div class="modal-actions">
+          <button class="btn-outline" @click="closeAllocDialog">取消</button>
+          <button class="btn-primary" :disabled="allocationSaving" @click="onAlloc">{{ allocationSaving ? '处理中...' : '确认分配' }}</button>
+        </div>
       </div>
-      <div class="form-grid single-column">
-        <label>分配金额（元）<span class="money-input"><b>&yen;</b><input v-model.trim="allocationForm.amount" type="number" min="0.01" step="0.01" placeholder="0.00" /></span></label>
-        <label>分配说明（选填）<input v-model.trim="allocationForm.remark" maxlength="100" placeholder="例如：业务测试额度" /></label>
-      </div>
-      <p class="allocation-hint">提交后将实时从代理可用余额转入该客户账户，资金流水同步记录。</p>
-      <p v-if="allocationMessage" class="form-message">{{ allocationMessage }}</p>
-      <template #footer>
-        <button class="ghost-btn" type="button" @click="closeAllocation">取消</button>
-        <button class="primary-btn" type="button" :disabled="allocationSaving" @click="saveAllocation">
-          {{ allocationSaving ? '处理中...' : '确认分配' }}
-        </button>
-      </template>
-    </AppModal>
-
-    <div v-if="toast" class="toast">{{ toast }}</div>
-  </div>
+    </div>
+    <div v-if="toast" class="agent-toast">{{ toast }}</div>
+  </main>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import {
-  ArrowRightLeft,
-  Copy,
-  Pencil,
-  Plus,
-  Power,
-  RefreshCw,
-  Search,
-  ShieldAlert,
-  TicketCheck,
-  UsersRound,
-  WalletCards
-} from '@lucide/vue'
-import AppModal from '../components/AppModal.vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { BarChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
+import { init, use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
 import { allocateAgentCustomerBalance, createAgentInviteCode, getAgentOverview, listAgentCustomers, listAgentInviteCodes, updateAgentInviteCode } from '../api/agent'
+import BusinessTableFooter from '../components/BusinessTableFooter.vue'
+import DateRangePicker from '../components/DateRangePicker.vue'
+import FormAlert from '../components/FormAlert.vue'
+import TopSlideNotice from '../components/TopSlideNotice.vue'
+import { createBackdropGuard } from '../utils/backdropGuard'
 
+use([GridComponent, TooltipComponent, BarChart, CanvasRenderer])
+
+const route = useRoute()
 const router = useRouter()
-
+const pageRef = ref(null)
+const conversionChartRef = ref(null)
+const overview = ref({
+  balance: 0,
+  commissionRate: 0,
+  customerCount: 0,
+  totalRecharge: 0,
+  monthlyNewCustomerCount: 0,
+  monthlyRecharge: 0,
+  monthlyConsume: 0,
+  allocatedAmount: 0,
+  settledCommission: 0,
+  unsettledCommission: 0,
+  activeCustomerCount: 0,
+  customerGrowthRate: 0,
+  monthlyNewCustomerGrowthRate: 0,
+  monthlyRechargeGrowthRate: 0,
+  monthlyConsumeGrowthRate: 0,
+  unsettledCommissionGrowthRate: 0,
+  activeCustomerGrowthRate: 0
+})
+const customers = ref([])
+const allCustomers = ref([])
+const inviteCodes = ref([])
+const activeTab = ref('overview')
 const isAgent = ref(true)
 const loading = ref(false)
 const customerLoading = ref(false)
-const saving = ref(false)
-const message = ref('')
-const toast = ref('')
-const inviteCodes = ref([])
-const customers = ref([])
 const customerKeyword = ref('')
-const codeDialog = ref(false)
-const editingCode = ref(null)
-const selectedCustomer = ref(null)
-const agentAvailableBalance = ref(0)
-const allocationDialog = ref(false)
+const activeFollowFilter = ref('')
+const customerPage = reactive({ pageNum: 1, pageSize: 10, total: 0 })
+const customerPageCount = computed(() => Math.max(1, Math.ceil(customerPage.total / customerPage.pageSize)))
+const invitePage = reactive({ pageNum: 1, pageSize: 10 })
+const invitePageCount = computed(() => Math.max(1, Math.ceil(inviteCodes.value.length / invitePage.pageSize)))
+const pagedInviteCodes = computed(() => {
+  const start = (invitePage.pageNum - 1) * invitePage.pageSize
+  return inviteCodes.value.slice(start, start + invitePage.pageSize)
+})
+const showInviteAdd = ref(false)
+const editingInvite = ref(null)
+const saving = ref(false)
+const formMessage = ref('')
+const allocCustomer = ref(null)
+const allocAmount = ref('')
+const allocRemark = ref('')
+const allocationRequestId = ref('')
 const allocationSaving = ref(false)
 const allocationMessage = ref('')
-const workspaceTab = ref('customers')
-const customerPage = reactive({ pageNum: 1, pageSize: 20, total: 0 })
-const totalRecharge = ref(0)
-const totalConsume = ref(0)
-const commissionRate = ref(0)
-const settledCommission = ref(0)
-const unsettledCommission = ref(0)
-const codeForm = reactive({ giftAmount: '', maxUses: 0, expireTime: '', remark: '' })
-const allocationForm = reactive({ amount: '', remark: '', requestId: '' })
-
-const filteredCustomers = computed(() => customers.value)
-const customerPageCount = computed(() => Math.max(1, Math.ceil(customerPage.total / customerPage.pageSize)))
-
+const toast = ref('')
+const togglingInviteId = ref(null)
+const noticeVisible = ref(false)
+const noticeType = ref('success')
+const noticeTitle = ref('')
+const noticeMessage = ref('')
+const agentBackdropGuard = createBackdropGuard()
+const inviteForm = ref({ giftAmount: '', maxUses: 0, expireTime: '', remark: '' })
 let customerSearchTimer
+let conversionChart = null
+
+const balanceWarningLine = 500
+const sectionTabs = [
+  { key: 'overview', title: '经营概览' },
+  { key: 'customers', title: '客户管理' },
+  { key: 'invites', title: '邀请码管理' },
+  { key: 'finance', title: '资金与分成' }
+]
+
+const customerMetricRows = computed(() => allCustomers.value.length ? allCustomers.value : customers.value)
+const loadedCustomerCount = computed(() => customerMetricRows.value.length)
+const rechargeCustomerCount = computed(() => customerMetricRows.value.filter(item => item.totalRecharge > 0).length)
+const activeCustomerCount = computed(() => Number(overview.value.activeCustomerCount || customerMetricRows.value.filter(item => item.active).length || 0))
+const lowBalanceCustomers = computed(() => filterFollowCustomers(customerMetricRows.value, 'lowBalance'))
+const unrechargedCustomers = computed(() => filterFollowCustomers(customerMetricRows.value, 'noRecharge'))
+const dormantAfterRechargeCustomers = computed(() => filterFollowCustomers(customerMetricRows.value, 'dormantAfterRecharge'))
+const decliningCustomers = computed(() => filterFollowCustomers(customerMetricRows.value, 'declining'))
+const newPendingAllocationCustomers = computed(() => filterFollowCustomers(customerMetricRows.value, 'newPendingAllocation'))
+
+function statTrend(value) {
+  const number = Number(value || 0)
+  if (!Number.isFinite(number) || number === 0) return null
+  return {
+    type: number > 0 ? 'up' : 'down',
+    text: `${number > 0 ? '+' : ''}${number.toFixed(1)}%`
+  }
+}
+
+const overviewStats = computed(() => [
+  { label: '可分配余额', value: yuanText(overview.value.balance), primary: true },
+  { label: '下级客户数', value: String(overview.value.customerCount || customerPage.total || loadedCustomerCount.value), trend: statTrend(overview.value.customerGrowthRate) },
+  { label: '本月新增客户', value: String(overview.value.monthlyNewCustomerCount || monthNewCustomerCount()), trend: statTrend(overview.value.monthlyNewCustomerGrowthRate) },
+  { label: '活跃客户数', value: String(activeCustomerCount.value), trend: statTrend(overview.value.activeCustomerGrowthRate) },
+  { label: '本月客户充值', value: yuanText(overview.value.monthlyRecharge), trend: statTrend(overview.value.monthlyRechargeGrowthRate) },
+  { label: '本月客户消费', value: yuanText(overview.value.monthlyConsume), trend: statTrend(overview.value.monthlyConsumeGrowthRate) },
+  { label: '待结算分成', value: yuanText(overview.value.unsettledCommission), trend: statTrend(overview.value.unsettledCommissionGrowthRate) },
+  { label: '已结算分成', value: yuanText(overview.value.settledCommission) }
+])
+
+const followUpItems = computed(() => [
+  { key: 'lowBalance', title: '余额低于预警线的客户', desc: `预警线 ¥${money(balanceWarningLine)}`, count: lowBalanceCustomers.value.length },
+  { key: 'noRecharge', title: '注册后未充值的客户', desc: '建议联系完成首充或分配试用额度', count: unrechargedCustomers.value.length },
+  { key: 'dormantAfterRecharge', title: '充值后长期未消费的客户', desc: '已充值但近期没有查询消耗', count: dormantAfterRechargeCustomers.value.length },
+  { key: 'declining', title: '最近 30 天消费下降的客户', desc: '本期消费低于上一周期', count: decliningCustomers.value.length },
+  { key: 'newPendingAllocation', title: '新注册客户待分配额度', desc: '注册 7 天内且额度较低', count: newPendingAllocationCustomers.value.length }
+])
+
+const activeFollowItem = computed(() => followUpItems.value.find(item => item.key === activeFollowFilter.value) || null)
+const filteredFollowCustomers = computed(() => {
+  if (!activeFollowFilter.value) return []
+  return applyCustomerKeyword(filterFollowCustomers(customerMetricRows.value, activeFollowFilter.value), customerKeyword.value)
+})
+const customerDisplayTotal = computed(() => activeFollowFilter.value ? filteredFollowCustomers.value.length : customerPage.total)
+const customerDisplayPageCount = computed(() => Math.max(1, Math.ceil(customerDisplayTotal.value / customerPage.pageSize)))
+const displayCustomers = computed(() => {
+  if (!activeFollowFilter.value) return customers.value
+  const start = (customerPage.pageNum - 1) * customerPage.pageSize
+  return filteredFollowCustomers.value.slice(start, start + customerPage.pageSize)
+})
+
+const inviteConversionBars = computed(() => {
+  const used = inviteCodes.value.reduce((sum, item) => sum + Number(item.used || 0), 0)
+  const customerCount = overview.value.customerCount || customerPage.total || loadedCustomerCount.value
+  const rechargeCount = rechargeCustomerCount.value
+  const activeCount = activeCustomerCount.value
+  const base = Math.max(used, customerCount, rechargeCount, activeCount, 1)
+  return [
+    { label: '邀请码使用', value: used, percent: percentOf(used, base) },
+    { label: '注册客户', value: customerCount, percent: percentOf(customerCount, base) },
+    { label: '充值客户', value: rechargeCount, percent: percentOf(rechargeCount, base) },
+    { label: '活跃客户', value: activeCount, percent: percentOf(activeCount, base) }
+  ]
+})
+
+const inviteUsageRate = computed(() => {
+  const max = inviteCodes.value.reduce((sum, item) => sum + Number(item.max || 0), 0)
+  const used = inviteCodes.value.reduce((sum, item) => sum + Number(item.used || 0), 0)
+  return max > 0 ? Math.round((used / max) * 100) : 0
+})
+
+const customerActiveRate = computed(() => {
+  const total = overview.value.customerCount || customerPage.total || loadedCustomerCount.value
+  return total > 0 ? Math.round((activeCustomerCount.value / total) * 100) : 0
+})
+
+const financeMetrics = computed(() => [
+  { label: '代理可用余额', value: yuanText(overview.value.balance) },
+  { label: '已分配给客户金额', value: yuanText(overview.value.allocatedAmount || customerMetricRows.value.reduce((sum, item) => sum + item.balance, 0)) },
+  { label: '客户累计充值', value: yuanText(overview.value.totalRecharge) },
+  { label: '客户累计消费', value: yuanText(overview.value.totalConsume || customerMetricRows.value.reduce((sum, item) => sum + item.totalConsume, 0)) },
+  { label: '待结算分成', value: yuanText(overview.value.unsettledCommission) },
+  { label: '已结算分成', value: yuanText(overview.value.settledCommission) }
+])
+
+const customerRankGroups = computed(() => [
+  { key: 'recharge', title: '充值最高客户', rows: rankCustomers('totalRecharge', 'money', 'desc') },
+  { key: 'consume', title: '消费最高客户', rows: rankCustomers('totalConsume', 'money', 'desc') },
+  { key: 'active', title: '最近活跃客户', rows: rankCustomers('lastActiveAt', 'date', 'desc') },
+  { key: 'new', title: '新增客户', rows: rankCustomers('time', 'date', 'desc') }
+])
+
+function normalizeAgentSection(value) {
+  const key = Array.isArray(value) ? value[0] : value
+  return sectionTabs.some(item => item.key === key) ? key : 'overview'
+}
+
+function scrollPageTop() {
+  requestAnimationFrame(() => {
+    pageRef.value?.scrollTo({ top: 0, behavior: 'smooth' })
+  })
+}
+
+function switchAgentSection(key, options = {}) {
+  const next = normalizeAgentSection(key)
+  if (next !== 'customers' || !options.keepFollowFilter) activeFollowFilter.value = ''
+  activeTab.value = next
+  const query = { ...route.query }
+  if (next === 'overview') delete query.section
+  else query.section = next
+  router.replace({ path: '/agent-center', query })
+  scrollPageTop()
+}
+
+watch(
+  () => route.query.section,
+  value => {
+    activeTab.value = normalizeAgentSection(value)
+  },
+  { immediate: true }
+)
+
 watch(customerKeyword, () => {
+  customerPage.pageNum = 1
+  if (activeFollowFilter.value) return
   window.clearTimeout(customerSearchTimer)
   customerSearchTimer = window.setTimeout(() => {
-    customerPage.pageNum = 1
     loadCustomers()
   }, 320)
+})
+
+watch(allocCustomer, value => {
+  if (!value) {
+    allocAmount.value = ''
+    allocRemark.value = ''
+    allocationRequestId.value = ''
+    allocationMessage.value = ''
+    return
+  }
+  allocationRequestId.value = newRequestId()
+})
+
+watch(inviteConversionBars, renderInviteConversionChart, { deep: true })
+
+watch(activeTab, value => {
+  if (value === 'overview') {
+    renderInviteConversionChart()
+  } else {
+    disposeConversionChart()
+  }
+})
+
+watch(customerDisplayPageCount, total => {
+  if (customerPage.pageNum > total) customerPage.pageNum = total
 })
 
 function money(value) {
   return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-function rateText(value) {
-  return Number(value || 0).toFixed(2)
+
+function yuanText(value) {
+  return `¥ ${money(value)}`
 }
-function formatTime(value) {
-  if (!value) return '-'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return String(value).replace('T', ' ')
-  const pad = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+
+function percentOf(value, total) {
+  if (!total) return 0
+  const current = Number(value || 0)
+  if (current <= 0) return 0
+  return Math.max(4, Math.min(100, Math.round((current / total) * 100)))
 }
-function usageText(item) {
-  const max = Number(item.maxUses || 0)
-  if (max <= 0) return '不限次数'
-  return `剩余 ${item.remainingUses || 0}/${max} 次`
+
+function disposeConversionChart() {
+  if (!conversionChart) return
+  conversionChart.dispose()
+  conversionChart = null
 }
-function avatarText(item) {
-  const text = item.nickName || item.userName || '?'
-  return String(text).slice(0, 1).toUpperCase()
+
+async function renderInviteConversionChart() {
+  await nextTick()
+  if (activeTab.value !== 'overview' || !conversionChartRef.value) return
+  if (!conversionChart) conversionChart = init(conversionChartRef.value)
+  const rows = inviteConversionBars.value
+  conversionChart.setOption({
+    animationDuration: 260,
+    color: ['#0B58BF'],
+    grid: { left: 36, right: 18, top: 28, bottom: 34 },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(11,88,191,.06)' } },
+      formatter: params => {
+        const row = params?.[0]
+        if (!row) return ''
+        return `${row.name}<br/>数量：${row.value}`
+      }
+    },
+    xAxis: {
+      type: 'category',
+      data: rows.map(item => item.label),
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: '#D8E0EA' } },
+      axisLabel: { color: '#667085', fontSize: 12, interval: 0 }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      axisLabel: { color: '#8A96AA', fontSize: 12 },
+      splitLine: { lineStyle: { color: '#EEF2F7' } }
+    },
+    series: [
+      {
+        type: 'bar',
+        barWidth: 30,
+        data: rows.map(item => item.value),
+        itemStyle: { color: '#0B58BF' },
+        label: {
+          show: true,
+          position: 'top',
+          color: '#475467',
+          fontSize: 12,
+          fontWeight: 700
+        }
+      }
+    ]
+  })
 }
+
+function resizeConversionChart() {
+  conversionChart?.resize()
+}
+
+function parseTime(value) {
+  if (!value) return null
+  const date = new Date(String(value).replace(' ', 'T'))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function daysSince(value) {
+  const date = parseTime(value)
+  if (!date) return 999
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / 86400000))
+}
+
+function monthNewCustomerCount() {
+  const now = new Date()
+  return customerMetricRows.value.filter(item => {
+    const date = parseTime(item.time)
+    return date && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()
+  }).length
+}
+
+function rankCustomers(field, type = 'money', direction = 'desc') {
+  const rows = [...customerMetricRows.value].sort((a, b) => {
+    const left = type === 'date' ? (parseTime(a[field])?.getTime() || 0) : Number(a[field] || 0)
+    const right = type === 'date' ? (parseTime(b[field])?.getTime() || 0) : Number(b[field] || 0)
+    return direction === 'asc' ? left - right : right - left
+  }).slice(0, 5)
+  return rows.map((item, index) => ({
+    id: `${field}-${item.id}`,
+    rank: index + 1,
+    name: item.enterpriseName || item.name || item.customerLabel,
+    meta: item.customerLabel && item.customerLabel !== item.enterpriseName
+      ? `${item.customerLabel} · ${item.customerSub || item.userName || '-'}`
+      : (item.customerSub || item.userName || '-'),
+    value: type === 'date'
+      ? (String(item[field] || '-').replace('T', ' ').slice(0, 10) || '-')
+      : yuanText(item[field])
+  }))
+}
+
+function filterFollowCustomers(rows, key) {
+  const list = Array.isArray(rows) ? rows : []
+  if (key === 'lowBalance') return list.filter(item => item.balance < balanceWarningLine)
+  if (key === 'noRecharge') return list.filter(item => item.totalRecharge <= 0)
+  if (key === 'dormantAfterRecharge') {
+    return list.filter(item => item.totalRecharge > 0 && (item.totalConsume <= 0 || daysSince(item.lastConsumeAt || item.lastActiveAt) > 30))
+  }
+  if (key === 'declining') return list.filter(item => item.previousConsume > 0 && item.recentConsume < item.previousConsume)
+  if (key === 'newPendingAllocation') return list.filter(item => daysSince(item.time) <= 7 && item.balance < 1000)
+  return list
+}
+
+function applyCustomerKeyword(rows, keyword) {
+  const text = String(keyword || '').trim().toLowerCase()
+  if (!text) return rows
+  return rows.filter(item =>
+    String(item.customerLabel || '').toLowerCase().includes(text) ||
+    String(item.customerSub || '').toLowerCase().includes(text) ||
+    String(item.userName || '').toLowerCase().includes(text) ||
+    String(item.phone || '').toLowerCase().includes(text) ||
+    String(item.enterpriseName || '').toLowerCase().includes(text)
+  )
+}
+
 function apiDate(value) {
   if (!value) return null
   return String(value).replace('T', ' ') + (String(value).length === 16 ? ':00' : '')
 }
+
 function showToast(text) {
   toast.value = text
   window.clearTimeout(showToast.timer)
   showToast.timer = window.setTimeout(() => { toast.value = '' }, 1800)
 }
-async function loadAll() {
-  loading.value = true
-  try {
-    const overviewRes = await getAgentOverview()
-    agentAvailableBalance.value = Number(overviewRes.data?.availableBalanceAmount || 0)
-    commissionRate.value = Number(overviewRes.data?.commissionRate || 0)
-    settledCommission.value = Number(overviewRes.data?.settledCommissionAmount || 0)
-    unsettledCommission.value = Number(overviewRes.data?.unsettledCommissionAmount || 0)
-    totalRecharge.value = Number(overviewRes.data?.totalRechargeAmount || 0)
-    const [codeRes, customerRes] = await Promise.all([
-      listAgentInviteCodes(),
-      listAgentCustomers({ pageNum: customerPage.pageNum, pageSize: customerPage.pageSize, keyword: customerKeyword.value || undefined })
-    ])
-    inviteCodes.value = codeRes.data || []
-    applyCustomerPage(customerRes.data)
-    isAgent.value = true
-  } catch (err) {
-    if (err && err.code && err.code !== 200) isAgent.value = false
-  } finally {
-    loading.value = false
+
+function showAgentNotice(title, message, type = 'success') {
+  noticeVisible.value = false
+  noticeType.value = type
+  noticeTitle.value = title
+  noticeMessage.value = message
+  window.setTimeout(() => {
+    noticeVisible.value = true
+  }, 0)
+}
+
+function mapCustomer(item) {
+  const customerLabel = item.nickName || item.userName || '-'
+  const customerSub = item.phonenumber || item.phone || item.userName || '-'
+  const enterpriseName = item.enterpriseName || '-'
+  return {
+    ...item,
+    id: item.invitedUserId || item.userId || item.id,
+    name: enterpriseName !== '-' ? enterpriseName : customerLabel,
+    customerLabel,
+    customerSub,
+    enterpriseName,
+    userName: item.userName || '-',
+    phone: item.phonenumber || item.phone || '-',
+    balance: Number(item.balanceAmount || 0),
+    totalRecharge: Number(item.rechargeAmount || 0),
+    totalConsume: Number(item.consumeAmount || 0),
+    allocatedAmount: Number(item.allocatedAmount || item.balanceAmount || 0),
+    recentConsume: Number(item.recentConsumeAmount || item.recentConsume || 0),
+    previousConsume: Number(item.previousConsumeAmount || item.previousConsume || 0),
+    lastActiveAt: item.lastActiveAt || item.lastLoginTime || item.updateTime || item.invitedAt || '',
+    lastConsumeAt: item.lastConsumeAt || item.lastConsumeTime || '',
+    active: Boolean(item.active ?? item.isActive ?? (daysSince(item.lastActiveAt || item.invitedAt) <= 30)),
+    time: String(item.invitedAt || item.createTime || item.registerTime || '').replace('T', ' ').slice(0, 16) || '-'
   }
 }
+
+function parseExpireDate(value) {
+  if (!value) return null
+  const text = String(value).trim().replace(' ', 'T')
+  const normalized = text.length === 10 ? `${text}T23:59:59` : text
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function inviteStatusMeta(item, max, remaining) {
+  const rawStatus = String(item.status ?? 0)
+  if (rawStatus === '2') return { key: 'expired', text: '已过期', className: 'expired' }
+  if (rawStatus === '3') return { key: 'usedUp', text: '已用完', className: 'used-up' }
+  if (rawStatus !== '0') return { key: 'disabled', text: '停用', className: 'off' }
+
+  const expireDate = parseExpireDate(item.expireTime)
+  if (expireDate && expireDate.getTime() < Date.now()) {
+    return { key: 'expired', text: '已过期', className: 'expired' }
+  }
+  if (max > 0 && remaining <= 0) {
+    return { key: 'usedUp', text: '已用完', className: 'used-up' }
+  }
+  return { key: 'enabled', text: '启用', className: 'enabled' }
+}
+
+function applyInviteStatus(inv) {
+  const remaining = Number(inv.remainingUses ?? Math.max(0, Number(inv.max || inv.maxUses || 0) - Number(inv.used || inv.usedCount || 0)))
+  const max = Number(inv.max || inv.maxUses || 0)
+  const meta = inviteStatusMeta(inv, max, remaining)
+  inv.statusKey = meta.key
+  inv.statusText = meta.text
+  inv.statusClass = meta.className
+  inv.active = meta.key === 'enabled'
+  inv.statusLocked = meta.key === 'expired' || meta.key === 'usedUp'
+}
+
+function mapInvite(item) {
+  const max = Number(item.maxUses || 0)
+  const used = item.usedCount != null
+    ? Number(item.usedCount)
+    : Math.max(0, max - Number(item.remainingUses ?? max))
+  const remaining = item.remainingUses != null ? Number(item.remainingUses) : Math.max(0, max - used)
+  const meta = inviteStatusMeta(item, max, remaining)
+  return {
+    ...item,
+    id: item.id,
+    code: item.inviteCode || '',
+    gift: money(item.giftAmount),
+    used,
+    max,
+    remainingUses: remaining,
+    usage: max <= 0 ? '不限次数' : `剩余 ${remaining}/${max} 次`,
+    expire: item.expireTime ? String(item.expireTime).replace('T', ' ').slice(0, 16) : '长期有效',
+    status: Number(item.status || 0),
+    active: meta.key === 'enabled',
+    statusKey: meta.key,
+    statusText: meta.text,
+    statusClass: meta.className,
+    statusLocked: meta.key === 'expired' || meta.key === 'usedUp',
+    remark: item.remark || '-'
+  }
+}
+
 function applyCustomerPage(data) {
   const page = data || {}
-  customers.value = page.rows || []
+  customers.value = (page.rows || []).map(mapCustomer)
   customerPage.total = Number(page.total || 0)
   customerPage.pageNum = Number(page.pageNum || customerPage.pageNum)
   customerPage.pageSize = Number(page.pageSize || customerPage.pageSize)
-  totalRecharge.value = Number(page.totalRecharge || 0)
-  totalConsume.value = Number(page.totalConsume || 0)
+  overview.value.customerCount = customerPage.total
+  if (page.totalRecharge != null) overview.value.totalRecharge = Number(page.totalRecharge || 0)
 }
+
+async function loadOverview() {
+  const res = await getAgentOverview()
+  const data = res.data || {}
+  overview.value = {
+    balance: Number(data.availableBalanceAmount || 0),
+    commissionRate: Number(data.commissionRate || 0),
+    customerCount: overview.value.customerCount,
+    totalRecharge: Number(data.totalRechargeAmount || 0),
+    totalConsume: Number(data.totalConsumeAmount || 0),
+    monthlyNewCustomerCount: Number(data.monthlyNewCustomerCount || 0),
+    monthlyRecharge: Number(data.monthlyRechargeAmount || 0),
+    monthlyConsume: Number(data.monthlyConsumeAmount || 0),
+    allocatedAmount: Number(data.allocatedAmount || data.allocatedBalanceAmount || 0),
+    settledCommission: Number(data.settledCommissionAmount || 0),
+    unsettledCommission: Number(data.unsettledCommissionAmount || data.pendingSettlementAmount || 0),
+    activeCustomerCount: Number(data.activeCustomerCount || 0),
+    customerGrowthRate: Number(data.customerGrowthRate || 0),
+    monthlyNewCustomerGrowthRate: Number(data.monthlyNewCustomerGrowthRate || 0),
+    monthlyRechargeGrowthRate: Number(data.monthlyRechargeGrowthRate || 0),
+    monthlyConsumeGrowthRate: Number(data.monthlyConsumeGrowthRate || 0),
+    unsettledCommissionGrowthRate: Number(data.unsettledCommissionGrowthRate || 0),
+    activeCustomerGrowthRate: Number(data.activeCustomerGrowthRate || 0)
+  }
+}
+
 async function loadCustomers() {
   customerLoading.value = true
   try {
@@ -360,280 +849,401 @@ async function loadCustomers() {
       keyword: customerKeyword.value || undefined
     })
     applyCustomerPage(res.data)
-  } catch (err) {
-    showToast(err?.msg || '客户列表加载失败')
+  } catch (error) {
+    showToast(error?.msg || error?.message || '客户列表加载失败')
   } finally {
     customerLoading.value = false
   }
 }
-async function changeCustomerPage(step) {
+
+async function loadAllCustomers() {
+  try {
+    const res = await listAgentCustomers({
+      pageNum: 1,
+      pageSize: 9999
+    })
+    const data = res.data || {}
+    allCustomers.value = (data.rows || []).map(mapCustomer)
+  } catch (error) {
+    allCustomers.value = [...customers.value]
+  }
+}
+
+async function loadInviteCodes() {
+  const res = await listAgentInviteCodes()
+  const data = res.data || []
+  inviteCodes.value = (Array.isArray(data) ? data : data.rows || []).map(mapInvite)
+  if (invitePage.pageNum > invitePageCount.value) invitePage.pageNum = invitePageCount.value
+}
+
+async function loadAll() {
+  loading.value = true
+  try {
+    await loadOverview()
+    await Promise.all([loadCustomers(), loadAllCustomers(), loadInviteCodes()])
+    isAgent.value = true
+  } catch (error) {
+    isAgent.value = false
+  } finally {
+    loading.value = false
+  }
+}
+
+function changeCustomerPage(step) {
   const target = customerPage.pageNum + step
   if (target < 1 || target > customerPageCount.value) return
   customerPage.pageNum = target
-  await loadCustomers()
+  loadCustomers()
 }
-function resetCodeForm() {
-  codeForm.giftAmount = ''
-  codeForm.maxUses = 0
-  codeForm.expireTime = ''
-  codeForm.remark = ''
-  message.value = ''
+
+function changeCustomerPageSize(size) {
+  customerPage.pageSize = size
+  customerPage.pageNum = 1
+  if (activeFollowFilter.value) return
+  loadCustomers()
 }
+
+function goCustomerPage(target) {
+  if (target === customerPage.pageNum) return
+  customerPage.pageNum = target
+  if (activeFollowFilter.value) return
+  loadCustomers()
+}
+
+function changeInvitePageSize(size) {
+  invitePage.pageSize = size
+  invitePage.pageNum = 1
+}
+
+function goInvitePage(target) {
+  invitePage.pageNum = target
+}
+
+function resetInviteForm() {
+  inviteForm.value = { giftAmount: '', maxUses: 0, expireTime: '', remark: '' }
+  formMessage.value = ''
+}
+
 function openCreate() {
-  editingCode.value = null
-  resetCodeForm()
-  codeDialog.value = true
+  editingInvite.value = null
+  resetInviteForm()
+  showInviteAdd.value = true
 }
-function openEdit(item) {
-  editingCode.value = item
-  codeForm.giftAmount = item.giftAmount || ''
-  codeForm.maxUses = item.maxUses || 0
-  codeForm.expireTime = item.expireTime ? String(item.expireTime).slice(0, 16) : ''
-  codeForm.remark = item.remark || ''
-  message.value = ''
-  codeDialog.value = true
+
+function closeInviteDialog() {
+  if (saving.value) return
+  showInviteAdd.value = false
+  editingInvite.value = null
+  resetInviteForm()
 }
-function closeCodeDialog() {
-  codeDialog.value = false
-  editingCode.value = null
-  resetCodeForm()
+
+function closeAllocDialog() {
+  if (allocationSaving.value) return
+  allocCustomer.value = null
 }
-async function saveCode() {
-  message.value = ''
-  if (!codeForm.giftAmount || Number(codeForm.giftAmount) <= 0) return (message.value = '请输入大于 0 的赠送余额')
-  if (Number(codeForm.maxUses) < 0) return (message.value = '最大使用次数不能小于 0')
+
+function openEdit(inv) {
+  editingInvite.value = inv
+  inviteForm.value = {
+    giftAmount: inv.giftAmount || '',
+    maxUses: inv.maxUses || 0,
+    expireTime: inv.expireTime ? String(inv.expireTime).slice(0, 10) : '',
+    remark: inv.remark || ''
+  }
+  formMessage.value = ''
+  showInviteAdd.value = true
+}
+
+async function onSaveInvite() {
+  formMessage.value = ''
+  if (!inviteForm.value.giftAmount || Number(inviteForm.value.giftAmount) <= 0) {
+    formMessage.value = '请输入大于 0 的赠送额度'
+    return
+  }
+  if (Number(inviteForm.value.maxUses) < 0) {
+    formMessage.value = '最大使用次数不能小于 0'
+    return
+  }
   saving.value = true
   try {
-    const data = { giftAmount: codeForm.giftAmount, maxUses: Number(codeForm.maxUses || 0), expireTime: apiDate(codeForm.expireTime), remark: codeForm.remark }
-    if (editingCode.value) await updateAgentInviteCode(editingCode.value.id, data)
+    const isEdit = Boolean(editingInvite.value)
+    const resultInfo = {
+      giftAmount: inviteForm.value.giftAmount,
+      maxUses: Number(inviteForm.value.maxUses || 0),
+      expireTime: inviteForm.value.expireTime || '长期有效'
+    }
+    const data = {
+      giftAmount: inviteForm.value.giftAmount,
+      maxUses: Number(inviteForm.value.maxUses || 0),
+      expireTime: apiDate(inviteForm.value.expireTime),
+      remark: inviteForm.value.remark
+    }
+    if (editingInvite.value) await updateAgentInviteCode(editingInvite.value.id, data)
     else await createAgentInviteCode(data)
-    closeCodeDialog()
-    await loadAll()
-    showToast('邀请码已保存')
-  } catch (err) {
-    message.value = err?.msg || err?.message || '提交失败'
+    showInviteAdd.value = false
+    editingInvite.value = null
+    resetInviteForm()
+    await loadInviteCodes()
+    showAgentNotice(
+      isEdit ? '邀请码已更新' : '邀请码已创建',
+      `赠送额度 ¥${money(resultInfo.giftAmount)}，最大使用 ${resultInfo.maxUses} 次，过期时间：${resultInfo.expireTime}。`
+    )
+  } catch (error) {
+    formMessage.value = error?.msg || error?.message || '提交失败'
+    showAgentNotice(editingInvite.value ? '邀请码更新失败' : '邀请码创建失败', formMessage.value, 'error')
   } finally {
     saving.value = false
   }
 }
-async function toggleStatus(item) {
+
+async function toggleInvite(inv) {
+  if (togglingInviteId.value !== null) return
+  if (inv.statusLocked) return
+  togglingInviteId.value = inv.id
+  const oldActive = inv.active
+  const oldStatus = inv.status
+  const oldStatusKey = inv.statusKey
+  const oldStatusText = inv.statusText
+  const oldStatusClass = inv.statusClass
+  const oldStatusLocked = inv.statusLocked
+  const nextActive = !oldActive
+  inv.active = nextActive
+  inv.status = nextActive ? 0 : 1
+  applyInviteStatus(inv)
   try {
-    await updateAgentInviteCode(item.id, { status: item.status === 0 ? 1 : 0 })
-    await loadAll()
-    showToast(item.status === 0 ? '邀请码已停用' : '邀请码已启用')
-  } catch (err) {
-    showToast(err?.msg || '操作失败')
+    await updateAgentInviteCode(inv.id, { status: nextActive ? 0 : 1 })
+    showToast(nextActive ? '邀请码已启用' : '邀请码已停用')
+  } catch (error) {
+    inv.active = oldActive
+    inv.status = oldStatus
+    inv.statusKey = oldStatusKey
+    inv.statusText = oldStatusText
+    inv.statusClass = oldStatusClass
+    inv.statusLocked = oldStatusLocked
+    showToast(error?.msg || error?.message || '操作失败')
+  } finally {
+    togglingInviteId.value = null
   }
-}
-async function copyCode(code) {
-  try {
-    await navigator.clipboard.writeText(code)
-    showToast('邀请码已复制')
-  } catch (err) {
-    showToast('复制失败，请手动复制')
-  }
-}
-function openCustomerFinance(item) {
-  router.push({
-    name: 'agentCustomerFinance',
-    params: { userId: item.invitedUserId },
-    query: { type: 'recharge' }
-  })
 }
 
 function newRequestId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID().replaceAll('-', '')
   return `${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
 }
-function openAllocation() {
-  if (!selectedCustomer.value) return
-  allocationForm.amount = ''
-  allocationForm.remark = ''
-  allocationForm.requestId = newRequestId()
+
+async function onAlloc() {
   allocationMessage.value = ''
-  allocationDialog.value = true
-}
-function openCustomerAllocation(item) {
-  selectedCustomer.value = item
-  openAllocation()
-}
-function closeAllocation() {
-  if (allocationSaving.value) return
-  allocationDialog.value = false
-  allocationMessage.value = ''
-  allocationForm.amount = ''
-  allocationForm.remark = ''
-  allocationForm.requestId = ''
-}
-async function saveAllocation() {
-  allocationMessage.value = ''
-  const amount = Number(allocationForm.amount)
+  const amount = Number(allocAmount.value)
   if (!Number.isFinite(amount) || amount <= 0) return (allocationMessage.value = '请输入大于0的分配金额')
-  if (!/^\d+(\.\d{1,2})?$/.test(String(allocationForm.amount))) return (allocationMessage.value = '分配金额最多保留两位小数')
-  if (amount > Number(agentAvailableBalance.value || 0)) return (allocationMessage.value = '分配金额不能超过代理可用余额')
-  if (!selectedCustomer.value) return (allocationMessage.value = '请选择下级客户')
+  if (!/^\d+(\.\d{1,2})?$/.test(String(allocAmount.value))) return (allocationMessage.value = '分配金额最多保留两位小数')
+  if (amount > Number(overview.value.balance || 0)) return (allocationMessage.value = '分配金额不能超过代理可用余额')
+  if (!allocCustomer.value) return (allocationMessage.value = '请选择下级客户')
   allocationSaving.value = true
-  const customerId = selectedCustomer.value.invitedUserId
   try {
-    const res = await allocateAgentCustomerBalance(customerId, {
-      amount: allocationForm.amount,
-      remark: allocationForm.remark,
-      requestId: allocationForm.requestId
+    const resultInfo = {
+      customerName: allocCustomer.value.name,
+      amount
+    }
+    await allocateAgentCustomerBalance(allocCustomer.value.id, {
+      amount: allocAmount.value,
+      remark: allocRemark.value,
+      requestId: allocationRequestId.value
     })
-    allocationDialog.value = false
-    agentAvailableBalance.value = Number(res.data?.agentAvailableBalance || 0)
-    await loadAll()
-    const customer = customers.value.find(item => item.invitedUserId === customerId)
-    if (customer) selectedCustomer.value = customer
-    showToast(`已成功分配 ¥${money(amount)}`)
-  } catch (err) {
-    allocationMessage.value = err?.msg || err?.message || '余额分配失败'
+    allocCustomer.value = null
+    await Promise.all([loadOverview(), loadCustomers(), loadAllCustomers()])
+    showAgentNotice(
+      '余额分配成功',
+      `已向「${resultInfo.customerName}」分配 ¥${money(resultInfo.amount)}，可在客户资金明细中查看流水记录。`
+    )
+  } catch (error) {
+    allocationMessage.value = error?.msg || error?.message || '余额分配失败'
+    showAgentNotice('余额分配失败', allocationMessage.value, 'error')
   } finally {
     allocationSaving.value = false
   }
 }
 
-onMounted(loadAll)
+async function copyInvite(inv) {
+  try {
+    await navigator.clipboard.writeText(inv.code)
+    showToast('邀请码已复制')
+  } catch (error) {
+    showToast('复制失败，请手动复制')
+  }
+}
+
+function focusFollowUp(item) {
+  if (!item.count) {
+    showToast('当前没有需要跟进的客户')
+    return
+  }
+  activeFollowFilter.value = item.key
+  customerPage.pageNum = 1
+  customerKeyword.value = ''
+  switchAgentSection('customers', { keepFollowFilter: true })
+  showToast(`已切换到客户列表，可处理「${item.title}」`)
+}
+
+function clearFollowFilter() {
+  activeFollowFilter.value = ''
+  customerPage.pageNum = 1
+  loadCustomers()
+}
+
+function openSettlementHistory() {
+  showAgentNotice('历史结算记录', '结算记录接口已预留，可接入代理分成结算列表。', 'info')
+}
+
+function openFinanceSummary() {
+  switchAgentSection('customers')
+  showToast('可在客户列表中进入单个客户资金明细')
+}
+
+onMounted(() => {
+  window.addEventListener('resize', resizeConversionChart)
+  loadAll().finally(renderInviteConversionChart)
+})
+onBeforeUnmount(() => {
+  window.clearTimeout(customerSearchTimer)
+  window.removeEventListener('resize', resizeConversionChart)
+  disposeConversionChart()
+})
 </script>
 
 <style scoped>
-.agent-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: #172033; }
-.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid #dfe6ef; }
-.page-eyebrow { margin: 0 0 5px; color: #2f6fe4; font-size: 13px; font-weight: 700; }
-.page-header h2 { margin: 0; font-size: 25px; line-height: 1.3; letter-spacing: 0; }
-.page-description { margin: 6px 0 0; color: #6b778c; font-size: 14px; }
-.page-actions { display: flex; align-items: center; gap: 10px; }
-.primary-btn, .secondary-btn, .ghost-btn { min-width: 0; height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border-radius: 7px; font: inherit; font-weight: 700; cursor: pointer; transition: border-color .16s ease, background .16s ease, transform .16s ease; }
-.primary-btn { border: 1px solid #2f6fe4; color: #fff; background: #2f6fe4; box-shadow: 0 7px 16px rgba(47, 111, 228, .16); }
-.primary-btn:hover { background: #255fca; }
-.secondary-btn, .ghost-btn { border: 1px solid #d6dfeb; color: #344054; background: #fff; }
-.secondary-btn:hover, .ghost-btn:hover { border-color: #9fb4cf; background: #f8fafc; }
-.primary-btn:active, .secondary-btn:active, .ghost-btn:active { transform: translateY(1px); }
-.primary-btn:disabled, .secondary-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-.primary-btn.compact { height: 36px; padding: 0 13px; font-size: 13px; box-shadow: none; }
+.agent-center-page{gap:0;min-height:0}
+.agent-depth-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--border);margin-bottom:30px;background:#fff}
+.agent-depth-tab{position:relative;min-height:58px;padding:0 22px;border:0;border-right:1px solid var(--border2);background:#fff;text-align:left;font-family:inherit;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.agent-depth-tab:last-child{border-right:0}
+.agent-depth-tab:hover{background:#F8FAFC}
+.agent-depth-tab.active{background:#3568b0;border-color:#3568b0}
+.agent-depth-tab.active:hover{background:#3568b0}
+.agent-depth-tab strong{display:block;font-size:15px;color:var(--text1);line-height:1.35;font-weight:600}
+.agent-depth-tab.active strong{color:#fff;font-weight:500}
+.agent-depth-pane{border-top:0}
+.agent-center-page .business-list-shell{border-top:0;flex:0 0 auto;min-height:420px}
+.agent-center-page .business-list-shell .table-content{min-height:260px}
+.agent-stat-row{grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:0;margin-bottom:30px}
+.agent-stat-row .stat-cell{min-height:96px;justify-content:center}
+.agent-stat-row .stat-cell:nth-child(4n){border-right:none}
+.agent-stat-row .stat-cell:nth-child(-n+4){border-bottom:1px solid var(--border2)}
+.stat-cell-main{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+.stat-cell-value.primary{color:var(--primary)}
+.stat-trend{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;line-height:1;white-space:nowrap}
+.stat-trend svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stat-trend.up{color:#16A34A}
+.stat-trend.down{color:#DC2626}
+.agent-ops-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:0}
+.agent-panel{background:#fff;border:1px solid var(--border);border-top:0;padding:20px 24px}
+.agent-ops-grid .agent-panel + .agent-panel{border-left:0}
+.agent-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.agent-panel-head h2{margin:0;font-size:16px;font-weight:700;color:var(--text1)}
+.agent-panel-head p{margin:5px 0 0;font-size:13px;line-height:1.5;color:var(--text2)}
+.follow-list{gap:0;list-style:none;display:flex;flex-direction:column}
+.follow-item{width:100%;display:flex;align-items:center;gap:10px;padding:10px 0;border:0;border-bottom:1px solid var(--border2);background:#fff;line-height:1;text-align:left;font-family:inherit;cursor:pointer}
+.follow-item:last-child{border-bottom:0}
+.follow-item:hover{background:#F8FAFC}
+.follow-count{font-size:12px;font-weight:600;width:22px;height:22px;border-radius:50%;background:#ffcc00;color:#f77f15;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.follow-count.zero{background:#F1F5F9;color:#94A3B8}
+.follow-text{flex:1;font-size:14px;color:var(--text1);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conversion-chart{height:250px;width:100%;padding-top:2px}
+.conversion-summary{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:17px;border:1px solid var(--border2)}
+.conversion-summary span{padding:11px 12px;font-size:13px;color:var(--text2)}
+.conversion-summary span + span{border-left:1px solid var(--border2)}
+.conversion-summary b{color:var(--text1);font-weight:700}
+.finance-panel{padding-bottom:22px}
+.finance-head{align-items:center}
+.finance-entry-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.finance-entry-actions .btn-primary,.finance-entry-actions .btn-outline{height:36px;padding:0 16px;font-size:13px}
+.finance-metric-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-top:1px solid var(--border2);border-left:1px solid var(--border2)}
+.finance-metric{min-height:74px;padding:13px 14px;border-right:1px solid var(--border2);border-bottom:1px solid var(--border2);display:flex;flex-direction:column;justify-content:center;gap:6px}
+.finance-metric span{font-size:12px;color:var(--text2)}
+.finance-metric strong{font-size:17px;color:var(--text1);font-weight:700;line-height:1.25}
+.rank-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}
+.rank-card{min-width:0;border:1px solid #dce3eb;background:#fff;padding:18px 20px}
+.rank-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--border2)}
+.rank-card-head h3{margin:0;font-size:16px;color:var(--text1);font-weight:700;line-height:1.35}
+.rank-card ol{list-style:none;margin:0;padding:12px 0 0;display:flex;flex-direction:column;gap:6px}
+.rank-card li{min-height:60px;display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #F0F3F7}
+.rank-card li:last-child{border-bottom:0}
+.rank-card li.top{background:#F8FAFC;margin:0 -10px;padding-left:10px;padding-right:10px}
+.rank-index{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:#EEF2F7;color:#667085;font-size:13px;font-weight:700}
+.rank-card li:nth-child(1) .rank-index{background:#E5484D;color:#fff}
+.rank-card li:nth-child(2) .rank-index{background:#F97316;color:#fff}
+.rank-card li:nth-child(3) .rank-index{background:#FACC15;color:#7A4A00}
+.rank-main{min-width:0;display:flex;flex-direction:column;gap:4px}
+.rank-main strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text1);font-size:14px;font-weight:700;line-height:1.3}
+.rank-main small{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:12px;line-height:1.3}
+.rank-value{flex-shrink:0;color:var(--text1);font-size:14px;font-weight:700;text-align:right;white-space:nowrap}
+.rank-card li.top .rank-value{color:var(--primary)}
+.rank-empty{display:flex!important;min-height:56px!important;align-items:center!important;justify-content:center!important;color:var(--text3);font-size:12px}
+.table-count{font-size:13px;color:var(--text2);font-weight:400}
+.customer-title-wrap{display:flex;align-items:center;gap:10px;min-width:0}
+.follow-filter-chip{height:26px;max-width:260px;padding:0 9px;border:1px solid var(--border2);background:#F8FAFC;color:var(--text2);font-size:12px;font-weight:500;font-family:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.follow-filter-chip:hover{border-color:var(--primary);color:var(--primary);background:#F3F7FD}
+.action-group{display:flex;align-items:center;gap:16px}
+.required{color:var(--error);font-weight:400}
+.permission-card{padding:24px;color:var(--error)}
+.customer-tools{display:flex;align-items:center;gap:14px}
+.customer-search{width:280px;height:36px}
+.agent-customer-table{min-width:1080px}
+.agent-customer-cell{display:inline-flex;align-items:center;justify-content:center;max-width:100%;text-align:left;vertical-align:middle}
+.agent-customer-main{display:block;min-width:0}
+.agent-customer-main strong,.agent-customer-main small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agent-customer-main strong{color:var(--text1);font-size:14px;font-weight:700}
+.agent-customer-main small{margin-top:3px;color:var(--text3);font-size:12px;font-weight:400}
+.invite-create-btn{border:none}
+.agent-invite-table{min-width:1080px}
+.td-status{vertical-align:middle;line-height:1}
+.invite-status-pill{display:inline-flex;height:24px;align-items:center;justify-content:center;padding:0 9px;background:#EEF1F5;color:#667085;font-size:12px;font-weight:700}
+.invite-status-pill.enabled{background:#E8F7EF;color:#087443}
+.invite-status-pill.off{background:#EEF1F5;color:#667085}
+.invite-status-pill.expired{background:#FDECEC;color:var(--error)}
+.invite-status-pill.used-up{background:#FEF3E2;color:var(--warning)}
+.invite-remark{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2)}
+.invite-actions{gap:10px}
+.invite-switch{position:relative;display:inline-flex;align-items:center;width:66px;min-width:66px;height:28px;flex:0 0 66px;box-sizing:border-box;padding:0;border:none;border-radius:999px;background:#D3DAE0;color:#64748B;font-size:11px;font-weight:700;font-family:inherit;line-height:1;cursor:pointer;transition:background-color .22s ease,color .18s ease;vertical-align:middle}
+.invite-switch.active{background:#52BC41;color:#fff}
+.invite-switch:disabled{cursor:default}
+.invite-switch:focus-visible{outline:2px solid rgba(11,88,191,.22);outline-offset:2px}
+.switch-knob{position:absolute;left:3px;top:50%;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.22);transform:translateY(-50%);transition:left .22s cubic-bezier(.25,.8,.25,1),box-shadow .18s ease;will-change:left}
+.invite-switch.active .switch-knob{left:calc(100% - 25px)}
+.switch-text{position:absolute;top:50%;right:9px;transform:translateY(-50%);letter-spacing:0;pointer-events:none}
+.invite-switch.active .switch-text{right:auto;left:10px}
+.agent-toast{position:fixed;right:30px;bottom:30px;z-index:100;padding:11px 16px;background:#172033;color:#fff;box-shadow:0 12px 30px rgba(23,32,51,.22);font-size:13px;font-weight:700}
 
-.overview-band { display: grid; grid-template-columns: minmax(300px, .82fr) minmax(620px, 1.8fr); min-height: 126px; overflow: hidden; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
-.balance-overview { display: flex; align-items: center; gap: 16px; padding: 22px 24px; border-right: 1px solid #e6ebf2; background: #f7faff; }
-.metric-icon { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 8px; color: #245fc8; background: #e8f0ff; }
-.balance-overview div > span, .balance-overview small { display: block; color: #68758a; }
-.balance-overview div > span { margin-bottom: 7px; font-size: 13px; font-weight: 700; }
-.balance-overview strong { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.balance-overview small { margin-top: 7px; font-size: 12px; }
-.overview-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
-.overview-metrics div { display: flex; flex-direction: column; justify-content: center; padding: 20px 22px; border-right: 1px solid #edf1f6; }
-.overview-metrics div:last-child { border-right: 0; }
-.overview-metrics dt { margin-bottom: 10px; color: #68758a; font-size: 13px; }
-.overview-metrics dd { margin: 0; color: #172033; font-size: 21px; font-weight: 750; font-variant-numeric: tabular-nums; }
-.overview-metrics dd span { margin-left: 4px; color: #7d899b; font-size: 12px; font-weight: 600; }
-
-.workspace-shell { overflow: hidden; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
-.workspace-tabs { height: 58px; display: flex; align-items: stretch; gap: 28px; padding: 0 24px; border-bottom: 1px solid #e3e9f1; background: #fbfcfe; }
-.workspace-tabs button { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 0 2px; border: 0; color: #667388; background: transparent; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-.workspace-tabs button::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: transparent; }
-.workspace-tabs button.active { color: #245fc8; }
-.workspace-tabs button.active::after { background: #2f6fe4; }
-.workspace-tabs button > span { min-width: 22px; height: 20px; display: inline-grid; place-items: center; padding: 0 6px; border-radius: 10px; color: #64748b; background: #e9eef5; font-size: 12px; }
-.workspace-tabs button.active > span { color: #245fc8; background: #e7efff; }
-.workspace-content { padding: 24px; }
-.section-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
-.section-toolbar h3 { margin: 0 0 5px; font-size: 18px; }
-.section-toolbar p { margin: 0; color: #758196; font-size: 13px; }
-.search-box { width: min(380px, 42%); height: 40px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #d7e0eb; border-radius: 7px; color: #8a96a8; background: #fff; }
-.search-box:focus-within { border-color: #7ba6ef; box-shadow: 0 0 0 3px rgba(47, 111, 228, .1); }
-.search-box input { min-width: 0; width: 100%; border: 0; outline: 0; color: #172033; background: transparent; font: inherit; font-size: 14px; }
-
-.data-table-wrap { overflow: auto; border: 1px solid #e2e8f0; border-radius: 7px; }
-.data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.data-table { min-width: 1080px; }
-.data-table th { padding: 12px 14px; border-bottom: 1px solid #dfe6ee; color: #637087; background: #f6f8fb; text-align: left; font-size: 12px; font-weight: 700; }
-.data-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: #344054; font-size: 13px; vertical-align: middle; }
-.data-table tbody tr:last-child td { border-bottom: 0; }
-.data-table tbody tr { transition: background .14s ease; }
-.data-table tbody tr:hover { background: #f7faff; }
-.data-table tr.muted { opacity: .67; }
-.data-table .numeric { text-align: right; font-variant-numeric: tabular-nums; }
-.customer-table th:first-child { width: 190px; }
-.customer-table th:nth-child(2) { width: 190px; }
-.customer-table th:nth-child(3) { width: 150px; }
-.customer-table th:nth-child(4), .customer-table th:nth-child(5), .customer-table th:nth-child(6) { width: 125px; }
-.customer-table th:last-child { width: 176px; }
-.code-table th:first-child { width: 150px; }
-.code-table th:nth-child(2) { width: 86px; }
-.code-table th:nth-child(3) { width: 120px; }
-.code-table th:nth-child(4) { width: 130px; }
-.code-table th:nth-child(5) { width: 170px; }
-.code-table th:last-child { width: 140px; }
-.actions-column { text-align: right !important; }
-.customer-cell { display: flex; align-items: center; gap: 11px; }
-.customer-avatar { width: 36px; height: 36px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; color: #245fc8; background: #e9f1ff; font-weight: 800; }
-.customer-cell div { min-width: 0; }
-.customer-cell strong, .customer-cell small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.customer-cell strong { color: #172033; font-size: 14px; }
-.customer-cell small { margin-top: 4px; color: #7a8698; font-size: 12px; }
-.money-value { color: #172033 !important; font-weight: 700; font-variant-numeric: tabular-nums; }
-.row-actions { text-align: right; white-space: nowrap; }
-.row-actions button { padding: 5px 7px; border: 0; color: #58677d; background: transparent; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.row-actions button:hover, .row-actions .primary-link { color: #245fc8; }
-.invite-code { color: #172033; font-size: 14px; letter-spacing: .04em; }
-.status-pill { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
-.status-pill.ok { color: #087443; background: #e8f7ef; }
-.status-pill.off { color: #667085; background: #eef1f5; }
-.remark-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.icon-actions { text-align: right; white-space: nowrap; }
-.icon-actions button { width: 32px; height: 32px; display: inline-grid; place-items: center; margin-left: 3px; border: 1px solid transparent; border-radius: 6px; color: #66758c; background: transparent; cursor: pointer; }
-.icon-actions button:hover { border-color: #cfdbeb; color: #245fc8; background: #f4f8ff; }
-.pagination-bar { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 14px; color: #738096; font-size: 12px; }
-.pagination-bar > div { display: flex; align-items: center; gap: 9px; }
-.pagination-bar button { height: 32px; padding: 0 12px; border: 1px solid #d5deea; border-radius: 6px; color: #45546a; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-.pagination-bar button:hover:not(:disabled) { border-color: #8eabe0; color: #245fc8; background: #f7faff; }
-.pagination-bar button:disabled { opacity: .45; cursor: not-allowed; }
-.pagination-bar strong { min-width: 58px; color: #344054; text-align: center; font-variant-numeric: tabular-nums; }
-
-.empty-state { min-height: 260px; display: grid; place-items: center; align-content: center; gap: 9px; color: #8591a3; text-align: center; }
-.empty-state strong { color: #344054; font-size: 15px; }
-.empty-state span { font-size: 13px; }
-.empty-state .primary-btn { margin-top: 8px; color: #fff; }
-.loading-table { display: grid; gap: 1px; overflow: hidden; border: 1px solid #e3e9f1; border-radius: 7px; background: #e7ecf3; }
-.loading-table span { height: 58px; background: linear-gradient(90deg, #f8fafc 25%, #eef2f7 40%, #f8fafc 65%); background-size: 400% 100%; animation: loading 1.4s ease infinite; }
-@keyframes loading { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-.no-permission { margin-top: 10px; padding: 52px 24px; border: 1px solid #dfe6ef; border-radius: 8px; background: #fff; text-align: center; }
-.empty-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 8px; color: #2f6fe4; background: #eaf1ff; }
-.no-permission h3 { margin: 0 0 8px; font-size: 18px; }
-.no-permission p { margin: 0; color: #758196; }
-
-.notice-tip { margin-bottom: 18px; padding: 12px 14px; border-left: 3px solid #2f6fe4; color: #2f4e7c; background: #f3f7fd; font-size: 13px; line-height: 1.6; }
-.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 20px; }
-.form-grid.single-column { grid-template-columns: 1fr; }
-.form-grid label { display: grid; gap: 8px; color: #344054; font-size: 13px; font-weight: 700; }
-.form-grid input { min-width: 0; height: 44px; padding: 0 13px; border: 1px solid #d5deea; border-radius: 7px; outline: none; color: #172033; background: #fff; font: inherit; }
-.form-grid input:focus, .money-input:focus-within { border-color: #76a2ea; box-shadow: 0 0 0 3px rgba(47, 111, 228, .1); }
-.money-input { height: 44px; display: flex; align-items: center; border: 1px solid #d5deea; border-radius: 7px; background: #fff; }
-.money-input b { padding-left: 13px; color: #6b778c; font-size: 15px; }
-.money-input input { flex: 1; border: 0; box-shadow: none !important; }
-.form-message { margin: 14px 0 0; padding: 11px 13px; border: 1px solid #ffd2cf; border-radius: 7px; color: #c43227; background: #fff4f3; font-size: 13px; }
-.allocation-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; margin-bottom: 20px; }
-.allocation-summary > svg { color: #8b99ad; }
-.allocation-summary div { padding: 14px; border: 1px solid #dde6f1; border-radius: 7px; background: #f8faff; }
-.allocation-summary span { display: block; margin-bottom: 7px; color: #6e7b90; font-size: 12px; }
-.allocation-summary strong { font-size: 19px; font-variant-numeric: tabular-nums; }
-.allocation-hint { margin: 14px 0 0; color: #6f7c90; font-size: 12px; line-height: 1.6; }
-.toast { position: fixed; right: 30px; bottom: 30px; z-index: 100; padding: 11px 16px; border-radius: 7px; color: #fff; background: #172033; box-shadow: 0 12px 30px rgba(23, 32, 51, .22); font-size: 13px; font-weight: 700; }
-
-@media (max-width: 1180px) {
-  .overview-band { grid-template-columns: 1fr; }
-  .balance-overview { border-right: 0; border-bottom: 1px solid #e6ebf2; }
-  .search-box { width: min(350px, 46%); }
+@media (max-width:1280px){
+  .finance-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rank-board{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media (max-width: 820px) {
-  .page-header, .section-toolbar { align-items: stretch; flex-direction: column; }
-  .page-actions { justify-content: space-between; }
-  .page-actions button { flex: 1; }
-  .overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .overview-metrics div:nth-child(2) { border-right: 0; }
-  .overview-metrics div:nth-child(-n+2) { border-bottom: 1px solid #edf1f6; }
-  .workspace-tabs, .workspace-content { padding-right: 16px; padding-left: 16px; }
-  .search-box { width: 100%; }
-  .pagination-bar { align-items: flex-start; flex-direction: column; }
-  .form-grid { grid-template-columns: 1fr; }
+
+@media (max-width:1100px){
+  .agent-depth-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .agent-depth-tab:nth-child(2n){border-right:0}
+  .agent-depth-tab:nth-child(n+3){border-top:1px solid var(--border2)}
+  .agent-depth-tab.active{background:#3568b0;border-color:#3568b0}
+  .agent-stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .agent-stat-row .stat-cell{border-right:1px solid var(--border2);border-bottom:1px solid var(--border2)}
+  .agent-stat-row .stat-cell:nth-child(2n){border-right:none}
+  .agent-ops-grid{grid-template-columns:1fr}
+  .agent-ops-grid .agent-panel + .agent-panel{border-left:1px solid var(--border);border-top:0}
+  .rank-board{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:768px){
+  .agent-depth-nav{grid-template-columns:1fr}
+  .agent-depth-tab{min-height:58px;border-right:0;border-top:1px solid var(--border2)}
+  .agent-depth-tab.active{background:#3568b0;border-color:#3568b0}
+  .agent-stat-row{grid-template-columns:1fr}
+  .agent-stat-row .stat-cell{min-height:82px;border-right:none}
+  .agent-panel{padding:16px}
+  .agent-panel-head,.finance-head{flex-direction:column;align-items:stretch}
+  .follow-item{align-items:flex-start}
+  .follow-text{white-space:normal}
+  .conversion-chart{height:230px}
+  .finance-entry-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .finance-metric-grid,.rank-board{grid-template-columns:1fr}
+  .conversion-summary{grid-template-columns:1fr}
+  .conversion-summary span + span{border-left:0;border-top:1px solid var(--border2)}
 }
 </style>

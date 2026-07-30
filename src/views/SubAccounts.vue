@@ -1,81 +1,152 @@
-﻿<template>
-  <div class="sub-page">
-    <section class="sub-hero">
-      <div>
-        <p>{{ labels.accountCenter }}</p>
-        <h2>{{ labels.subAccountManage }}</h2>
-        <span>{{ labels.heroDesc }}</span>
-      </div>
-      <button v-if="!isSubAccount" class="primary-btn" type="button" @click="openCreate"><Plus :size="17" />{{ labels.addSub }}</button>
-    </section>
+<template>
+  <main class="main-content">
+    <TopSlideNotice
+      v-model="noticeVisible"
+      :type="noticeType"
+      :title="noticeTitle"
+      :message="noticeMessage"
+    />
 
-    <section v-if="isSubAccount" class="sub-card no-permission-card">
-      <div class="no-permission-icon"><ShieldAlert :size="23" :stroke-width="1.8" /></div>
-      <h3>子账号无权管理子账号</h3>
+    <div v-if="isSubAccount" class="card sub-no-permission">
+      <div class="sub-shield">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3L5 6V11C5 15.4 7.9 19.2 12 20.5C16.1 19.2 19 15.4 19 11V6L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M12 8V12M12 15.5H12.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2>子账号无权管理子账号</h2>
       <p>子账号由主账号统一创建和管理。</p>
       <div class="sub-quota-view">
-        <div><span>主账号分配总额度</span><strong>&yen;{{ formatMoney(subTotalQuotaYuan) }}</strong></div>
-        <div><span>已消费额度</span><strong>&yen;{{ formatMoney(subUsedQuotaYuan) }}</strong></div>
-        <div><span>剩余可用额度</span><strong>&yen;{{ formatMoney(subRemainingQuotaYuan) }}</strong></div>
+        <div><span>主账号分配总额度</span><strong>¥{{ formatMoney(subTotalQuota) }}</strong></div>
+        <div><span>已消费额度</span><strong>¥{{ formatMoney(subUsedQuota) }}</strong></div>
+        <div><span>剩余可用额度</span><strong>¥{{ formatMoney(subRemainingQuota) }}</strong></div>
       </div>
-    </section>
+    </div>
 
-    <section v-if="!isSubAccount" class="sub-summary">
-      <div><span>{{ labels.mainBalance }}</span><strong>&yen;{{ formatMoney(mainBalance) }}</strong></div>
-      <div><span>{{ labels.subCount }}</span><strong>{{ accounts.length }}</strong></div>
-      <div><span>{{ labels.totalQuota }}</span><strong>&yen;{{ formatMoney(totalQuota) }}</strong></div>
-      <div><span>{{ labels.totalUsed }}</span><strong>&yen;{{ formatMoney(totalUsed) }}</strong></div>
-    </section>
-
-    <section v-if="!isSubAccount" class="sub-card">
-      <div class="card-head">
-        <div><h3>{{ labels.subList }}</h3><p>{{ labels.listDesc }}</p></div>
-        <button class="ghost-btn" type="button" @click="loadList">{{ labels.refresh }}</button>
+    <template v-else>
+      <div class="stat-row">
+        <div class="stat-cell">
+          <span class="stat-cell-label">主账号可支配余额</span>
+          <span class="stat-cell-value">¥ {{ formatMoney(mainBalance) }}</span>
+          <span class="stat-cell-sub">可用于分配额度</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-cell-label">子账号数</span>
+          <span class="stat-cell-value">{{ accounts.length }}</span>
+          <span class="stat-cell-sub">已创建</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-cell-label">已分配额度</span>
+          <span class="stat-cell-value">¥ {{ formatMoney(totalQuota) }}</span>
+          <span class="stat-cell-sub">子账号总额度</span>
+        </div>
+        <div class="stat-cell">
+          <span class="stat-cell-label">已消费额度</span>
+          <span class="stat-cell-value">¥ {{ formatMoney(totalUsed) }}</span>
+          <span class="stat-cell-sub">子账号合计</span>
+        </div>
       </div>
-      <div v-if="loading" class="empty-state">{{ labels.loading }}</div>
-      <div v-else-if="!accounts.length" class="empty-state">{{ labels.empty }}</div>
-      <div v-else class="account-list">
-        <article v-for="item in accounts" :key="item.userId" class="account-row">
-          <div class="account-main">
-            <div class="account-avatar">{{ initial(item) }}</div>
-            <div><h4>{{ item.nickName || item.userName }}</h4><p>{{ item.userName }}<span v-if="item.phonenumber"> · {{ item.phonenumber }}</span></p></div>
+
+      <div class="table-section business-list-shell">
+        <div class="table-header">
+          <h2>子账号列表</h2>
+          <div class="table-tools">
+            <button class="btn-outline refresh-btn" type="button" :disabled="loading" @click="loadList">
+              {{ loading ? '刷新中...' : '刷新' }}
+            </button>
+            <button class="btn-mini sub-account-add-btn" type="button" @click="openCreate">添加子账号</button>
           </div>
-          <div class="quota-block"><span>{{ labels.quota }}</span><strong>&yen;{{ formatMoney(item.subAccountQuota) }}</strong></div>
-          <div class="quota-block"><span>{{ labels.used }}</span><strong>&yen;{{ formatMoney(item.subAccountUsed) }}</strong></div>
-          <div class="quota-block remain"><span>{{ labels.remaining }}</span><strong>&yen;{{ formatMoney(remaining(item)) }}</strong></div>
-          <div class="row-actions"><button type="button" @click="openRecords(item)">查询记录</button><button type="button" @click="openLogs(item)">流水</button><button type="button" @click="openQuota(item)">{{ labels.adjust }}</button><button class="danger" type="button" @click="remove(item)">{{ labels.delete }}</button></div>
-        </article>
+        </div>
+        <div class="table-content">
+          <table class="business-list-table">
+            <thead>
+              <tr>
+                <th style="width:17%">账号</th>
+                <th style="width:12%">姓名</th>
+                <th style="width:14%">手机号</th>
+                <th style="width:13%">分配额度</th>
+                <th style="width:13%">已消费</th>
+                <th style="width:13%">剩余额度</th>
+                <th style="width:18%">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in pagedAccounts" :key="item.userId || item.id">
+                <td class="td-name">{{ item.userName || '-' }}</td>
+                <td>{{ item.nickName || '-' }}</td>
+                <td>{{ maskPhone(item.phonenumber) }}</td>
+                <td>¥{{ formatMoney(item.subAccountQuota) }}</td>
+                <td>¥{{ formatMoney(item.subAccountUsed) }}</td>
+                <td class="remain-cell">¥{{ formatMoney(remaining(item)) }}</td>
+                <td>
+                  <div class="action-group sub-actions">
+                    <span class="action-link" @click="openRecords(item)">查询记录</span>
+                    <span class="action-link" @click="openLogs(item)">流水</span>
+                    <span class="action-link" @click="openQuota(item)">调额度</span>
+                    <span class="action-danger" @click="openDeleteConfirm(item)">删除</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="loading"><td colspan="7" class="table-empty">正在加载子账号...</td></tr>
+              <tr v-else-if="accounts.length === 0"><td colspan="7" class="table-empty">暂无子账号</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <BusinessTableFooter
+          v-if="accounts.length > 0"
+          :total="accounts.length"
+          :page="accountPage.pageNum"
+          :page-size="accountPage.pageSize"
+          :total-pages="accountTotalPages"
+          :loading="loading"
+          @update:page-size="changeAccountPageSize"
+          @page-change="goAccountPage"
+        />
       </div>
-    </section>
+    </template>
 
     <AppModal
-      :open="dialogVisible && !isSubAccount"
-      :title="editing ? labels.adjustQuota : labels.addSub"
+      v-model="dialogVisible"
+      :title="editing ? '调整子账号额度' : '添加子账号'"
       eyebrow="子账号管理"
       :description="editing ? '调整后立即影响该子账号的可用额度' : '创建后由主账号统一管理权限与额度'"
       size="md"
       @close="closeDialog"
     >
-      <div class="form-grid">
-          <label v-if="!editing">{{ labels.loginName }}<input v-model.trim="form.userName" :placeholder="labels.loginNamePlaceholder" /></label>
-          <label v-if="!editing">{{ labels.nickName }}<input v-model.trim="form.nickName" :placeholder="labels.nickNamePlaceholder" /></label>
-          <label v-if="!editing">{{ labels.phone }}<input v-model.trim="form.phonenumber" :placeholder="labels.optional" /></label>
-          <label v-if="!editing">{{ labels.password }}<input v-model.trim="form.password" type="password" :placeholder="labels.passwordPlaceholder" /></label>
-          <label class="quota-field">
-            {{ labels.quotaYuan }}
-            <input v-model.trim="form.subAccountQuota" type="number" min="0" :max="maxQuotaForForm" step="0.01" placeholder="500" />
-            <small>本次最高可设置 &yen;{{ formatMoney(maxQuotaForForm) }}</small>
-          </label>
+      <div class="sub-form-grid">
+        <label v-if="!editing" class="field">
+          <span class="field-label">登录账号 <span class="required">*</span></span>
+          <input v-model.trim="form.userName" class="field-input" placeholder="请输入登录账号" />
+        </label>
+        <label v-if="!editing" class="field">
+          <span class="field-label">昵称</span>
+          <input v-model.trim="form.nickName" class="field-input" placeholder="请输入昵称" />
+        </label>
+        <label v-if="!editing" class="field">
+          <span class="field-label">手机号</span>
+          <input v-model.trim="form.phonenumber" class="field-input" maxlength="11" placeholder="请输入手机号" />
+        </label>
+        <label v-if="!editing" class="field">
+          <span class="field-label">初始密码 <span class="required">*</span></span>
+          <input v-model.trim="form.password" class="field-input" type="password" placeholder="请输入初始密码" />
+        </label>
+        <label class="field quota-field">
+          <span class="field-label">可使用额度（元） <span class="required">*</span></span>
+          <input v-model.trim="form.subAccountQuota" class="field-input" type="number" min="0" :max="maxQuotaForForm" step="0.01" placeholder="500" />
+          <small>本次最高可设置 ¥{{ formatMoney(maxQuotaForForm) }}</small>
+        </label>
       </div>
-      <p v-if="message" class="form-message">{{ message }}</p>
+      <FormAlert :message="message" type="error" />
       <template #footer>
-        <button type="button" class="ghost-btn" @click="closeDialog">{{ labels.cancel }}</button>
-        <button type="button" class="primary-btn" :disabled="saving" @click="submit">{{ saving ? labels.saving : labels.confirm }}</button>
+        <button type="button" class="btn-outline" @click="closeDialog">取消</button>
+        <button type="button" class="btn-primary" :disabled="saving" @click="submit">
+          {{ saving ? '提交中...' : '确认' }}
+        </button>
       </template>
     </AppModal>
 
     <AppModal
-      :open="detailVisible && !isSubAccount"
+      v-model="detailVisible"
       :title="`${detailAccount?.nickName || detailAccount?.userName || '子账号'} 的${detailType === 'records' ? '查询记录' : '账户流水'}`"
       eyebrow="子账号详情"
       :description="detailAccount?.userName || ''"
@@ -83,108 +154,136 @@
       flush
       @close="closeDetail"
     >
-        <div class="detail-tabs">
-          <button :class="{ active: detailType === 'records' }" @click="switchDetail('records')">查询记录</button>
-          <button :class="{ active: detailType === 'logs' }" @click="switchDetail('logs')">账户流水</button>
-        </div>
-        <div class="detail-body">
-          <table v-if="detailType === 'records'" class="detail-table">
-            <thead><tr><th>姓名</th><th>查询类型</th><th>手机号</th><th>提交时间</th><th>状态</th><th>订单号</th></tr></thead>
-            <tbody>
-              <tr v-if="detailLoading"><td colspan="6">正在加载...</td></tr>
-              <tr v-else-if="!detailRows.length"><td colspan="6">暂无查询记录</td></tr>
-              <tr v-for="row in detailRows" :key="row.id">
-                <td><strong>{{ row.name || '-' }}</strong></td>
-                <td>{{ getQueryTypeName(row.searchType) }}</td>
-                <td>{{ maskPhone(row.phoneNumber) }}</td>
-                <td>{{ formatDateTime(row.createTime) }}</td>
-                <td><span class="status-pill" :class="statusClass(row.searchStatus, row.displayStatus, row.billingStatus)">{{ statusText(row.searchStatus, row.displayStatusText, row.billingStatus, row.displayStatus) }}</span></td>
-                <td>{{ row.outTradeNo || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <table v-else class="detail-table">
-            <thead><tr><th>时间</th><th>订单/流水号</th><th>金额</th><th>类型</th><th>变动前</th><th>变动后</th><th>原因</th></tr></thead>
-            <tbody>
-              <tr v-if="detailLoading"><td colspan="7">正在加载...</td></tr>
-              <tr v-else-if="!detailRows.length"><td colspan="7">暂无流水记录</td></tr>
-              <tr v-for="row in detailRows" :key="row.id">
-                <td>{{ formatDateTime(row.createdAt) }}</td>
-                <td>{{ row.outTradeNo || '-' }}</td>
-                <td :class="['amount', String(row.changeStyle) === '7' ? 'frozen' : Number(row.changeCent) >= 0 ? 'plus' : 'minus']">{{ formatSignedFen(row.changeCent, row.changeStyle) }}</td>
-                <td>{{ logTypeText(row.changeStyle) }}</td>
-                <td>&yen;{{ yuanFromFen(row.beforeMoney) }}</td>
-                <td>&yen;{{ yuanFromFen(row.afterMoney) }}</td>
-                <td>{{ row.reason || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="detail-tabs">
+        <button type="button" :class="{ active: detailType === 'records' }" @click="switchDetail('records')">查询记录</button>
+        <button type="button" :class="{ active: detailType === 'logs' }" @click="switchDetail('logs')">账户流水</button>
+      </div>
+      <div class="detail-body">
+        <table v-if="detailType === 'records'" class="detail-table business-list-table">
+          <thead>
+            <tr>
+              <th>候选人</th>
+              <th>背调类型</th>
+              <th>身份证号</th>
+              <th>手机号</th>
+              <th>提交时间</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="detailLoading"><td colspan="7" class="table-empty">正在加载...</td></tr>
+            <tr v-else-if="detailRows.length === 0"><td colspan="7" class="table-empty">暂无查询记录</td></tr>
+            <tr v-for="row in detailRows" :key="row.id">
+              <td class="td-name">{{ row.name || '-' }}</td>
+              <td>{{ getQueryTypeName(row.searchType || row.callTypeId) }}</td>
+              <td class="td-mono">{{ maskIdCard(row.idCard || row.idcard) }}</td>
+              <td>{{ maskPhone(row.phoneNumber || row.mobile || row.phone) }}</td>
+              <td class="td-date">{{ formatFullTime(row.createTime || row.time) }}</td>
+              <td><span class="status-badge" :class="recordStatusTone(row)">{{ recordStatusText(row) }}</span></td>
+              <td>
+                <div class="action-group record-actions">
+                  <router-link v-if="canOperateRecord(row)" :to="`/report/${row.id}`" class="action-link">查看报告</router-link>
+                  <span v-else class="action-plain">查看报告</span>
+                  <button v-if="canOperateRecord(row)" class="action-link action-btn" type="button" @click="downloadPdf(row)">下载 PDF</button>
+                  <span v-else class="action-plain">下载 PDF</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table v-else class="detail-table ledger-table business-list-table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>类型</th>
+              <th>变动金额</th>
+              <th>变动前余额</th>
+              <th>说明</th>
+              <th>流水号</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="detailLoading"><td colspan="6" class="table-empty">正在加载...</td></tr>
+            <tr v-else-if="detailRows.length === 0"><td colspan="6" class="table-empty">暂无流水记录</td></tr>
+            <tr v-for="row in detailRows" :key="row.id">
+              <td class="td-date">{{ String(row.createdAt || row.createTime || '').slice(0, 16) }}</td>
+              <td><span class="ledger-type" :class="ledgerChangeType(row)">{{ logTypeText(row.changeStyle) }}</span></td>
+              <td :class="['ledger-amount', amountClass(row)]">{{ formatSignedFen(row) }}</td>
+              <td>¥{{ formatFenMoney(row.beforeMoney ?? row.beforeCent) }}</td>
+              <td>{{ row.reason || row.remark || '-' }}</td>
+              <td class="td-mono ledger-serial">{{ row.outTradeNo || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <template #footer>
-        <div class="pager">
-          <span>共 {{ detailTotal }} 条</span>
-          <button class="ghost-btn" :disabled="detailPage.pageNum <= 1 || detailLoading" @click="changeDetailPage(-1)">上一页</button>
-          <span>第 {{ detailPage.pageNum }} 页</span>
-          <button class="ghost-btn" :disabled="detailRows.length < detailPage.pageSize || detailLoading" @click="changeDetailPage(1)">下一页</button>
-        </div>
+        <BusinessTableFooter
+          class="detail-business-footer"
+          :total="detailTotal"
+          :page="detailPage.pageNum"
+          :page-size="detailPage.pageSize"
+          :total-pages="detailTotalPages"
+          :loading="detailLoading"
+          @update:page-size="changeDetailPageSize"
+          @page-change="goDetailPage"
+        />
       </template>
     </AppModal>
-  </div>
+
+    <div
+      v-if="deleteTarget"
+      class="modal-mask"
+      @pointerdown="subBackdropGuard.pointerDown"
+      @click.self="subBackdropGuard.click(closeDeleteConfirm)"
+    >
+      <div class="modal-card delete-confirm-card">
+        <div class="delete-confirm-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <h3 class="delete-confirm-title">删除子账号</h3>
+        <p class="delete-confirm-desc">
+          确定删除子账号 <strong>{{ deleteTarget.nickName || deleteTarget.userName }}</strong> 吗？删除后该账号将无法继续登录使用。
+        </p>
+        <div class="delete-confirm-actions">
+          <button type="button" class="btn-outline" :disabled="deleting" @click="closeDeleteConfirm">取消</button>
+          <button type="button" class="btn-primary danger-btn" :disabled="deleting" @click="confirmDelete">
+            {{ deleting ? '删除中...' : '确认删除' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Plus, ShieldAlert } from '@lucide/vue'
+import { useRouter } from 'vue-router'
 import AppModal from '../components/AppModal.vue'
-import { createSubAccount, deleteSubAccount, listSubAccountLogs, listSubAccountRecords, listSubAccounts, updateSubAccountQuota } from '../api/subAccount'
-import { getUserProfile } from '../api/user'
-import { getUser, setUser } from '../utils/auth'
+import BusinessTableFooter from '../components/BusinessTableFooter.vue'
+import FormAlert from '../components/FormAlert.vue'
+import TopSlideNotice from '../components/TopSlideNotice.vue'
+import {
+  createSubAccount,
+  deleteSubAccount,
+  listSubAccountLogs,
+  listSubAccountRecords,
+  listSubAccounts,
+  updateSubAccountQuota
+} from '../api/subAccount'
 import { listQueryTypeConfig } from '../api/queryType'
-import { formatDateTime, statusClass, statusText, yuanFromFen } from '../utils/format'
+import { getUserBalance, getUserProfile } from '../api/user'
+import { setUser } from '../utils/auth'
+import { createBackdropGuard } from '../utils/backdropGuard'
+import { statusText } from '../utils/format'
 
-const labels = {
-  accountCenter: '\u8d26\u6237\u4e2d\u5fc3',
-  subAccountManage: '\u5b50\u8d26\u53f7\u7ba1\u7406',
-  heroDesc: '\u7edf\u4e00\u7ba1\u7406\u5b50\u8d26\u53f7\u53ca\u53ef\u7528\u989d\u5ea6\u3002',
-  addSub: '\u6dfb\u52a0\u5b50\u8d26\u53f7',
-  mainBalance: '\u4e3b\u8d26\u53f7\u53ef\u652f\u914d\u4f59\u989d',
-  subCount: '\u5b50\u8d26\u53f7\u6570',
-  totalQuota: '\u5df2\u5206\u914d\u989d\u5ea6',
-  totalUsed: '\u5df2\u6d88\u8d39\u989d\u5ea6',
-  subList: '\u5b50\u8d26\u53f7\u5217\u8868',
-  listDesc: '\u67e5\u770b\u5b50\u8d26\u53f7\u989d\u5ea6\u3001\u67e5\u8be2\u8bb0\u5f55\u548c\u8d26\u6237\u6d41\u6c34\u3002',
-  refresh: '\u5237\u65b0',
-  loading: '\u6b63\u5728\u52a0\u8f7d\u5b50\u8d26\u53f7...',
-  empty: '\u6682\u65e0\u5b50\u8d26\u53f7',
-  quota: '\u5206\u914d\u603b\u989d\u5ea6',
-  used: '\u5df2\u6d88\u8d39',
-  remaining: '\u5269\u4f59\u989d\u5ea6',
-  adjust: '\u8c03\u989d\u5ea6',
-  delete: '\u5220\u9664',
-  adjustQuota: '\u8c03\u6574\u5b50\u8d26\u53f7\u989d\u5ea6',
-  loginName: '\u767b\u5f55\u8d26\u53f7',
-  loginNamePlaceholder: '\u8bf7\u8f93\u5165\u767b\u5f55\u8d26\u53f7',
-  nickName: '\u6635\u79f0',
-  nickNamePlaceholder: '\u8bf7\u8f93\u5165\u6635\u79f0',
-  phone: '\u624b\u673a\u53f7',
-  optional: '\u8bf7\u8f93\u5165\u624b\u673a\u53f7',
-  password: '\u521d\u59cb\u5bc6\u7801',
-  passwordPlaceholder: '\u8bf7\u8f93\u5165\u521d\u59cb\u5bc6\u7801',
-  quotaYuan: '\u53ef\u4f7f\u7528\u989d\u5ea6\uff08\u5143\uff09',
-  cancel: '\u53d6\u6d88',
-  confirm: '\u786e\u8ba4',
-  saving: '\u63d0\u4ea4\u4e2d...',
-  inputLogin: '\u8bf7\u8f93\u5165\u767b\u5f55\u8d26\u53f7',
-  inputPassword: '\u8bf7\u8f93\u5165\u521d\u59cb\u5bc6\u7801',
-  inputQuota: '\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u989d\u5ea6',
-  submitFail: '\u63d0\u4ea4\u5931\u8d25',
-  deleteConfirmPrefix: '\u786e\u5b9a\u5220\u9664\u5b50\u8d26\u53f7\u300c',
-  deleteConfirmSuffix: '\u300d\u5417\uff1f',
-  defaultInitial: '\u5b50'
-}
-
-const profile = ref(getUser() || {})
-const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
+const router = useRouter()
+const profile = ref({})
 const accounts = ref([])
 const mainBalance = ref(0)
 const loading = ref(false)
@@ -192,7 +291,6 @@ const saving = ref(false)
 const dialogVisible = ref(false)
 const editing = ref(null)
 const message = ref('')
-const form = reactive({ userName: '', nickName: '', phonenumber: '', password: '', subAccountQuota: '' })
 const queryTypeMap = ref({})
 const detailVisible = ref(false)
 const detailType = ref('records')
@@ -200,37 +298,124 @@ const detailAccount = ref(null)
 const detailRows = ref([])
 const detailTotal = ref(0)
 const detailLoading = ref(false)
-const detailPage = reactive({ pageNum: 1, pageSize: 8 })
-const subTotalQuotaYuan = computed(() => Number(profile.value?.subAccountQuota || 0) / 100)
-const subUsedQuotaYuan = computed(() => Number(profile.value?.subAccountUsed || 0) / 100)
-const subRemainingQuotaYuan = computed(() => Math.max(0, (Number(profile.value?.subAccountQuota || 0) - Number(profile.value?.subAccountUsed || 0)) / 100))
+const detailPage = reactive({ pageNum: 1, pageSize: 10 })
+const accountPage = reactive({ pageNum: 1, pageSize: 10 })
+const deleteTarget = ref(null)
+const deleting = ref(false)
+const noticeVisible = ref(false)
+const noticeType = ref('success')
+const noticeTitle = ref('')
+const noticeMessage = ref('')
+const subBackdropGuard = createBackdropGuard()
+const form = reactive({ userName: '', nickName: '', phonenumber: '', password: '', subAccountQuota: '' })
+
+const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
+const subTotalQuota = computed(() => Number(profile.value?.subAccountQuota || 0) / 100)
+const subUsedQuota = computed(() => Number(profile.value?.subAccountUsed || 0) / 100)
+const subRemainingQuota = computed(() => Math.max(0, subTotalQuota.value - subUsedQuota.value))
 const totalQuota = computed(() => accounts.value.reduce((sum, item) => sum + Number(item.subAccountQuota || 0), 0))
 const totalUsed = computed(() => accounts.value.reduce((sum, item) => sum + Number(item.subAccountUsed || 0), 0))
 const totalRemaining = computed(() => accounts.value.reduce((sum, item) => sum + remaining(item), 0))
+const accountTotalPages = computed(() => Math.max(1, Math.ceil(accounts.value.length / accountPage.pageSize)))
+const pagedAccounts = computed(() => {
+  const start = (accountPage.pageNum - 1) * accountPage.pageSize
+  return accounts.value.slice(start, start + accountPage.pageSize)
+})
+const detailTotalPages = computed(() => Math.max(1, Math.ceil(detailTotal.value / detailPage.pageSize)))
 const maxQuotaForForm = computed(() => {
   const available = Number(mainBalance.value || 0)
   if (!editing.value) return Math.max(0, available - totalRemaining.value)
   const currentUsed = Number(editing.value.subAccountUsed || 0)
-  const currentOccupied = currentUsed
   const otherRemaining = Math.max(0, totalRemaining.value - remaining(editing.value))
-  return Math.max(currentOccupied, currentOccupied + available - otherRemaining)
+  return Math.max(currentUsed, currentUsed + available - otherRemaining)
 })
 
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-function remaining(item) { return Math.max(0, Number(item.subAccountQuota || 0) - Number(item.subAccountUsed || 0)) }
-function initial(item) { return String(item.nickName || item.userName || labels.defaultInitial).slice(0, 1) }
+
+function formatFenMoney(value) {
+  return formatMoney(Number(value || 0) / 100)
+}
 
 function maskPhone(value) {
-  if (!value) return '-'
-  const s = String(value)
-  if (s.length !== 11) return s
-  return `${s.slice(0, 3)}****${s.slice(-4)}`
+  const phone = String(value || '')
+  if (phone.length < 7) return phone || '-'
+  return `${phone.slice(0, 3)}****${phone.slice(-4)}`
 }
+
+function maskIdCard(value) {
+  const idCard = String(value || '')
+  if (idCard.length < 8) return idCard || '-'
+  return `${idCard.slice(0, 3)}***********${idCard.slice(-4)}`
+}
+
+function formatFullTime(value) {
+  if (!value) return '-'
+  const d = new Date(String(value).replace(/-/g, '/'))
+  if (Number.isNaN(d.getTime())) return String(value)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `${y}年${m}月${day}日 ${h}:${min}`
+}
+
+function remaining(item) {
+  return Math.max(0, Number(item.subAccountQuota || 0) - Number(item.subAccountUsed || 0))
+}
+
+function normalizeAccount(item) {
+  return {
+    ...item,
+    id: item.id,
+    userId: item.userId || item.id,
+    userName: item.userName || item.username || '-',
+    nickName: item.nickName || item.name || '-',
+    phonenumber: item.phonenumber || item.phone || '',
+    subAccountQuota: Number(item.subAccountQuota || item.quota || 0),
+    subAccountUsed: Number(item.subAccountUsed || item.used || 0)
+  }
+}
+
 function getQueryTypeName(id) {
   return queryTypeMap.value[String(id)] || id || '-'
 }
+
+function recordStatusText(row) {
+  return statusText(row.searchStatus ?? row.status, row.displayStatusText, row.billingStatus, row.displayStatus)
+}
+
+function recordStatusTone(row) {
+  const s = String(row.searchStatus ?? row.status ?? '')
+  if (s === '2' || row.displayStatus === 'success') return 'success'
+  if (s === '3' || s === '4' || s === '6') return 'error'
+  if (s === '1' || s === '5') return 'warning'
+  return 'neutral'
+}
+
+function canOperateRecord(row) {
+  return String(row.searchStatus ?? row.status ?? '') === '2'
+}
+
+function downloadPdf(row) {
+  if (!canOperateRecord(row)) return
+  if (row.pdfFilePath) {
+    const path = String(row.pdfFilePath).trim()
+    const base = import.meta.env.VITE_APP_BASE_API || ''
+    const url = /^(https?:)?\/\//i.test(path) ? path : `${base}${path.startsWith('/') ? path : `/${path}`}`
+    window.open(url, '_blank', 'noopener')
+    return
+  }
+  const target = router.resolve({
+    name: 'reportDetail',
+    params: { id: row.id },
+    query: { download: '1' }
+  })
+  window.open(target.href, '_blank', 'noopener')
+}
+
 function logTypeText(value) {
   const s = String(value ?? '')
   if (s === '1' || s === '5') return '充值'
@@ -240,40 +425,77 @@ function logTypeText(value) {
   if (s === '8') return '释放冻结'
   return s || '-'
 }
-function formatSignedFen(value, changeStyle) {
-  const n = Number(value || 0)
-  if (String(changeStyle) === '7') return `¥${yuanFromFen(Math.abs(n))}`
-  const prefix = n > 0 ? '+' : n < 0 ? '-' : ''
-  return `${prefix}¥${yuanFromFen(Math.abs(n))}`
+
+function changeAmount(row) {
+  return Number(row.changeCent ?? row.changeAmount ?? row.amount ?? 0)
 }
+
+function afterMoney(row) {
+  const before = Number(row.beforeMoney ?? row.beforeCent ?? 0)
+  return before + changeAmount(row)
+}
+
+function amountClass(row) {
+  const n = changeAmount(row)
+  if (String(row.changeStyle) === '7') return 'frozen'
+  if (n > 0) return 'plus'
+  if (n < 0) return 'minus'
+  return ''
+}
+
+function ledgerChangeType(row) {
+  return changeAmount(row) >= 0 ? 'add' : 'sub'
+}
+
+function formatSignedFen(row) {
+  const n = changeAmount(row)
+  const prefix = n > 0 ? '+' : n < 0 ? '-' : ''
+  return `${prefix}¥${formatFenMoney(Math.abs(n))}`
+}
+
 async function loadQueryTypes() {
   try {
     const res = await listQueryTypeConfig({ pageNum: 1, pageSize: 1000 })
-    const map = {}
-    ;(res.rows || []).forEach(item => {
-      if (item.id != null) map[String(item.id)] = item.callTypeName || item.name || `类型${item.id}`
-    })
-    queryTypeMap.value = map
-  } catch (err) {
+    queryTypeMap.value = Object.fromEntries((res.rows || res.data || []).map(item => [
+      String(item.id),
+      item.callTypeName || item.queryTypeName || item.name || `类型${item.id}`
+    ]))
+  } catch (error) {
     queryTypeMap.value = {}
   }
 }
+
+async function loadProfile() {
+  const res = await getUserProfile()
+  const user = res.data || res.user || {}
+  profile.value = user
+  setUser(user)
+  if (!isSubAccount.value) {
+    const balanceRes = await getUserBalance(user.userId || user.id)
+    mainBalance.value = Number(balanceRes.data || balanceRes.balance || 0) / 100
+  }
+}
+
 async function loadList() {
   loading.value = true
   try {
     const res = await listSubAccounts()
-    accounts.value = res.data || []
-    mainBalance.value = res.mainBalance || 0
-  } finally { loading.value = false }
+    accounts.value = (res.rows || res.data || []).map(normalizeAccount)
+    if (accountPage.pageNum > accountTotalPages.value) accountPage.pageNum = accountTotalPages.value
+  } finally {
+    loading.value = false
+  }
 }
-async function loadProfile() {
-  try {
-    const response = await getUserProfile()
-    const user = response.data || response.user || {}
-    profile.value = user
-    setUser(user)
-  } catch (err) {}
+
+function changeAccountPageSize(size) {
+  accountPage.pageSize = size
+  accountPage.pageNum = 1
 }
+
+function goAccountPage(target) {
+  accountPage.pageNum = target
+}
+
 function resetForm() {
   form.userName = ''
   form.nickName = ''
@@ -282,32 +504,91 @@ function resetForm() {
   form.subAccountQuota = ''
   message.value = ''
 }
-function openCreate() { if (isSubAccount.value) return; editing.value = null; resetForm(); dialogVisible.value = true }
-function openQuota(item) { if (isSubAccount.value) return; editing.value = item; resetForm(); form.subAccountQuota = item.subAccountQuota || 0; dialogVisible.value = true }
-function closeDialog() { dialogVisible.value = false; editing.value = null; resetForm() }
+
+function openCreate() {
+  editing.value = null
+  resetForm()
+  dialogVisible.value = true
+}
+
+function openQuota(item) {
+  editing.value = item
+  resetForm()
+  form.subAccountQuota = item.subAccountQuota
+  dialogVisible.value = true
+}
+
+function closeDialog() {
+  dialogVisible.value = false
+  editing.value = null
+  resetForm()
+}
+
+function openSubAccountResult({ isEdit, accountName, loginName, quota }) {
+  noticeVisible.value = false
+  noticeType.value = 'success'
+  noticeTitle.value = isEdit ? '额度调整成功' : '子账号添加成功'
+  noticeMessage.value = isEdit
+    ? `「${accountName}」的可使用额度已更新为 ¥${formatMoney(quota)}。`
+    : `「${accountName}」已创建，登录账号：${loginName || '-'}。`
+  window.setTimeout(() => {
+    noticeVisible.value = true
+  }, 0)
+}
+
 async function submit() {
   message.value = ''
-  if (!editing.value && !form.userName) return (message.value = labels.inputLogin)
-  if (!editing.value && !form.password) return (message.value = labels.inputPassword)
-  if (form.subAccountQuota === '' || Number(form.subAccountQuota) < 0) return (message.value = labels.inputQuota)
+  if (!editing.value && !form.userName) return (message.value = '请输入登录账号')
+  if (!editing.value && !form.password) return (message.value = '请输入初始密码')
+  if (form.subAccountQuota === '' || Number(form.subAccountQuota) < 0) return (message.value = '请输入正确的额度')
   if (Number(form.subAccountQuota) > maxQuotaForForm.value) {
     return (message.value = `额度超出主账号可分配范围，本次最高可设置 ¥${formatMoney(maxQuotaForForm.value)}`)
   }
   saving.value = true
   try {
+    const resultInfo = {
+      isEdit: Boolean(editing.value),
+      accountName: editing.value?.nickName || editing.value?.userName || form.nickName || form.userName || '子账号',
+      loginName: editing.value?.userName || form.userName,
+      quota: form.subAccountQuota
+    }
     if (editing.value) await updateSubAccountQuota(editing.value.userId, { subAccountQuota: form.subAccountQuota })
     else await createSubAccount({ ...form })
     closeDialog()
-    await loadList()
-  } catch (err) {
-    message.value = err.msg || err.message || labels.submitFail
-  } finally { saving.value = false }
+    await Promise.all([loadProfile(), loadList()])
+    openSubAccountResult(resultInfo)
+  } catch (error) {
+    message.value = error?.msg || error?.message || '提交失败'
+    noticeVisible.value = false
+    noticeType.value = 'error'
+    noticeTitle.value = editing.value ? '额度调整失败' : '子账号添加失败'
+    noticeMessage.value = message.value
+    window.setTimeout(() => {
+      noticeVisible.value = true
+    }, 0)
+  } finally {
+    saving.value = false
+  }
 }
-async function remove(item) {
-  const name = item.nickName || item.userName
-  if (!window.confirm(`${labels.deleteConfirmPrefix}${name}${labels.deleteConfirmSuffix}`)) return
-  await deleteSubAccount(item.userId)
-  await loadList()
+
+function openDeleteConfirm(item) {
+  deleteTarget.value = item
+}
+
+function closeDeleteConfirm() {
+  if (!deleting.value) deleteTarget.value = null
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await deleteSubAccount(deleteTarget.value.userId)
+    deleteTarget.value = null
+    await loadList()
+  } finally {
+    deleting.value = false
+  }
 }
 
 function openRecords(item) {
@@ -317,6 +598,7 @@ function openRecords(item) {
   detailVisible.value = true
   loadDetail()
 }
+
 function openLogs(item) {
   detailAccount.value = item
   detailType.value = 'logs'
@@ -324,18 +606,21 @@ function openLogs(item) {
   detailVisible.value = true
   loadDetail()
 }
+
 function switchDetail(type) {
   if (detailType.value === type) return
   detailType.value = type
   detailPage.pageNum = 1
   loadDetail()
 }
+
 function closeDetail() {
   detailVisible.value = false
   detailAccount.value = null
   detailRows.value = []
   detailTotal.value = 0
 }
+
 async function loadDetail() {
   if (!detailAccount.value) return
   detailLoading.value = true
@@ -344,16 +629,24 @@ async function loadDetail() {
     const res = detailType.value === 'records'
       ? await listSubAccountRecords(detailAccount.value.userId, params)
       : await listSubAccountLogs(detailAccount.value.userId, params)
-    detailRows.value = res.rows || []
-    detailTotal.value = res.total || 0
+    detailRows.value = res.rows || res.data || []
+    detailTotal.value = Number(res.total || detailRows.value.length || 0)
   } finally {
     detailLoading.value = false
   }
 }
-function changeDetailPage(delta) {
-  detailPage.pageNum += delta
+
+function changeDetailPageSize(size) {
+  detailPage.pageSize = size
+  detailPage.pageNum = 1
   loadDetail()
 }
+
+function goDetailPage(target) {
+  detailPage.pageNum = target
+  loadDetail()
+}
+
 onMounted(async () => {
   await Promise.all([loadQueryTypes(), loadProfile()])
   if (!isSubAccount.value) await loadList()
@@ -361,69 +654,60 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.sub-page { width: min(1360px, 100%); margin: 0 auto; display: grid; gap: 16px; }
-.no-permission-card { padding: 52px 40px; text-align: center; color: #52627a; }
-.no-permission-card h3 { margin: 14px 0 8px; color: #07162d; font-size: 24px; }
-.no-permission-card p { margin: 0 auto; max-width: 560px; line-height: 1.8; }
-.no-permission-icon { width: 52px; height: 52px; margin: 0 auto; border-radius: 8px; display: grid; place-items: center; color: #2168f3; background: #eaf2ff; font-size: 24px; font-weight: 900; }
-.sub-quota-view { margin: 26px auto 0; max-width: 760px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; text-align: left; }
-.sub-quota-view div { padding: 18px 20px; border: 1px solid #e4ebf5; border-radius: 8px; background: #f8fbff; }
-.sub-quota-view span { display: block; color: #66758c; font-size: 14px; }
-.sub-quota-view strong { display: block; margin-top: 8px; color: #07162d; font-size: 24px; }
-.sub-quota-view div:last-child strong { color: #0b9f62; }
-.sub-hero { min-height: auto; padding: 0 0 18px; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; color: #101828; background: transparent; box-shadow: none; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
-.sub-hero p { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
-.sub-hero h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
-.sub-hero span { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
-.primary-btn, .ghost-btn { border: 0; border-radius: 7px; font-weight: 700; cursor: pointer; }
-.primary-btn { min-height: 42px; background: #2168f3; color: #fff; padding: 0 18px; box-shadow: none; }
-.primary-btn:disabled { opacity: .55; cursor: not-allowed; }
-.ghost-btn { background: #f4f7fb; color: #2168f3; padding: 10px 16px; border: 1px solid #dce6f5; }
-.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; }
-.sub-summary > div, .sub-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
-.sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
-.sub-summary > div:last-child { border-right: 0; }
-.sub-summary span, .quota-block span { color: #66758c; font-size: 14px; }
-.sub-summary strong { display: block; margin-top: 8px; font-size: 24px; color: #07162d; }
-.sub-card { overflow: hidden; }
-.card-head { min-height: 68px; padding: 14px 20px; border-bottom: 1px solid #edf1f7; display: flex; align-items: center; justify-content: space-between; }
-.card-head h3 { margin: 0; font-size: 18px; }
-.card-head p { margin: 8px 0 0; color: #66758c; }
-.empty-state { padding: 70px 20px; text-align: center; color: #7b8aa0; }
-.account-row { min-height: 88px; padding: 16px 20px; border-bottom: 1px solid #edf1f7; display: grid; grid-template-columns: minmax(200px, 1.25fr) repeat(3, 118px) minmax(280px, auto); gap: 14px; align-items: center; }
-.account-row:last-child { border-bottom: 0; }
-.account-main { display: flex; align-items: center; gap: 14px; }
-.account-avatar { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: #eaf2ff; color: #2168f3; font-size: 18px; font-weight: 800; }
-.account-main h4 { margin: 0 0 6px; font-size: 18px; }
-.account-main p { margin: 0; color: #6c7a91; }
-.quota-block strong { display: block; margin-top: 6px; color: #07162d; font-size: 20px; }
-.quota-block.remain strong { color: #0b9f62; }
-.row-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.row-actions button { min-height: 34px; border: 1px solid #dbe6f6; background: #fff; color: #2168f3; border-radius: 6px; padding: 0 11px; font-weight: 700; cursor: pointer; }
-.row-actions .danger { color: #e24a4a; background: #fff7f7; border-color: #ffdada; }
-.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.form-grid label { display: grid; gap: 9px; color: #24344d; font-weight: 800; }
-.form-grid input { height: 42px; border: 1px solid #dbe3ef; border-radius: 6px; padding: 0 12px; font-size: 14px; outline: none; }
-.form-grid input:focus { border-color: #2168f3; box-shadow: 0 0 0 3px rgba(33,104,243,.12); }
-.quota-field small { color: #66758c; font-size: 12px; font-weight: 500; }
-.form-message { margin: 8px 0 0; color: #e24a4a; }
-.detail-tabs { margin: 0; padding: 14px 24px 12px; border-bottom: 1px solid #edf1f7; display: flex; gap: 10px; background: #fff; }
-.detail-tabs button { height: 38px; padding: 0 18px; border-radius: 6px; border: 1px solid #dbe6f6; background: #fff; color: #64748b; font-weight: 700; cursor: pointer; }
-.detail-tabs .active { color: #2168f3; border-color: #2168f3; background: #eef5ff; }
-.detail-body { overflow: auto; max-height: 56vh; padding: 0; }
-.detail-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.detail-table th { position: sticky; top: 0; background: #f6f8fb; color: #52627a; text-align: left; padding: 14px 12px; border-bottom: 1px solid #e5ebf4; white-space: nowrap; }
-.detail-table td { padding: 15px 12px; border-bottom: 1px solid #edf1f7; color: #17233c; vertical-align: top; }
-.status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; background: #eef4ff; color: #2168f3; white-space: nowrap; }
-.status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.status-pill.success { background: #e8f8ef; color: #0b9f62; }
-.status-pill.warning { background: #fff4df; color: #d67a00; }
-.status-pill.danger { background: #ffecec; color: #df3f3f; }
-.amount { font-weight: 900; }
-.amount.plus { color: #0b9f62; }
-.amount.minus { color: #df3f3f; }
-.amount.frozen { color: #b35c00; }
-.pager { margin: 0; padding: 0; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-radius: 0; color: #64748b; }
-@media (max-width: 1180px) { .account-row { grid-template-columns: 1fr 1fr; } .row-actions { justify-content: flex-start; } .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 720px) { .sub-quota-view, .sub-summary, .form-grid { grid-template-columns: 1fr; } .sub-hero { align-items: stretch; flex-direction: column; } }
+.required{color:var(--error);font-weight:400}
+.table-tools{display:flex;align-items:center;gap:10px}
+.refresh-btn{height:34px;padding:0 14px}
+.sub-account-add-btn{width:104px;height:34px;font-weight:600}
+.sub-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.remain-cell{color:var(--success);font-weight:600}
+.sub-no-permission{text-align:center;padding:52px 40px}
+.sub-no-permission h2{font-size:22px;color:var(--text1);margin:12px 0 8px}
+.sub-no-permission p{color:var(--text2);line-height:1.7}
+.sub-shield{width:52px;height:52px;margin:0 auto;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center}
+.sub-shield svg{width:27px;height:27px}
+.sub-quota-view{margin:26px auto 0;max-width:760px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;text-align:left}
+.sub-quota-view div{padding:18px 20px;border:1px solid var(--border);background:#F8FAFC}
+.sub-quota-view span{display:block;color:var(--text2);font-size:13px}
+.sub-quota-view strong{display:block;margin-top:8px;color:var(--text1);font-size:22px}
+.sub-quota-view div:last-child strong{color:var(--success)}
+.sub-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.quota-field{grid-column:1 / -1}
+.quota-field .field-input::-webkit-outer-spin-button,
+.quota-field .field-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.quota-field .field-input{appearance:textfield;-moz-appearance:textfield}
+.quota-field small{font-size:12px;color:var(--text3);margin-top:-2px}
+.detail-tabs{padding:14px 24px 12px;border-bottom:1px solid var(--border);display:flex;gap:10px;background:#fff}
+.detail-tabs button{height:36px;padding:0 16px;border:1px solid var(--border);background:#fff;color:var(--text2);font-weight:600;cursor:pointer;font-family:inherit}
+.detail-tabs button.active{color:var(--primary);border-color:var(--primary);background:var(--primary-light)}
+.detail-body{overflow:auto;max-height:56vh;padding:0 24px 18px;background:#fff}
+.detail-table{width:100%;min-width:900px;border-collapse:collapse;table-layout:auto;border:1px solid var(--border)}
+.ledger-table{min-width:1080px}
+.detail-table th{position:sticky;top:0;height:44px;background:#F8FAFC;color:var(--text2);text-align:center;padding:0 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;white-space:nowrap}
+.detail-table td{height:50px;padding:0 16px;border-bottom:1px solid var(--border2);white-space:nowrap;text-align:center}
+.detail-table th:first-child,.detail-table td:first-child{padding-left:16px}
+.detail-table th:last-child,.detail-table td:last-child{padding-right:16px}
+.ledger-amount{font-weight:700}
+.ledger-amount.plus{color:var(--success)}
+.ledger-amount.minus{color:var(--error)}
+.ledger-amount.frozen{color:var(--warning)}
+.ledger-type{font-size:13px;font-weight:600}
+.ledger-type.add{color:var(--success)}
+.ledger-type.sub{color:var(--error)}
+.ledger-serial{font-size:14px}
+.record-actions{display:flex;align-items:center;gap:14px}
+.action-btn{padding:0;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;line-height:inherit}
+.action-plain{font-size:13px;color:var(--text3);font-weight:500;white-space:nowrap}
+.detail-business-footer{width:100%;border-top:0;padding:0;min-height:32px}
+.delete-confirm-card{max-width:420px;padding:30px 32px;text-align:center}
+.delete-confirm-icon{width:48px;height:48px;margin:0 auto 16px;background:var(--error-bg);color:var(--error);display:flex;align-items:center;justify-content:center}
+.delete-confirm-icon svg{width:26px;height:26px}
+.delete-confirm-title{font-size:18px;font-weight:700;color:var(--text1);margin-bottom:10px}
+.delete-confirm-desc{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:24px}
+.delete-confirm-desc strong{color:var(--text1);font-weight:700}
+.delete-confirm-actions{display:flex;justify-content:center;gap:12px}
+.delete-confirm-actions .btn-primary,.delete-confirm-actions .btn-outline{height:40px;min-width:104px;justify-content:center}
+.danger-btn{background:var(--error)}
+@media (max-width:1100px){
+  .sub-form-grid,.sub-quota-view{grid-template-columns:1fr}
+}
 </style>

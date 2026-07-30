@@ -1,4 +1,4 @@
-﻿export function yuanFromFen(value) {
+export function yuanFromFen(value) {
   const n = Number(value || 0) / 100
   if (!Number.isFinite(n)) return '0.00'
   return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -44,7 +44,6 @@ export function statusClass(status, displayStatus = '', billingStatus = '') {
   return 'pending'
 }
 
-
 function isPlainStatusMessage(value) {
   if (!value) return false
   const text = String(value).trim()
@@ -56,21 +55,12 @@ function getStatusReason(item) {
   const status = String(item.searchStatus ?? '')
   const refunded = isRefundedStatus(status, item.billingStatus, item.displayStatus)
   const codeMsg = item.codeMsg || item.code_msg || ''
-
-  if (refunded) {
-    return item.reasonForRefund || item.reason_for_refund || ''
-  }
-
-  if (status === '6') {
-    return String(codeMsg).startsWith('授权书审核不通过') ? codeMsg : ''
-  }
-
-  if (status === '3') {
-    return isPlainStatusMessage(codeMsg) ? codeMsg : ''
-  }
-
+  if (refunded) return item.reasonForRefund || item.reason_for_refund || ''
+  if (status === '6') return String(codeMsg).startsWith('授权书审核不通过') ? codeMsg : ''
+  if (status === '3') return isPlainStatusMessage(codeMsg) ? codeMsg : ''
   return ''
 }
+
 export function mapRecord(item, queryTypeMap = {}) {
   const typeId = item.searchType || item.searchTypeId || item.callTypeId
   return {
@@ -92,5 +82,3 @@ export function mapRecord(item, queryTypeMap = {}) {
     statusReason: getStatusReason(item)
   }
 }
-
-

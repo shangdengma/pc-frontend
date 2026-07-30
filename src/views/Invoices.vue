@@ -1,330 +1,327 @@
 <template>
-  <section class="invoice-page">
-    <div class="invoice-hero">
-      <div>
-        <p class="eyebrow">账户中心</p>
-        <h2>我的发票</h2>
-        <p>{{ isSubAccount ? '子账号可查看自己的开票记录，如需开票请联系主账号。' : '查看开票申请记录、处理进度和企业开票信息。' }}</p>
+  <main class="main-content">
+    <!-- 统计 -->
+    <div class="stat-row">
+      <div class="stat-cell">
+        <span class="stat-cell-label">全部发票</span>
+        <span class="stat-cell-value">{{ stats.total }}</span>
+        <span class="stat-cell-sub">累计申请</span>
       </div>
-      <button class="primary-btn invoice-apply-btn" :disabled="isSubAccount" :title="isSubAccount ? '子账号无权申请发票，请联系主账号开票' : ''" @click="openApplyDialog">
-        {{ isSubAccount ? '请联系主账号开票' : '我要开票' }}
-      </button>
-    </div>
-
-    <div class="invoice-stats">
-      <div class="stat-card total">
-        <div class="stat-info">
-          <span>全部申请</span>
-          <strong>{{ invoiceList.length }}</strong>
-        </div>
-        <span class="stat-icon">
-          <FileText :size="19" :stroke-width="1.8" />
-        </span>
+      <div class="stat-cell">
+        <span class="stat-cell-label">待处理</span>
+        <span class="stat-cell-value warning">{{ stats.pending + stats.processing }}</span>
+        <span class="stat-cell-sub">等待审核</span>
       </div>
-      <div class="stat-card pending">
-        <div class="stat-info">
-          <span>待处理</span>
-          <strong>{{ statusCount.pending + statusCount.processing }}</strong>
-        </div>
-        <span class="stat-icon">
-          <Clock3 :size="19" :stroke-width="1.8" />
-        </span>
+      <div class="stat-cell">
+        <span class="stat-cell-label">已开票</span>
+        <span class="stat-cell-value success">{{ stats.issued }}</span>
+        <span class="stat-cell-sub">已完成</span>
       </div>
-      <div class="stat-card issued">
-        <div class="stat-info">
-          <span>已开票</span>
-          <strong>{{ statusCount.issued }}</strong>
-        </div>
-        <span class="stat-icon">
-          <BadgeCheck :size="19" :stroke-width="1.8" />
-        </span>
-      </div>
-      <div class="stat-card rejected">
-        <div class="stat-info">
-          <span>已驳回</span>
-          <strong>{{ statusCount.rejected }}</strong>
-        </div>
-        <span class="stat-icon">
-          <CircleX :size="19" :stroke-width="1.8" />
-        </span>
+      <div class="stat-cell">
+        <span class="stat-cell-label">已驳回</span>
+        <span class="stat-cell-value error">{{ stats.rejected }}</span>
+        <span class="stat-cell-sub">需重新申请</span>
       </div>
     </div>
 
-    <div class="invoice-panel">
-      <div class="invoice-panel-head">
-        <div>
-          <h3>开票记录</h3>
-        </div>
-        <button class="ghost-btn" :disabled="loading" @click="fetchInvoices">
-          {{ loading ? '刷新中...' : '刷新' }}
+    <FormAlert class="invoice-page-alert" :message="pageMsg" type="error" />
+
+    <!-- 表格 -->
+    <div class="table-section business-list-shell">
+      <div class="table-header">
+        <h2>开票记录</h2>
+        <button class="btn-mini invoice-apply-btn" :disabled="isSubAccount" @click="openAdd">
+          {{ isSubAccount ? '请联系主账号开票' : '我要开票' }}
         </button>
       </div>
-
-      <div class="invoice-table-wrap">
-        <table class="invoice-table">
+      <div class="table-content">
+        <table class="business-list-table">
           <thead>
             <tr>
-              <th>申请时间</th>
-              <th>发票抬头</th>
-              <th>发票金额</th>
-              <th>开票状态</th>
-              <th>发票详情</th>
-              <th>操作</th>
+              <th style="width:26%">发票抬头</th>
+              <th style="width:14%">发票类型</th>
+              <th style="width:12%">金额</th>
+              <th style="width:12%">状态</th>
+              <th style="width:16%">申请时间</th>
+              <th style="width:20%">操作</th>
             </tr>
           </thead>
-          <tbody v-if="invoiceList.length">
-            <tr v-for="item in invoiceList" :key="item.id">
-              <td>{{ item.createdate || '-' }}</td>
-              <td class="title-cell">{{ item.title || '-' }}</td>
-              <td class="amount-cell">{{ formatAmount(item.amount) }}</td>
+          <tbody>
+            <tr v-for="inv in pagedInvoices" :key="inv.id">
+              <td class="td-name">{{ inv.title }}</td>
+              <td>{{ typeLabel(inv.types) }}</td>
+              <td>¥{{ inv.amount.toFixed(2) }}</td>
               <td>
-                <span class="invoice-status" :class="statusMeta(item.status).className">
-                  {{ statusMeta(item.status).label }}
-                </span>
+                <span class="status-badge" :class="invStatusClass(inv.status)">{{ inv.statusLabel }}</span>
               </td>
+              <td class="td-date">{{ inv.time }}</td>
               <td>
-                <div class="detail-lines">
-                  <span>{{ typeLabel(item.types) }}</span>
-                  <span v-if="item.taxno">税号：{{ item.taxno }}</span>
-                  <span v-if="item.remark">备注：{{ item.remark }}</span>
+                <div class="action-group">
+                  <span class="action-link" @click="openDetail(inv)">详情</span>
                 </div>
               </td>
-              <td>
-                <button class="text-btn" @click="showDetail(item)">查看详情</button>
-              </td>
             </tr>
+            <tr v-if="list.length===0"><td colspan="6" class="table-empty">暂无开票记录</td></tr>
           </tbody>
         </table>
+      </div>
+      <BusinessTableFooter
+        v-if="list.length > 0"
+        :total="list.length"
+        :page="invoicePage"
+        :page-size="invoicePageSize"
+        :total-pages="invoiceTotalPages"
+        @update:page-size="changeInvoicePageSize"
+        @page-change="goInvoicePage"
+      />
+    </div>
 
-        <div v-if="!invoiceList.length" class="invoice-empty">
-          <div class="empty-illustration">
-            <span></span>
-          </div>
-          <strong>{{ loading ? '正在加载发票记录' : '暂无开票记录' }}</strong>
-          <p>{{ isSubAccount ? '子账号无权申请发票，请联系主账号开票。' : '需要开票时，点击右上角“我要开票”提交申请。' }}</p>
+    <!-- 申请开票弹窗 -->
+    <div
+      v-if="showAdd"
+      class="modal-mask"
+      @pointerdown="invoiceBackdropGuard.pointerDown"
+      @click.self="invoiceBackdropGuard.click(closeAdd)"
+    >
+      <div class="modal-card">
+        <h3 class="modal-title">填写开票信息</h3>
+        <label class="field">
+          <span class="field-label">发票类型 <span class="required">*</span></span>
+          <select v-model="addForm.types" class="field-input">
+            <option value="normal">普通发票</option>
+            <option value="special">增值税专用发票</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">企业名称 <span class="required">*</span></span>
+          <input v-model.trim="addForm.title" class="field-input" placeholder="请输入企业完整名称" />
+        </label>
+        <label class="field">
+          <span class="field-label">纳税人识别号 <span class="required">*</span></span>
+          <input v-model.trim="addForm.taxno" class="field-input" placeholder="请输入15-20位统一社会信用代码" />
+        </label>
+        <label class="field">
+          <span class="field-label">开票金额（元） <span class="required">*</span></span>
+          <input v-model.trim="addForm.amount" class="field-input" inputmode="decimal" placeholder="请输入需开票的金额" />
+        </label>
+        <template v-if="addForm.types === 'special'">
+          <label class="field">
+            <span class="field-label">注册地址</span>
+            <input v-model.trim="addForm.registeraddress" class="field-input" placeholder="请输入注册地址" />
+          </label>
+          <label class="field">
+            <span class="field-label">开户行</span>
+            <input v-model.trim="addForm.bankname" class="field-input" placeholder="请输入开户行" />
+          </label>
+          <label class="field">
+            <span class="field-label">银行账号</span>
+            <input v-model.trim="addForm.bankaccount" class="field-input" placeholder="请输入银行账号" />
+          </label>
+        </template>
+        <label class="field">
+          <span class="field-label">备注说明（选填）</span>
+          <textarea v-model.trim="addForm.remark" class="field-input invoice-remark-input" placeholder="如有特殊要求请在此备注"></textarea>
+        </label>
+        <FormAlert :message="addMsg" type="error" />
+        <div class="modal-actions">
+          <button class="btn-outline" @click="closeAdd">取消</button>
+          <button class="btn-primary" @click="onAdd">提交申请</button>
         </div>
       </div>
     </div>
 
+    <!-- 详情弹窗 -->
     <AppModal
-      :open="applyVisible"
-      title="填写开票信息"
-      eyebrow="发票申请"
-      description="请准确填写企业开票资料，带 * 为必填项"
-      size="lg"
-      @close="closeApplyDialog"
+      v-model="detailOpen"
+      :title="detail?.title || '发票详情'"
+      eyebrow="发票详情"
+      :description="detail ? `申请编号：INV-${detail.id.toString().padStart(6, '0')}` : ''"
+      size="md"
     >
-      <form id="invoice-apply-form" class="invoice-form" @submit.prevent="submitInvoice">
-          <label>
-            <span>发票类型 <b>*</b></span>
-            <select v-model="form.types">
-              <option value="normal">普通发票</option>
-              <option value="special">增值税专用发票</option>
-            </select>
-          </label>
-          <label>
-            <span>企业名称 <b>*</b></span>
-            <input v-model.trim="form.title" placeholder="请输入企业完整名称" />
-          </label>
-          <label>
-            <span>纳税人识别号 <b>*</b></span>
-            <input v-model.trim="form.taxno" placeholder="请输入15-20位统一社会信用代码" />
-          </label>
-          <label>
-            <span>开票金额（元） <b>*</b></span>
-            <input v-model.trim="form.amount" placeholder="请输入需开票的金额" inputmode="decimal" />
-          </label>
-          <label v-if="form.types === 'special'" class="span-2">
-            <span>注册地址</span>
-            <input v-model.trim="form.registeraddress" placeholder="请输入注册地址" />
-          </label>
-          <label v-if="form.types === 'special'">
-            <span>开户行</span>
-            <input v-model.trim="form.bankname" placeholder="请输入开户行" />
-          </label>
-          <label v-if="form.types === 'special'">
-            <span>银行账号</span>
-            <input v-model.trim="form.bankaccount" placeholder="请输入银行账号" />
-          </label>
-          <label class="span-2">
-            <span>备注说明（选填）</span>
-            <textarea v-model.trim="form.remark" placeholder="如有特殊要求请在此备注"></textarea>
-          </label>
-
-          <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
-      </form>
+      <template v-if="detail">
+        <div class="message-detail-body invoice-detail-body">
+          <div class="detail-grid">
+            <div class="detail-item"><span class="detail-label">发票抬头</span><span class="detail-value">{{ detail.title }}</span></div>
+            <div class="detail-item"><span class="detail-label">发票类型</span><span class="detail-value">{{ typeLabel(detail.types) }}</span></div>
+            <div class="detail-item"><span class="detail-label">开票金额</span><span class="detail-value">¥{{ detail.amount.toFixed(2) }}</span></div>
+            <div class="detail-item"><span class="detail-label">申请时间</span><span class="detail-value">{{ detail.time }}</span></div>
+            <div class="detail-item"><span class="detail-label">状态</span><span class="detail-value"><span class="status-badge" :class="invStatusClass(detail.status)">{{ detail.statusLabel }}</span></span></div>
+            <div class="detail-item"><span class="detail-label">纳税人识别号</span><span class="detail-value">{{ detail.taxno || '-' }}</span></div>
+            <div class="detail-item" v-if="detail.registeraddress"><span class="detail-label">注册地址</span><span class="detail-value">{{ detail.registeraddress }}</span></div>
+            <div class="detail-item" v-if="detail.bankname"><span class="detail-label">开户行</span><span class="detail-value">{{ detail.bankname }}</span></div>
+            <div class="detail-item" v-if="detail.bankaccount"><span class="detail-label">银行账号</span><span class="detail-value">{{ detail.bankaccount }}</span></div>
+            <div class="detail-item"><span class="detail-label">备注说明</span><span class="detail-value">{{ detail.remark || '-' }}</span></div>
+            <div class="detail-item" v-if="detail.status === 'rejected' && detail.rejectReason"><span class="detail-label">驳回原因</span><span class="detail-value error">{{ detail.rejectReason }}</span></div>
+          </div>
+        </div>
+      </template>
       <template #footer>
-        <button class="ghost-btn" type="button" @click="closeApplyDialog">取消</button>
-        <button class="primary-btn" type="submit" form="invoice-apply-form" :disabled="submitting">
-          {{ submitting ? '提交中...' : '提交申请' }}
-        </button>
+        <button class="btn-primary invoice-confirm-btn" type="button" @click="detail = null">确认</button>
       </template>
     </AppModal>
 
-    <AppModal
-      :open="!!detail"
-      :title="detail?.title || '发票申请'"
-      eyebrow="发票详情"
-      :description="detail?.createdate || '-'"
-      size="md"
-      @close="detail = null"
-    >
-      <div v-if="detail" class="detail-grid">
-          <span>发票类型</span><strong>{{ typeLabel(detail.types) }}</strong>
-          <span>处理状态</span><strong>{{ statusMeta(detail.status).label }}</strong>
-          <span>发票金额</span><strong>{{ formatAmount(detail.amount) }}</strong>
-          <span>纳税人识别号</span><strong>{{ detail.taxno || '-' }}</strong>
-          <span v-if="detail.registeraddress">注册地址</span><strong v-if="detail.registeraddress">{{ detail.registeraddress }}</strong>
-          <span v-if="detail.bankname">开户行</span><strong v-if="detail.bankname">{{ detail.bankname }}</strong>
-          <span v-if="detail.bankaccount">银行账号</span><strong v-if="detail.bankaccount">{{ detail.bankaccount }}</strong>
-          <span>备注说明</span><strong>{{ detail.remark || '-' }}</strong>
-      </div>
-    </AppModal>
-  </section>
+    <ResultModal
+      v-model="resultVisible"
+      type="success"
+      title="开票申请已提交"
+      description="开票信息已进入处理流程，可在开票记录中查看状态。"
+      :details="resultDetails"
+      primary-text="确认"
+      @primary="resultVisible = false"
+      @close="resultVisible = false"
+    />
+  </main>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { BadgeCheck, CircleX, Clock3, FileText } from '@lucide/vue'
-import AppModal from '../components/AppModal.vue'
+import { computed, onMounted, ref } from 'vue'
 import { addInvoice, listInvoices } from '../api/invoice'
 import { getUserProfile } from '../api/user'
-import { getUser, setUser } from '../utils/auth'
+import AppModal from '../components/AppModal.vue'
+import BusinessTableFooter from '../components/BusinessTableFooter.vue'
+import FormAlert from '../components/FormAlert.vue'
+import ResultModal from '../components/ResultModal.vue'
+import { createBackdropGuard } from '../utils/backdropGuard'
 
-const loading = ref(false)
-const submitting = ref(false)
-const applyVisible = ref(false)
-const invoiceList = ref([])
+const list = ref([])
+const profile = ref({})
+const invoicePage = ref(1)
+const invoicePageSize = ref(10)
+const showAdd = ref(false)
 const detail = ref(null)
-const message = ref('')
-const messageType = ref('info')
-const profile = ref(getUser() || {})
-const isSubAccount = computed(() => profile.value && (profile.value.parentUserId != null || profile.value.accountType === 'sub'))
 
-const form = reactive({
-  types: 'normal',
-  title: '',
-  taxno: '',
-  amount: '',
-  remark: '',
-  registeraddress: '',
-  bankname: '',
-  bankaccount: ''
+const stats = computed(() => ({
+  total: list.value.length,
+  pending: list.value.filter(i => i.status === 'pending').length,
+  processing: list.value.filter(i => i.status === 'processing').length,
+  issued: list.value.filter(i => i.status === 'issued').length,
+  rejected: list.value.filter(i => i.status === 'rejected').length
+}))
+const isSubAccount = computed(() => profile.value.parentUserId != null || profile.value.accountType === 'sub')
+const invoiceTotalPages = computed(() => Math.max(1, Math.ceil(list.value.length / invoicePageSize.value)))
+const pagedInvoices = computed(() => {
+  const start = (invoicePage.value - 1) * invoicePageSize.value
+  return list.value.slice(start, start + invoicePageSize.value)
+})
+const detailOpen = computed({
+  get: () => !!detail.value,
+  set: value => {
+    if (!value) detail.value = null
+  }
 })
 
-const statusCount = computed(() => invoiceList.value.reduce((acc, item) => {
-  const key = statusMeta(item.status).className
-  acc[key] = (acc[key] || 0) + 1
-  return acc
-}, { pending: 0, processing: 0, issued: 0, rejected: 0 }))
+const pageMsg = ref('')
+const addMsg = ref('')
+const resultVisible = ref(false)
+const resultDetails = ref([])
+const invoiceBackdropGuard = createBackdropGuard()
+const addForm = ref({ types:'normal', title:'', taxno:'', amount:'', remark:'', registeraddress:'', bankname:'', bankaccount:'' })
 
-function resetForm() {
-  form.types = 'normal'
-  form.title = ''
-  form.taxno = ''
-  form.amount = ''
-  form.remark = ''
-  form.registeraddress = ''
-  form.bankname = ''
-  form.bankaccount = ''
+function invStatusClass(s) {
+  const m = { pending: 'warning', processing: 'primary', issued: 'success', rejected: 'error' }
+  return m[s] || 'neutral'
 }
 
-function openApplyDialog() {
-  if (isSubAccount.value) {
-    messageType.value = 'error'
-    message.value = '子账号无权申请发票，请联系主账号开票'
-    return
-  }
-  message.value = ''
-  messageType.value = 'info'
-  applyVisible.value = true
+function statusLabel(status) {
+  const map = { pending: '待处理', processing: '处理中', issued: '已开票', rejected: '已驳回' }
+  return map[status] || '未知'
 }
 
-function closeApplyDialog() {
-  if (submitting.value) return
-  applyVisible.value = false
+function normalizeType(item) {
+  const value = item.types || item.type || item.invoiceType || 'normal'
+  return value === 'general' ? 'normal' : value
 }
 
 function typeLabel(type) {
   return type === 'special' ? '增值税专用发票' : '普通发票'
 }
 
-function statusMeta(status) {
-  const map = {
-    pending: { label: '待处理', className: 'pending' },
-    processing: { label: '处理中', className: 'processing' },
-    issued: { label: '已开票', className: 'issued' },
-    rejected: { label: '已驳回', className: 'rejected' }
+function mapInvoice(item) {
+  const types = normalizeType(item)
+  return {
+    id: item.id,
+    title: item.title || item.invoiceTitle,
+    types,
+    type: types === 'normal' ? 'general' : 'special',
+    amount: Number(item.amount || 0),
+    status: item.status || 'pending',
+    statusLabel: statusLabel(item.status || 'pending'),
+    time: String(item.createdate || item.createTime || item.time || '').slice(0, 10),
+    rejectReason: item.rejectReason || '',
+    taxno: item.taxno || item.taxNo || '',
+    remark: item.remark || '',
+    registeraddress: item.registeraddress || item.address || '',
+    bankname: item.bankname || item.bank || '',
+    bankaccount: item.bankaccount || item.account || ''
   }
-  return map[status] || map.pending
-}
-
-function formatAmount(value) {
-  const num = Number(value)
-  if (!Number.isFinite(num)) return value ? `¥${value}` : '-'
-  return `¥${num.toFixed(2)}`
-}
-
-function validateForm() {
-  if (!form.title) return '请输入企业名称'
-  if (!form.taxno) return '请输入纳税人识别号'
-  if (!form.amount) return '请输入开票金额'
-  const amount = Number(form.amount)
-  if (!Number.isFinite(amount) || amount <= 0) return '开票金额必须大于0'
-  return ''
 }
 
 async function fetchInvoices() {
-  loading.value = true
+  pageMsg.value = ''
   try {
     const res = await listInvoices({ pageNum: 1, pageSize: 100 })
-    invoiceList.value = res.rows || []
-  } catch (err) {
-    messageType.value = 'error'
-    message.value = err?.msg || '获取发票记录失败'
-  } finally {
-    loading.value = false
+    list.value = (res.rows || []).map(mapInvoice)
+    if (invoicePage.value > invoiceTotalPages.value) invoicePage.value = invoiceTotalPages.value
+  } catch (error) {
+    list.value = []
+    pageMsg.value = error?.msg || error?.message || '获取发票记录失败'
   }
-}
-
-async function submitInvoice() {
-  if (isSubAccount.value) {
-    messageType.value = 'error'
-    message.value = '子账号无权申请发票，请联系主账号开票'
-    return
-  }
-  const error = validateForm()
-  if (error) {
-    messageType.value = 'error'
-    message.value = error
-    return
-  }
-  submitting.value = true
-  message.value = ''
-  try {
-    await addInvoice({ ...form })
-    resetForm()
-    await fetchInvoices()
-    applyVisible.value = false
-  } catch (err) {
-    messageType.value = 'error'
-    message.value = err?.msg || '提交发票申请失败'
-  } finally {
-    submitting.value = false
-  }
-}
-
-function showDetail(item) {
-  detail.value = item
 }
 
 async function loadProfile() {
+  const res = await getUserProfile()
+  profile.value = res.data || res.user || {}
+}
+
+function openAdd() {
+  addMsg.value = ''
+  if (isSubAccount.value) {
+    addMsg.value = '子账号无权申请发票，请联系主账号开票'
+    return
+  }
+  showAdd.value = true
+}
+
+function closeAdd() {
+  showAdd.value = false
+  addMsg.value = ''
+}
+
+async function onAdd() {
+  addMsg.value = ''
+  if (isSubAccount.value) return (addMsg.value = '子账号无权申请发票，请联系主账号开票')
+  if (!addForm.value.title) return (addMsg.value = '请输入企业名称')
+  if (!addForm.value.taxno) return (addMsg.value = '请输入纳税人识别号')
+  if (!addForm.value.amount) return (addMsg.value = '请输入开票金额')
+  const amount = Number(addForm.value.amount)
+  if (!Number.isFinite(amount) || amount <= 0) return (addMsg.value = '开票金额必须大于0')
   try {
-    const res = await getUserProfile()
-    const user = res.data || res.user || {}
-    profile.value = user
-    setUser(user)
-  } catch (error) {}
+    const resultInfo = {
+      title: addForm.value.title,
+      type: typeLabel(addForm.value.types),
+      amount
+    }
+    await addInvoice({ ...addForm.value, amount })
+    await fetchInvoices()
+    closeAdd()
+    addForm.value = { types:'normal', title:'', taxno:'', amount:'', remark:'', registeraddress:'', bankname:'', bankaccount:'' }
+    resultDetails.value = [
+      { label: '发票抬头', value: resultInfo.title },
+      { label: '发票类型', value: resultInfo.type },
+      { label: '开票金额', value: `¥${resultInfo.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, tone: 'primary' }
+    ]
+    resultVisible.value = true
+  } catch (error) {
+    addMsg.value = error?.msg || error?.message || '提交发票申请失败'
+  }
+}
+function openDetail(item) { detail.value = item }
+function changeInvoicePageSize(size) {
+  invoicePageSize.value = size
+  invoicePage.value = 1
+}
+function goInvoicePage(target) {
+  invoicePage.value = target
 }
 
 onMounted(async () => {
@@ -334,415 +331,21 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.invoice-page {
-  width: min(1360px, 100%);
-  margin: 0 auto;
-}
+.stat-cell-value.warning{color:var(--warning)}
+.stat-cell-value.success{color:var(--success)}
+.stat-cell-value.error{color:var(--error)}
+.invoice-page-alert{margin-top:0}
 
-.invoice-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 28px;
-  min-height: auto;
-  margin-bottom: 16px;
-  padding: 0 0 18px;
-  border: 0;
-  border-bottom: 1px solid #e2e8f0;
-  border-radius: 0;
-  color: #101828;
-  background: transparent;
-  box-shadow: none;
-}
+.required{color:var(--error);font-weight:400}
+.action-group{display:flex;align-items:center;gap:16px}
+.invoice-apply-btn{width:96px;height:34px;font-weight:600}
+.invoice-remark-input{height:88px;resize:none;padding-top:11px;line-height:1.5}
 
-.eyebrow {
-  margin: 0 0 8px;
-  color: var(--blue);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.invoice-hero h2 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.2;
-}
-
-.invoice-hero p:last-child {
-  margin: 10px 0 0;
-  color: var(--muted);
-}
-
-.invoice-apply-btn {
-  flex: none;
-  min-width: 138px;
-  background: var(--blue);
-  color: #ffffff;
-  box-shadow: none;
-}
-
-.invoice-apply-btn:disabled {
-  color: #64748b;
-  background: #e5ecf6;
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-.invoice-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  overflow: hidden;
-  margin-bottom: 20px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 20px;
-  border: 0;
-  border-right: 1px solid #edf1f6;
-  border-radius: 0;
-  background: #ffffff;
-  box-shadow: none;
-  transition: border-color 0.18s ease, background 0.18s ease;
-}
-
-.stat-card:last-child { border-right: 0; }
-
-.stat-card:hover {
-  border-color: #cddcf6;
-  background: #fbfdff;
-}
-
-.stat-card span {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.stat-card strong {
-  display: block;
-  margin-top: 10px;
-  color: #101828;
-  font-size: 28px;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-icon {
-  width: 42px;
-  height: 42px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-}
-
-.stat-icon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.stat-card.total .stat-icon { color: var(--blue); background: #eaf1ff; }
-.stat-card.pending .stat-icon { color: #d97706; background: #fff7ed; }
-.stat-card.issued .stat-icon { color: #067647; background: #ecfdf3; }
-.stat-card.rejected .stat-icon { color: #d92d20; background: #fef3f2; }
-
-.invoice-panel {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: var(--shadow-panel);
-}
-
-.invoice-panel-head {
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--line);
-}
-
-.invoice-panel-head h3 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.invoice-panel-head p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.invoice-table-wrap {
-  position: relative;
-  min-height: 430px;
-  overflow-x: auto;
-}
-
-.invoice-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  min-width: 980px;
-}
-
-.invoice-table th {
-  height: 54px;
-  padding: 0 18px;
-  color: #52627a;
-  background: #f6f9fd;
-  border-bottom: 1px solid #e8eef7;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: left;
-}
-
-.invoice-table td {
-  min-height: 62px;
-  padding: 16px 18px;
-  color: #344054;
-  border-bottom: 1px solid #edf2f7;
-  word-break: break-word;
-}
-
-.invoice-table tbody tr {
-  transition: background 0.15s ease;
-}
-
-.invoice-table tbody tr:hover td {
-  background: #f8fbff;
-}
-
-.title-cell {
-  color: #111827;
-  font-weight: 700;
-}
-
-.amount-cell {
-  color: #17376d;
-  font-weight: 800;
-}
-
-.invoice-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 11px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.invoice-status::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.invoice-status.pending { color: #b54708; background: #fffaeb; }
-.invoice-status.processing { color: #175cd3; background: #eff8ff; }
-.invoice-status.issued { color: #067647; background: #ecfdf3; }
-.invoice-status.rejected { color: #b42318; background: #fef3f2; }
-
-.detail-lines {
-  display: grid;
-  gap: 4px;
-  color: #667085;
-  font-size: 13px;
-  text-align: left;
-}
-
-.text-btn {
-  color: var(--blue);
-  background: transparent;
-  border: 0;
-  font-weight: 700;
-}
-
-.invoice-empty {
-  min-height: 360px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 10px;
-  color: #98a2b3;
-}
-
-.invoice-empty p {
-  margin: 0;
-  color: #667085;
-  font-size: 13px;
-}
-
-.empty-illustration {
-  position: relative;
-  width: 118px;
-  height: 128px;
-  opacity: 0.65;
-}
-
-.empty-illustration::before {
-  content: '';
-  position: absolute;
-  left: 25px;
-  top: 24px;
-  width: 72px;
-  height: 92px;
-  border: 5px solid #d5deea;
-  border-radius: 8px;
-  transform: rotate(-20deg);
-}
-
-.empty-illustration::after {
-  content: '';
-  position: absolute;
-  left: 58px;
-  top: 62px;
-  width: 18px;
-  height: 62px;
-  border-radius: 999px;
-  background: #d5deea;
-  transform: rotate(28deg);
-}
-
-.empty-illustration span::before,
-.empty-illustration span::after {
-  content: '';
-  position: absolute;
-  background: #d5deea;
-  border-radius: 999px;
-}
-
-.empty-illustration span::before {
-  left: 84px;
-  top: 18px;
-  width: 8px;
-  height: 28px;
-  transform: rotate(42deg);
-}
-
-.empty-illustration span::after {
-  left: 64px;
-  top: 2px;
-  width: 8px;
-  height: 26px;
-  transform: rotate(-14deg);
-}
-
-.invoice-empty strong {
-  color: #667085;
-  font-size: 16px;
-}
-
-.invoice-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.invoice-form label {
-  display: grid;
-  gap: 8px;
-  color: #344054;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.invoice-form b {
-  color: #ef4444;
-}
-
-.invoice-form input,
-.invoice-form select,
-.invoice-form textarea {
-  width: 100%;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  color: #101828;
-  background: #ffffff;
-  outline: none;
-}
-
-.invoice-form input,
-.invoice-form select {
-  height: 44px;
-  padding: 0 14px;
-}
-
-.invoice-form textarea {
-  min-height: 96px;
-  padding: 12px 14px;
-  resize: vertical;
-  font: inherit;
-}
-
-.invoice-form input:focus,
-.invoice-form select:focus,
-.invoice-form textarea:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(47, 111, 228, 0.1);
-}
-
-.span-2,
-.form-message {
-  grid-column: 1 / -1;
-}
-
-.form-message {
-  margin: 0;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 12px 16px;
-  padding-top: 4px;
-}
-
-.detail-grid span {
-  color: #667085;
-}
-
-.detail-grid strong {
-  color: #101828;
-  word-break: break-word;
-}
-
-@media (max-width: 1100px) {
-  .invoice-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .invoice-hero {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .invoice-apply-btn {
-    width: 100%;
-  }
-
-  .invoice-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .invoice-form {
-    grid-template-columns: 1fr;
-  }
-
-}
+.invoice-detail-body{padding:0;background:#fff}
+.detail-grid{display:flex;flex-direction:column;gap:14px}
+.detail-item{display:flex;justify-content:space-between;align-items:center;gap:18px;font-size:14px;line-height:1.6}
+.detail-label{color:var(--text2)}
+.detail-value{font-weight:500;color:var(--text1);text-align:right;overflow-wrap:anywhere}
+.detail-value.error{color:var(--error)}
+.invoice-confirm-btn{height:34px;min-width:82px;padding:0 18px;justify-content:center;margin-left:auto}
 </style>

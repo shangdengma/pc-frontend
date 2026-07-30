@@ -1,40 +1,23 @@
-﻿import request from '../utils/request'
+import request from '../utils/request'
 
 export function getMyEnterpriseCertList() {
-  return request({
-    url: '/interface/enterpriseCert/my',
-    method: 'get'
-  })
+  return request({ url: '/interface/enterpriseCert/my', method: 'get' })
 }
 
 export function getEnterpriseCertDetail(id) {
-  return request({
-    url: `/interface/enterpriseCert/${id}`,
-    method: 'get'
-  })
+  return request({ url: `/interface/enterpriseCert/${id}`, method: 'get' })
 }
 
 export function addEnterpriseCert(data) {
-  return request({
-    url: '/interface/enterpriseCert',
-    method: 'post',
-    data
-  })
+  return request({ url: '/interface/enterpriseCert', method: 'post', data })
 }
 
 export function updateEnterpriseCert(id, data) {
-  return request({
-    url: `/interface/enterpriseCert/${id}`,
-    method: 'put',
-    data
-  })
+  return request({ url: `/interface/enterpriseCert/${id}`, method: 'put', data })
 }
 
 export function submitEnterpriseCert(id) {
-  return request({
-    url: `/interface/enterpriseCert/${id}/submit`,
-    method: 'post'
-  })
+  return request({ url: `/interface/enterpriseCert/${id}/submit`, method: 'post' })
 }
 
 export function uploadEnterpriseCertImage(file) {
@@ -50,8 +33,13 @@ export function uploadEnterpriseCertImage(file) {
 }
 
 export function deleteEnterpriseCertFile(fileId) {
+  return request({ url: `/interface/enterpriseCert/file/${fileId}`, method: 'delete' })
+}
+
+export function fetchEnterpriseCertFile(fileId) {
   return request({
-    url: `/interface/enterpriseCert/file/${fileId}`,
-    method: 'delete'
+    url: `/interface/enterpriseCert/file/${fileId}/content`,
+    method: 'get',
+    responseType: 'blob'
   })
 }

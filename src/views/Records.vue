@@ -1,213 +1,300 @@
-﻿<template>
-  <section class="work-card records-card">
-    <div class="work-card-head records-head">
-      <div>
-        <h2>查询记录</h2>
+<template>
+  <main class="main-content">
+    <!-- 筛选栏 -->
+    <div class="filter-bar records-filter">
+      <label class="filter-field filter-field-keyword">
+        <span>关键词</span>
+        <input v-model="filters.keyword" class="field-input" type="text" placeholder="姓名 / 手机号 / 身份证号" />
+      </label>
+      <label class="filter-field filter-field-status">
+        <span>查询状态</span>
+        <select v-model="filters.status" class="field-input">
+          <option value="">全部状态</option>
+          <option value="1">查询中</option>
+          <option value="2">查询成功</option>
+          <option value="3">查询失败</option>
+          <option value="4">已退款</option>
+          <option value="5">授权中</option>
+          <option value="6">背调中止</option>
+          <option value="4,6">已退款 / 已中止</option>
+        </select>
+      </label>
+      <div class="filter-field filter-field-date">
+        <span>提交日期</span>
+        <DateRangePicker
+          v-model:start-date="filters.startDate"
+          v-model:end-date="filters.endDate"
+          @change="page = 1"
+        />
       </div>
-      <router-link class="primary-btn" to="/query/create">{{ canOnlineTest ? '在线测试' : '发起查询' }}</router-link>
+      <div class="filter-actions">
+        <button class="btn-primary" @click="doSearch">查询</button>
+        <button class="btn-outline" @click="resetFilters">重置</button>
+      </div>
     </div>
 
-    <div class="toolbar">
-      <input v-model.trim="filters.keyword" placeholder="搜索姓名 / 身份证号" @keyup.enter="search">
-      <select v-model="filters.status" @change="search">
-        <option value="">全部状态</option>
-        <option value="5">授权中</option>
-        <option value="1">查询中</option>
-        <option value="2">查询成功</option>
-        <option value="3">查询失败</option>
-        <option value="4">已退款</option>
-        <option value="6">背调中止</option>
-      </select>
-      <span class="toolbar-label">提交时间</span>
-      <input v-model="filters.beginTime" type="date" @change="search">
-      <span class="toolbar-sep">—</span>
-      <input v-model="filters.endTime" type="date" @change="search">
-      <button class="ghost-btn" @click="search">查询</button>
-      <button v-if="hasFilters" class="text-btn" @click="resetFilters">重置</button>
-    </div>
+    <FormAlert class="records-error" :message="loadError" type="error" />
 
-    <div class="records-table-wrap">
-      <table class="data-table large records-table">
-        <colgroup>
-          <col class="record-col-name">
-          <col class="record-col-type">
-          <col class="record-col-id">
-          <col class="record-col-phone">
-          <col class="record-col-time">
-          <col class="record-col-status">
-          <col class="record-col-actions">
-        </colgroup>
-        <thead>
-          <tr><th>姓名</th><th>查询类型</th><th>身份证号</th><th>手机号</th><th>提交时间</th><th>状态</th><th>操作</th></tr>
-        </thead>
-        <tbody>
-          <tr v-if="loading" class="skeleton-table-row"><td colspan="7"><span></span></td></tr>
-          <tr v-else-if="records.length === 0"><td colspan="7" class="table-empty">暂无符合条件的查询记录</td></tr>
-          <tr v-for="item in records" :key="item.id">
-            <td class="record-name"><strong>{{ item.name }}</strong></td>
-            <td class="record-type">{{ item.type }}</td>
-            <td class="record-identity">{{ maskIdCard(item.idCard) }}</td>
-            <td class="record-phone">{{ maskPhone(item.phone) }}</td>
-            <td class="record-time">{{ formatDateTime(item.time) }}</td>
-            <td>
-              <div class="record-status-cell">
-                <span class="status-pill" :class="statusClass(item.status, item.displayStatus, item.billingStatus)">{{ statusText(item.status, item.displayStatusText, item.billingStatus, item.displayStatus) }}</span>
-                <div v-if="item.statusReason" class="record-status-reason">{{ item.statusReason }}</div>
-              </div>
-            </td>
-            <td class="actions-cell">
-              <button class="text-btn" :disabled="String(item.status) !== '2'" @click="openReport(item)">查看报告</button>
-              <button class="text-btn" :disabled="String(item.status) !== '2'" @click="downloadPdf(item)">下载PDF</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- 表格与分页一体化卡片 -->
+    <div class="table-section business-list-shell records-table-card">
+      <div class="table-header">
+        <h2>查询结果</h2>
+        <span class="table-count">共 {{ total }} 条记录</span>
+      </div>
+      <div class="table-content">
+        <table class="business-list-table">
+          <thead>
+            <tr>
+              <th style="width:10%">候选人</th>
+              <th style="width:12%">背调类型</th>
+              <th style="width:16%">身份证号</th>
+              <th style="width:12%">手机号</th>
+              <th style="width:16%">提交时间</th>
+              <th style="width:10%">状态</th>
+              <th style="width:24%">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in pagedRecords" :key="row.id || row.name">
+              <td class="td-name">{{ row.name }}</td>
+              <td class="td-type">{{ row.type }}</td>
+              <td class="td-mono">{{ maskIdCard(row.idCard) }}</td>
+              <td class="td-mono">{{ maskPhone(row.phone) }}</td>
+              <td class="td-date">{{ formatTime(row.time) }}</td>
+              <td><span class="status-badge" :class="recordStatusClass(row.status)">{{ recordStatusText(row.status) }}</span></td>
+              <td>
+                <div class="action-group record-actions">
+                  <router-link v-if="canOperateRecord(row)" :to="`/report/${row.id}`" class="action-link">查看报告</router-link>
+                  <span v-else class="action-plain">查看报告</span>
+                  <button v-if="canOperateRecord(row)" class="action-link action-btn" type="button" @click="downloadPdf(row)">下载 PDF</button>
+                  <span v-else class="action-plain">下载 PDF</span>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="pagedRecords.length === 0">
+              <td colspan="7" class="table-empty">暂无查询记录，可<router-link to="/query/create">发起背调查询</router-link></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <BusinessTableFooter
+        v-if="total > 0"
+        :total="total"
+        :page="page"
+        :page-size="pageSize"
+        :total-pages="totalPages"
+        :loading="loading"
+        @update:page-size="changePageSize"
+        @page-change="goPage"
+      />
     </div>
-
-    <div class="pager">
-      <span>共 {{ total }} 条</span>
-      <select v-model.number="filters.pageSize" @change="search">
-        <option :value="10">10 条/页</option>
-        <option :value="20">20 条/页</option>
-        <option :value="50">50 条/页</option>
-      </select>
-      <button class="ghost-btn" :disabled="filters.pageNum <= 1" @click="changePage(-1)">上一页</button>
-      <span>{{ filters.pageNum }} / {{ totalPages }} 页</span>
-      <button class="ghost-btn" :disabled="filters.pageNum >= totalPages" @click="changePage(1)">下一页</button>
-    </div>
-
-    <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
-  </section>
+  </main>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { listData } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserProfile } from '../api/user'
-import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
+import { mapRecord as mapLegacyRecord } from '../utils/format'
+import BusinessTableFooter from '../components/BusinessTableFooter.vue'
+import DateRangePicker from '../components/DateRangePicker.vue'
+import FormAlert from '../components/FormAlert.vue'
 
+const route = useRoute()
 const router = useRouter()
-const loading = ref(false)
-const records = ref([])
+
+const filters = ref({ keyword: '', status: '', startDate: '', endDate: '' })
+const page = ref(1)
+const pageSize = ref(10)
 const total = ref(0)
+const records = ref([])
 const queryTypeMap = ref({})
-const message = ref('')
-const messageType = ref('info')
-const profile = ref({})
-const filters = reactive({ pageNum: 1, pageSize: 10, keyword: '', status: '', beginTime: '', endTime: '' })
+const loading = ref(false)
+const ready = ref(false)
+const loadError = ref('')
 
-const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / filters.pageSize)))
-const hasFilters = computed(() => !!(filters.keyword || filters.status || filters.beginTime || filters.endTime))
-const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
+watch(
+  () => route.query.keyword,
+  value => {
+    filters.value.keyword = typeof value === 'string' ? value : ''
+    page.value = 1
+    if (ready.value) loadRecords()
+  },
+  { immediate: true }
+)
 
-function search() {
-  filters.pageNum = 1
-  loadRecords()
+watch(
+  () => route.query.status,
+  value => {
+    filters.value.status = typeof value === 'string' ? value : ''
+    page.value = 1
+    if (ready.value) loadRecords()
+  },
+  { immediate: true }
+)
+
+watch([page, pageSize], () => {
+  if (ready.value) loadRecords()
+})
+
+const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1)
+const pagedRecords = computed(() => records.value)
+
+function syncKeywordQuery(keyword) {
+  const query = { ...route.query }
+  if (keyword) query.keyword = keyword
+  else delete query.keyword
+  router.replace({ path: '/records', query })
 }
-
+function syncStatusQuery(status) {
+  const query = { ...route.query }
+  if (status) query.status = status
+  else delete query.status
+  router.replace({ path: '/records', query })
+}
+function doSearch() {
+  page.value = 1
+  const keyword = filters.value.keyword.trim()
+  const routeChanged = String(route.query.keyword || '') !== keyword || String(route.query.status || '') !== String(filters.value.status || '')
+  syncKeywordQuery(keyword)
+  syncStatusQuery(filters.value.status)
+  if (!routeChanged) loadRecords()
+}
 function resetFilters() {
-  filters.keyword = ''
-  filters.status = ''
-  filters.beginTime = ''
-  filters.endTime = ''
-  search()
+  filters.value = { keyword: '', status: '', startDate: '', endDate: '' }
+  page.value = 1
+  const routeChanged = Boolean(route.query.keyword || route.query.status)
+  syncKeywordQuery('')
+  syncStatusQuery('')
+  if (!routeChanged) loadRecords()
 }
-
-function show(text, type = 'info') {
-  message.value = text
-  messageType.value = type
-  setTimeout(() => { message.value = '' }, 2500)
+function changePageSize(size) {
+  pageSize.value = size
+  page.value = 1
 }
-
-function maskIdCard(value) {
-  if (!value) return '-'
-  const s = String(value)
-  if (s.length <= 7) return s
-  return `${s.slice(0, 3)}${'*'.repeat(Math.max(0, s.length - 7))}${s.slice(-4)}`
+function goPage(target) {
+  page.value = target
 }
-
-function maskPhone(value) {
-  if (!value) return '-'
-  const s = String(value)
-  if (s.length !== 11) return s
-  return `${s.slice(0, 3)}****${s.slice(-4)}`
+function canOperateRecord(row) {
+  return String(row.status) === '2'
 }
-
-async function loadQueryTypes() {
+function downloadPdf(row) {
+  if (!canOperateRecord(row)) return
   try {
-    const res = await listQueryTypeConfig({ pageNum: 1, pageSize: 1000 })
-    const map = {}
-    ;(res.rows || []).forEach(item => {
-      if (item.id != null) map[String(item.id)] = item.callTypeName || item.name || `类型${item.id}`
-    })
-    queryTypeMap.value = map
-  } catch (err) {
-    queryTypeMap.value = {}
-  }
-}
-
-async function loadRecords() {
-  loading.value = true
-  try {
-    const params = { pageNum: filters.pageNum, pageSize: filters.pageSize }
-    if (filters.keyword) params.idCard = filters.keyword
-    if (filters.status) params.searchStatus = filters.status
-    if (filters.beginTime) params['params[beginTime]'] = `${filters.beginTime} 00:00:00`
-    if (filters.endTime) params['params[endTime]'] = `${filters.endTime} 23:59:59`
-    const res = await listData(params)
-    total.value = res.total || 0
-    records.value = (res.rows || []).map(item => mapRecord(item, queryTypeMap.value))
-  } catch (err) {
-    show(err?.msg || '查询记录加载失败', 'error')
-  } finally {
-    loading.value = false
-  }
-}
-
-function changePage(delta) {
-  filters.pageNum += delta
-  loadRecords()
-}
-
-function openReport(item) {
-  if (String(item.status) !== '2') return show('当前状态不能查看报告', 'error')
-  router.push(`/report/${item.id}`)
-}
-
-function downloadPdf(item) {
-  if (String(item.status) !== '2') return show('报告尚未生成，暂时无法下载', 'error')
-  try {
-    if (item.pdfFilePath) {
-      const path = String(item.pdfFilePath).trim()
+    if (row.pdfFilePath) {
+      const path = String(row.pdfFilePath).trim()
       const base = import.meta.env.VITE_APP_BASE_API || ''
       const url = /^(https?:)?\/\//i.test(path) ? path : `${base}${path.startsWith('/') ? path : `/${path}`}`
       const link = document.createElement('a')
       link.href = encodeURI(url)
-      link.download = `背调报告_${item.name || item.id}.pdf`
+      link.download = `背调报告_${row.name || row.id}.pdf`
       link.rel = 'noopener'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       return
     }
-
     const target = router.resolve({
       name: 'reportDetail',
-      params: { id: item.id },
+      params: { id: row.id },
       query: { download: '1' }
     })
     window.open(target.href, '_blank', 'noopener')
-  } catch (err) {
-    show(err?.msg || 'PDF 下载失败', 'error')
+  } catch (error) {
+    loadError.value = error?.msg || error?.message || 'PDF 下载失败'
+  }
+}
+function maskIdCard(v) { return v ? v.slice(0, 3) + '***********' + v.slice(-4) : '-' }
+function maskPhone(v) { return v ? v.slice(0, 3) + '****' + v.slice(-4) : '-' }
+function formatTime(t) {
+  if (!t) return '-'
+  const d = new Date(t)
+  if (isNaN(d.getTime())) return t
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `${y}年${m}月${day}日 ${h}:${min}`
+}
+function recordStatusText(s) {
+  const m = { '1': '查询中', '2': '查询成功', '3': '查询失败', '4': '已退款', '5': '授权中', '6': '背调中止' }
+  return m[String(s)] || '未知'
+}
+function recordStatusClass(s) {
+  const m = { '1': 'info', '2': 'success', '3': 'error', '4': 'neutral', '5': 'warning', '6': 'neutral' }
+  return m[String(s)] || 'neutral'
+}
+
+function mapRecord(row) {
+  const mapped = mapLegacyRecord(row, queryTypeMap.value)
+  return { ...mapped, status: String(mapped.status ?? '') }
+}
+
+async function loadQueryTypes() {
+  const res = await listQueryTypeConfig({ pageNum: 1, pageSize: 1000 })
+  queryTypeMap.value = Object.fromEntries((res.rows || []).map(item => [
+    String(item.id),
+    item.callTypeName || item.name || `类型${item.id}`
+  ]))
+}
+
+async function loadRecords() {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const params = {
+      pageNum: page.value,
+      pageSize: pageSize.value
+    }
+    if (filters.value.keyword.trim()) params.idCard = filters.value.keyword.trim()
+    if (filters.value.status) params.searchStatus = filters.value.status
+    if (filters.value.startDate) params['params[beginTime]'] = `${filters.value.startDate} 00:00:00`
+    if (filters.value.endDate) params['params[endTime]'] = `${filters.value.endDate} 23:59:59`
+    const res = await listData(params)
+    records.value = (res.rows || []).map(mapRecord)
+    total.value = Number(res.total || records.value.length)
+  } catch (error) {
+    records.value = []
+    total.value = 0
+    loadError.value = error?.msg || error?.message || '查询记录加载失败，请稍后重试'
+  } finally {
+    loading.value = false
   }
 }
 
 onMounted(async () => {
-  const profilePromise = getUserProfile().then(res => { profile.value = res.data || res.user || {} }).catch(() => {})
-  await Promise.all([loadQueryTypes(), profilePromise])
+  await Promise.all([loadQueryTypes(), getUserProfile().catch(() => null)])
+  ready.value = true
   await loadRecords()
 })
 </script>
 
+<style scoped>
+.table-count{font-size:13px;color:var(--text2);font-weight:400}
+.records-error{margin:0}
+.action-group{display:flex;align-items:center;gap:16px}
+.record-actions{gap:14px}
+.action-btn{padding:0;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;line-height:inherit}
+.action-plain{font-size:13px;color:var(--text3);font-weight:500;white-space:nowrap}
+
+.records-filter{align-items:flex-end;gap:14px;padding:16px 20px}
+.filter-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.filter-field > span{font-size:12px;font-weight:600;color:var(--text2)}
+.filter-field-keyword{width:280px}
+.filter-field-status{width:150px}
+.filter-field-date{width:342px}
+.filter-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
+.filter-actions .btn-primary,.filter-actions .btn-outline{height:40px}
+
+/* 表格卡片一体化 */
+.records-table-card{display:flex;flex-direction:column;min-height:0}
+.records-table-card .table-content{overflow:auto}
+@media (max-width:980px){
+  .filter-field-keyword,.filter-field-status,.filter-field-date{width:100%}
+  .filter-actions{width:100%;margin-left:0}
+  .filter-actions .btn-primary,.filter-actions .btn-outline{flex:1;justify-content:center}
+}
+</style>

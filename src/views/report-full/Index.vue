@@ -5050,10 +5050,18 @@ normalbadtext(){
 <style scoped>
 /* 页面总标题样式 */
 .page_canvas {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f3f4f6;
+  box-sizing: border-box;
   margin: 0;
-  padding: 10px;
+  padding: 16px 24px 110px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
   /* 移动端默认边距 */
 }
 

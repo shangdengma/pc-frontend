@@ -2,7 +2,6 @@
 import App from './App.vue'
 import router from './router'
 import './styles/main.css'
-import './styles/workspace.css'
 
 function showToastMessage(type, message) {
   if (!message) return
@@ -11,7 +10,6 @@ function showToastMessage(type, message) {
     window.alert(message)
     return
   }
-  console.log(message)
 }
 
 function normalizeUniUrl(url = '') {
@@ -33,9 +31,7 @@ if (!window.uni) {
     },
     showModal({ title = '提示', content = '', success } = {}) {
       const confirmed = window.confirm(`${title}${content ? `\n${content}` : ''}`)
-      if (typeof success === 'function') {
-        success({ confirm: confirmed, cancel: !confirmed })
-      }
+      if (typeof success === 'function') success({ confirm: confirmed, cancel: !confirmed })
     },
     navigateBack() {
       if (window.history.length > 1) window.history.back()
