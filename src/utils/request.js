@@ -21,8 +21,10 @@ service.interceptors.response.use(
     const res = response.data
     const code = res && res.code !== undefined ? res.code : 200
     if (code === 401) {
-      removeToken()
-      window.location.hash = '#/login'
+      if (!response.config?.skipAuthRedirect) {
+        removeToken()
+        window.location.hash = '#/login'
+      }
       return Promise.reject(res)
     }
     if (code !== 200 && code !== 0) {

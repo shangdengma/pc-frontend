@@ -38,9 +38,7 @@
       </article>
     </main>
 
-    <footer class="legal-footer">
-      河南钟馗科技有限公司 · 豫ICP备2025138155号
-    </footer>
+    <footer class="legal-footer">河南钟馗科技有限公司</footer>
   </div>
 </template>
 

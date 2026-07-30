@@ -1,21 +1,21 @@
 import request from '../utils/request'
 
-export function login(username, password, code = '', uuid = '', clientType = 'web') {
+export function login(username, password, code = '', uuid = '', clientType = 'web', legalAcceptance = {}) {
   return request({
     url: '/login',
     method: 'post',
     headers: { isToken: false },
-    data: { username, password, code, uuid, clientType }
+    data: { username, password, code, uuid, clientType, ...legalAcceptance }
   })
 }
 
 
-export function smsLogin(phone, code = '', clientType = 'web') {
+export function smsLogin(phone, code = '', clientType = 'web', legalAcceptance = {}) {
   return request({
     url: '/smsLogin',
     method: 'post',
     headers: { isToken: false },
-    data: { phone, code, clientType }
+    data: { phone, code, clientType, ...legalAcceptance }
   })
 }
 

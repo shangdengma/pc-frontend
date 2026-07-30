@@ -36,6 +36,14 @@
             <span>{{ item.title }}</span>
           </router-link>
         </div>
+
+        <div class="nav-group">
+          <div class="nav-section">服务支持</div>
+          <router-link v-for="item in supportMenus" :key="item.path" class="nav-item" :to="item.path" :data-title="item.title" @click="navOpen = false">
+            <component :is="item.icon" class="nav-icon" :size="18" :stroke-width="1.8" />
+            <span>{{ item.title }}</span>
+          </router-link>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
@@ -128,10 +136,13 @@ import {
   ChevronDown,
   ClipboardList,
   CreditCard,
+  CircleHelp,
+  Headphones,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
   Menu,
+  MessageSquareText,
   PanelLeft,
   Plus,
   ReceiptText,
@@ -198,6 +209,11 @@ const rawOrgMenus = [
 const fundMenus = computed(() => rawFundMenus.filter(item => !item.agentOnly || isAgent.value))
 // 子账号本身不能再管理子账号，隐藏该入口
 const orgMenus = computed(() => rawOrgMenus.filter(item => !item.mainOnly || !isSubAccount.value))
+const supportMenus = [
+  { title: '常见问题', path: '/support/faq', icon: CircleHelp },
+  { title: '意见反馈', path: '/support/feedback', icon: MessageSquareText },
+  { title: '联系我们', path: '/support/contact-us', icon: Headphones }
+]
 
 function toggleMenu() {
   menuOpen.value = !menuOpen.value

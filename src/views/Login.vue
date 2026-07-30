@@ -1,5 +1,6 @@
 ﻿<template>
   <div class="login-page">
+    <main class="login-main">
     <!-- 单列居中，不做左右分栏：登录页不承担营销职能，紧凑即专业 -->
     <div class="login-brand">
       <div class="brand-seal" aria-hidden="true"><span>钟馗</span></div>
@@ -68,14 +69,23 @@
 
       <div v-if="error" class="form-error">{{ error }}</div>
       <div v-if="notice" class="form-notice">{{ notice }}</div>
-      <button class="primary-btn" type="submit" :disabled="loading">{{ loading ? '登录中...' : '进入工作台' }}</button>
+      <button class="primary-btn" type="submit" :disabled="loading || !legalDocumentsReady">{{ loading ? '登录中...' : '进入工作台' }}</button>
       <div class="login-register-entry">
         <span>没有账号？</span>
         <router-link to="/register">立即注册</router-link>
       </div>
+      <router-link class="login-help-entry" to="/contact-us">
+        <CircleHelp :size="15" aria-hidden="true" />
+        遇到问题？联系客服处理
+        <ChevronRight :size="14" aria-hidden="true" />
+      </router-link>
     </form>
+    </main>
 
-    <footer class="login-foot">河南钟馗科技有限公司 · 豫ICP备2025138155号</footer>
+    <footer class="login-foot">
+      河南钟馗科技有限公司 ·
+      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">豫ICP备2025138155号</a>
+    </footer>
 
     <SmsSliderVerify
       v-model="sliderOpen"
@@ -87,10 +97,12 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ChevronRight, CircleHelp } from '@lucide/vue'
 import SmsSliderVerify from '../components/SmsSliderVerify.vue'
 import { getCodeImg, getInfo, login, sendLoginCode, smsLogin } from '../api/auth'
+import { getPublicLegalDocument } from '../api/legal'
 import { setToken, setUser } from '../utils/auth'
 
 const router = useRouter()
@@ -102,9 +114,41 @@ const notice = ref('')
 const sliderOpen = ref(false)
 const loginMode = ref('password')
 const agreementAccepted = ref(false)
+const legalDocumentsReady = ref(false)
+const legalDocumentIds = reactive({ agreementDocId: null, privacyDocId: null })
 const form = reactive({ username: '', password: '' })
 const smsForm = reactive({ phone: '', code: '' })
 let countdownTimer = null
+
+function legalAcceptancePayload() {
+  return {
+    legalAccepted: agreementAccepted.value,
+    agreementDocId: legalDocumentIds.agreementDocId,
+    privacyDocId: legalDocumentIds.privacyDocId
+  }
+}
+
+async function loadLegalDocuments() {
+  legalDocumentsReady.value = false
+  try {
+    const [agreement, privacy] = await Promise.all([
+      getPublicLegalDocument('user_agreement'),
+      getPublicLegalDocument('privacy_policy')
+    ])
+    const agreementDocId = Number(agreement?.data?.id)
+    const privacyDocId = Number(privacy?.data?.id)
+    if (!Number.isSafeInteger(agreementDocId) || !Number.isSafeInteger(privacyDocId)) {
+      throw new Error('法律文档未发布')
+    }
+    legalDocumentIds.agreementDocId = agreementDocId
+    legalDocumentIds.privacyDocId = privacyDocId
+    legalDocumentsReady.value = true
+  } catch (err) {
+    legalDocumentIds.agreementDocId = null
+    legalDocumentIds.privacyDocId = null
+    error.value = err?.msg || '协议内容加载失败，请刷新页面后重试'
+  }
+}
 
 function switchMode(mode) {
   loginMode.value = mode
@@ -184,7 +228,8 @@ async function handlePasswordLogin() {
       form.username, form.password,
       captcha.need ? captcha.code : '',
       captcha.need ? captcha.uuid : '',
-      'pc-web'
+      'pc-web',
+      legalAcceptancePayload()
     )
     await finishLogin(res, form.username)
   } catch (err) {
@@ -202,7 +247,7 @@ async function handlePasswordLogin() {
 async function handleSmsLogin() {
   if (!smsForm.phone) return (error.value = '请输入手机号')
   if (!/^1[3-9]\d{9}$/.test(smsForm.phone)) return (error.value = '请输入正确的手机号')
-  const res = await smsLogin(smsForm.phone, smsForm.code, 'web')
+  const res = await smsLogin(smsForm.phone, smsForm.code, 'pc-web', legalAcceptancePayload())
   await finishLogin(res, smsForm.phone)
 }
 
@@ -211,6 +256,11 @@ async function handleLogin() {
   notice.value = ''
   if (!agreementAccepted.value) {
     error.value = '请先阅读并同意《用户协议》和《隐私政策》'
+    return
+  }
+  if (!legalDocumentsReady.value) {
+    error.value = '协议内容尚未加载，请刷新页面后重试'
+    await loadLegalDocuments()
     return
   }
   loading.value = true
@@ -226,4 +276,6 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+onMounted(loadLegalDocuments)
 </script>

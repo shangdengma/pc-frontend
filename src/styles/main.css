@@ -1358,9 +1358,8 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 0;
-  padding: 40px 20px;
+  padding: 0 20px;
   background: var(--paper);
 }
 
@@ -1378,6 +1377,18 @@ textarea::placeholder {
 .login-brand,
 .login-card,
 .login-foot { position: relative; z-index: 1; }
+
+.login-main {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
 
 /* ---- 品牌行：一行搞定，不占额外版面 ---- */
 .login-brand {
@@ -1598,6 +1609,21 @@ textarea::placeholder {
 
 .login-register-entry a { color: var(--cinnabar); font-weight: 500; }
 
+.login-help-entry {
+  width: max-content;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 12px auto 0;
+  color: #777066;
+  font-size: 12px;
+  transition: color .14s ease;
+}
+
+.login-help-entry:hover { color: var(--cinnabar); }
+
 .login-consent {
   display: flex;
   align-items: center;
@@ -1635,16 +1661,25 @@ textarea::placeholder {
 }
 
 .login-foot {
-  margin-top: 34px;
+  flex: 0 0 auto;
+  padding: 0 0 20px;
   font-size: 11px;
   color: #b3aca1;
   text-align: center;
 }
 
+.login-foot a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.login-foot a:hover { color: #777066; }
+
 @media (max-width: 480px) {
-  .login-page { padding: 32px 20px calc(32px + env(safe-area-inset-bottom)); }
+  .login-page { padding: 0 20px; }
+  .login-main { padding: 32px 0 26px; }
   .login-brand, .login-card { max-width: 100%; }
-  .login-foot { margin-top: 26px; }
+  .login-foot { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
 }
 
 .register-page .login-brand,

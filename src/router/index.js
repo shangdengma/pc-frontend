@@ -6,6 +6,9 @@ const Dashboard = () => import('../views/Dashboard.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
 const LegalDocument = () => import('../views/LegalDocument.vue')
+const ContactUs = () => import('../views/ContactUs.vue')
+const FaqCenter = () => import('../views/FaqCenter.vue')
+const FeedbackCenter = () => import('../views/FeedbackCenter.vue')
 const CandidateAuthorization = () => import('../views/candidate/CandidateAuthorization.vue')
 const QueryCreate = () => import('../views/QueryCreate.vue')
 const Records = () => import('../views/Records.vue')
@@ -25,6 +28,12 @@ const NotFound = () => import('../views/NotFound.vue')
 const routes = [
   { path: '/login', name: 'login', component: Login },
   { path: '/register', name: 'register', component: Register },
+  {
+    path: '/contact-us',
+    name: 'contactUs',
+    component: ContactUs,
+    meta: { public: true, title: '联系我们' }
+  },
   {
     path: '/user-agreement',
     name: 'userAgreement',
@@ -63,7 +72,26 @@ const routes = [
       { path: 'agent-center', name: 'agentCenter', component: AgentCenter, meta: { title: '代理中心', agentOnly: true } },
       { path: 'agent-center/customers/:userId/finance', name: 'agentCustomerFinance', component: AgentCustomerFinance, meta: { title: '客户资金明细', agentOnly: true } },
       { path: 'announcements', name: 'announcements', component: PublicAnnouncements, meta: { title: '公告中心' } },
-      { path: 'messages', name: 'messages', component: Announcements, meta: { title: '消息通知' } }
+      { path: 'messages', name: 'messages', component: Announcements, meta: { title: '消息通知' } },
+      {
+        path: 'support/faq',
+        name: 'faqCenter',
+        component: FaqCenter,
+        meta: { title: '常见问题' }
+      },
+      {
+        path: 'support/feedback',
+        name: 'feedbackCenter',
+        component: FeedbackCenter,
+        meta: { title: '意见反馈' }
+      },
+      {
+        path: 'support/contact-us',
+        name: 'workspaceContactUs',
+        component: ContactUs,
+        props: { embedded: true },
+        meta: { title: '联系我们' }
+      }
     ]
   },
   { path: '/:pathMatch(.*)*', component: NotFound }
