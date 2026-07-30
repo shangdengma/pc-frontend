@@ -221,11 +221,11 @@ watch(docKey, loadDocument, { immediate: true })
   width: 34px;
   height: 34px;
   place-items: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: #a6392e;
   color: #fff;
   font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
 }
 
@@ -236,14 +236,14 @@ watch(docKey, loadDocument, { immediate: true })
 }
 
 .legal-brand strong {
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 650;
 }
 
 .legal-brand small {
   margin-top: 1px;
   color: #938b80;
-  font-size: 10px;
+  font-size: var(--fs-xs);
 }
 
 .legal-back {
@@ -251,7 +251,7 @@ watch(docKey, loadDocument, { immediate: true })
   align-items: center;
   gap: 5px;
   color: #5f5a52;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 
@@ -273,7 +273,7 @@ watch(docKey, loadDocument, { immediate: true })
 .legal-heading > p {
   margin: 0 0 10px;
   color: #a6392e;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 650;
 }
 
@@ -289,7 +289,7 @@ watch(docKey, loadDocument, { immediate: true })
   min-height: 360px;
   padding-top: 32px;
   color: #4d4942;
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1.9;
 }
 
@@ -318,18 +318,18 @@ watch(docKey, loadDocument, { immediate: true })
 
 .legal-rich-text :deep(h1) {
   margin: 38px 0 12px;
-  font-size: 20px;
+  font-size: var(--fs-xl);
 }
 
 .legal-rich-text :deep(h2) {
   margin: 30px 0 9px;
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 .legal-rich-text :deep(h3),
 .legal-rich-text :deep(h4) {
   margin: 24px 0 8px;
-  font-size: 14px;
+  font-size: var(--fs-base);
 }
 
 .legal-rich-text :deep(p) {
@@ -389,7 +389,7 @@ watch(docKey, loadDocument, { immediate: true })
 
 .legal-rich-text :deep(code) {
   padding: 2px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: #eeeae4;
   font-family: Consolas, monospace;
   font-size: 0.92em;
@@ -422,7 +422,7 @@ watch(docKey, loadDocument, { immediate: true })
 .legal-loading span {
   display: block;
   height: 13px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: #eeeae4;
   animation: legal-pulse 1.2s ease-in-out infinite alternate;
 }
@@ -444,7 +444,7 @@ watch(docKey, loadDocument, { immediate: true })
   padding: 24px;
   border-top: 1px solid #e4e1da;
   color: #aaa298;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   text-align: center;
 }
 
@@ -464,11 +464,11 @@ watch(docKey, loadDocument, { immediate: true })
   }
 
   .legal-heading h1 {
-    font-size: 27px;
+    font-size: var(--fs-2xl);
   }
 
   .legal-content {
-    font-size: 13.5px;
+    font-size: var(--fs-sm);
   }
 
   .legal-rich-text :deep(table) {

@@ -1,11 +1,11 @@
 <template>
   <section class="recharge-page">
-    <div class="recharge-hero">
-      <div>
-        <p class="eyebrow">账户中心</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">账户资金</p>
         <h2>账户充值</h2>
       </div>
-    </div>
+    </header>
 
     <div class="recharge-grid">
       <div class="work-card package-card">
@@ -323,17 +323,8 @@ onBeforeUnmount(stopPolling)
 </script>
 
 <style scoped>
-.recharge-hero-actions {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-}
 
 @media (max-width: 760px) {
-  .recharge-hero-actions {
-    width: 100%;
-    flex-direction: column-reverse;
-  }
 
 }
 

@@ -114,7 +114,6 @@ const codeButtonText = computed(() => {
   return '获取验证码'
 })
 
-
 function validateAccount() {
   if (!form.account) return '请输入账号'
   if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(form.account)) {

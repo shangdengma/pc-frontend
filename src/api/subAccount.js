@@ -12,6 +12,10 @@ export function updateSubAccountQuota(userId, data) {
   return request({ url: `/system/sub-account/${userId}/quota`, method: 'put', data })
 }
 
+export function resetSubAccountPassword(userId, data) {
+  return request({ url: `/system/sub-account/${userId}/reset-password`, method: 'put', data })
+}
+
 export function disableSubAccount(userId) {
   return request({ url: `/system/sub-account/${userId}/disable`, method: 'put' })
 }

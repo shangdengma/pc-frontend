@@ -49,6 +49,26 @@
 
   /* 焦点环 */
   --ring: 0 0 0 3px rgba(22, 24, 29, 0.07);
+
+  /* ---- 字号阶梯 ----
+     此前全站散落 25 种字号（含 11.5 / 12.5 / 13.5 / 14.5 这类半像素），
+     没有 token 可依循，每个页面各写各的。收敛为六级，新代码一律用变量。 */
+  --fs-xs: 12px;      /* 辅助说明、表格次要列、徽章 */
+  --fs-sm: 13px;      /* 正文默认、表单标签、列表项 */
+  --fs-base: 14px;    /* 输入框、按钮、表格正文 */
+  --fs-lg: 16px;      /* 卡片标题 */
+  --fs-xl: 20px;      /* 页面标题 */
+  --fs-2xl: 24px;     /* 大数字、页头主标题 */
+
+  /* ---- 间距阶梯（4px 基数）----
+     此前 34 种 padding 值几乎连续分布，等于没有规则。 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
 }
 
 html,
@@ -66,7 +86,7 @@ body {
   font-family: system-ui, -apple-system, "PingFang SC", "HarmonyOS Sans SC",
     "Source Han Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI",
     Roboto, sans-serif;
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1.55;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
@@ -152,12 +172,12 @@ textarea:focus-visible {
   display: grid;
   place-items: center;
   color: #ffffff;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   /* 与登录页同一枚朱砂方印，保持品牌一致 */
   background: var(--cinnabar);
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   transform: rotate(-2.5deg);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.22),
@@ -166,7 +186,7 @@ textarea:focus-visible {
 
 .brand-title {
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: 0;
@@ -175,7 +195,7 @@ textarea:focus-visible {
 .brand-sub {
   margin-top: 1px;
   color: var(--faint);
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 .sidebar-nav {
@@ -194,7 +214,7 @@ textarea:focus-visible {
 .nav-section {
   margin: 0 10px 6px;
   color: var(--faint);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.4px;
 }
@@ -208,7 +228,7 @@ textarea:focus-visible {
   margin: 1px 0;
   padding: 0 10px;
   color: var(--text-secondary);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   border: 0;
   border-radius: var(--radius-sm);
@@ -262,13 +282,13 @@ textarea:focus-visible {
 
 .security-note strong {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
 .security-note span {
   margin-top: 1px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--faint);
 }
 
@@ -298,7 +318,7 @@ textarea:focus-visible {
 
 .topbar-context > span {
   color: var(--faint);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 500;
 }
 
@@ -306,7 +326,7 @@ textarea:focus-visible {
 .topbar h1 {
   margin: 0;
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-base);
   line-height: 1.3;
   font-weight: 600;
 }
@@ -333,7 +353,7 @@ textarea:focus-visible {
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 
 .user-menu-btn:hover {
@@ -349,7 +369,7 @@ textarea:focus-visible {
   place-items: center;
   margin-left: 0;
   color: #ffffff;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   background: linear-gradient(135deg, var(--blue), var(--blue-dark));
   border: 0;
@@ -360,7 +380,7 @@ textarea:focus-visible {
   width: 40px;
   height: 40px;
   flex-basis: 40px;
-  font-size: 15px;
+  font-size: var(--fs-base);
 }
 
 .user-menu-copy {
@@ -376,7 +396,7 @@ textarea:focus-visible {
   max-width: 140px;
   overflow: hidden;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -385,7 +405,7 @@ textarea:focus-visible {
 .user-menu-copy small {
   margin-top: 1px;
   color: var(--faint);
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 
 .menu-chevron {
@@ -435,14 +455,14 @@ textarea:focus-visible {
 .user-dropdown-head strong {
   display: block;
   color: var(--text);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 
 .user-dropdown-head p {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .dropdown-links {
@@ -463,7 +483,7 @@ textarea:focus-visible {
   background: transparent;
   border: 0;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   text-align: left;
 }
@@ -500,7 +520,6 @@ textarea:focus-visible {
    2. 按钮与通用控件
    ============================================================ */
 
-.new-query-btn,
 .primary-btn {
   display: inline-flex;
   align-items: center;
@@ -510,29 +529,22 @@ textarea:focus-visible {
   height: 38px;
   padding: 0 18px;
   color: #ffffff;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   background: var(--blue);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius);
   box-shadow: var(--shadow-xs);
 }
 
-.new-query-btn:hover,
 .primary-btn:hover:not(:disabled) {
   background: var(--blue-dark);
 }
 
-.new-query-btn:active,
 .primary-btn:active:not(:disabled),
 .primary-action:active:not(:disabled),
 .ghost-btn:active:not(:disabled) {
   transform: translateY(1px);
-}
-
-.new-query-btn svg {
-  width: 16px;
-  height: 16px;
 }
 
 .ghost-btn {
@@ -546,7 +558,7 @@ textarea:focus-visible {
   font-weight: 500;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   box-shadow: var(--shadow-xs);
 }
 
@@ -562,7 +574,7 @@ textarea:focus-visible {
   color: var(--text-secondary);
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 
 .ghost-light-btn:hover {
@@ -592,7 +604,7 @@ textarea:focus-visible {
   font-weight: 600;
   background: var(--blue);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius);
   box-shadow: var(--shadow-xs);
 }
 
@@ -652,14 +664,14 @@ textarea:focus-visible {
 .panel-head h3 {
   margin: 0;
   color: var(--text);
-  font-size: 14.5px;
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 
 .panel-head p {
   margin: 2px 0 0;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .panel-head a,
@@ -668,7 +680,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 4px;
   color: var(--blue);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   background: transparent;
   border: 0;
@@ -695,37 +707,6 @@ textarea:focus-visible {
   margin: 0;
 }
 
-.welcome-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.welcome-kicker {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--blue);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.welcome-row h2,
-.dashboard-page .welcome-row h2 {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.3;
-  font-weight: 700;
-}
-
-.welcome-row p,
-.dashboard-page .welcome-row p {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .metric-grid,
 .dashboard-page .metric-grid {
   display: grid;
@@ -746,7 +727,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 
@@ -759,7 +740,7 @@ textarea:focus-visible {
   color: var(--blue);
   background: var(--blue-soft);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 
 .metric-icon.blue { color: var(--blue); background: var(--blue-soft); }
@@ -772,7 +753,7 @@ textarea:focus-visible {
   display: block;
   margin-top: 10px;
   color: var(--text);
-  font-size: 26px;
+  font-size: var(--fs-2xl);
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.2px;
@@ -783,7 +764,7 @@ textarea:focus-visible {
 .dashboard-page .metric-card p {
   margin: 5px 0 0;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .metric-card p.green { color: var(--green); font-weight: 500; }
@@ -803,18 +784,33 @@ textarea:focus-visible {
 }
 
 /* 公告列表 */
-.notice-list,
+.notice-list {
+  display: grid;
+  gap: 0;
+  padding: 4px 14px 10px;
+}
 
 .notice-list.standalone {
   padding: 0;
 }
 
-.notice-item,
+.notice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  min-height: 58px;
+  padding: 11px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 0;
+}
 
-.notice-item:last-child,
+.notice-item:last-child {
+  border-bottom: 0;
+}
 
 .notice-item:hover {
-  background: #fafcff;
+  background: var(--line-soft);
 }
 
 .notice-tag {
@@ -828,7 +824,7 @@ textarea:focus-visible {
   color: var(--blue);
   background: var(--blue-soft);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   line-height: 24px;
 }
@@ -839,18 +835,28 @@ textarea:focus-visible {
 .notice-tag.notice { color: #475467; background: #f2f4f7; }
 .notice-tag.top { color: #b42318; background: #fef3f2; }
 
-.notice-item strong,
+.notice-item strong {
+  display: block;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.45;
+}
 
-.notice-item p,
+.notice-item p {
+  margin: 3px 0 0;
+  color: var(--faint);
+  font-size: var(--fs-xs);
+}
 
 .top-flag {
   display: inline-block;
   margin-right: 6px;
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: #ef4444;
   background: #fef2f2;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   vertical-align: 1px;
 }
@@ -858,7 +864,7 @@ textarea:focus-visible {
 .empty-inline {
   padding: 18px 10px;
   color: var(--faint);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* 待办 */
@@ -869,7 +875,7 @@ textarea:focus-visible {
   gap: 16px;
   padding: 16px 20px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .chart-legend i {
@@ -878,7 +884,7 @@ textarea:focus-visible {
   display: inline-block;
   margin-right: 6px;
   background: var(--blue);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 
 .chart-legend i.light {
@@ -919,7 +925,7 @@ textarea:focus-visible {
   justify-items: center;
   gap: 8px;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .chart-empty svg {
@@ -945,7 +951,7 @@ textarea:focus-visible {
 .quick-card strong {
   display: block;
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1.35;
   font-weight: 600;
 }
@@ -954,7 +960,7 @@ textarea:focus-visible {
   display: block;
   margin-top: 2px;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-style: normal;
 }
 
@@ -965,8 +971,8 @@ textarea:focus-visible {
   display: grid;
   place-items: center;
   flex: none;
-  border-radius: 8px;
-  font-size: 15px;
+  border-radius: var(--radius);
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 
@@ -997,14 +1003,14 @@ textarea:focus-visible {
 .compliance-item strong {
   display: block;
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 
 .compliance-item p {
   margin: 2px 0 0;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 /* ============================================================
@@ -1028,14 +1034,14 @@ textarea:focus-visible {
   height: 40px;
   color: var(--muted);
   background: #f8fafc;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
 .data-table td {
   padding-top: 13px;
   padding-bottom: 13px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.45;
   /* 身份证号等长串不含空格，默认不会换行会溢出压到相邻列，这里强制在必要时断行 */
   overflow-wrap: anywhere;
@@ -1086,7 +1092,7 @@ textarea:focus-visible {
   height: auto;
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 500;
   line-height: 1.35;
 }
@@ -1120,7 +1126,7 @@ textarea:focus-visible {
 .record-status-reason {
   max-width: 300px;
   color: #b42318;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.5;
   white-space: normal;
 }
@@ -1134,7 +1140,7 @@ textarea:focus-visible {
   display: grid;
   gap: 7px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   /* 行高只由内容决定：有的字段带下方提示文字（三行），有的没有（两行），
      若让行去分摊剩余高度，同一栅格行里的输入框顶边就会错开十几像素 */
@@ -1152,7 +1158,7 @@ textarea:focus-visible {
 
 .form-grid label > span {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 
@@ -1166,10 +1172,10 @@ textarea {
   height: 40px;
   padding: 0 12px;
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-base);
   background: #ffffff;
   border: 1px solid #d6dee9;
-  border-radius: 8px;
+  border-radius: var(--radius);
   outline: none;
   box-shadow: var(--shadow-xs);
 }
@@ -1210,8 +1216,8 @@ textarea::placeholder {
   color: #b42318;
   background: var(--red-soft);
   border: 1px solid #fee4e2;
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
 }
 
 .form-message.success { color: #027a48; background: var(--green-soft); border-color: #abefc6; }
@@ -1220,17 +1226,17 @@ textarea::placeholder {
 .form-notice {
   margin: -4px 0 14px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--green-soft);
   color: #047857;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 
 .form-success {
   margin: -4px 0 14px;
   color: #079455;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .error-line {
@@ -1255,21 +1261,21 @@ textarea::placeholder {
 
 .work-card-head h2 {
   margin: 0;
-  font-size: 19px;
+  font-size: var(--fs-xl);
   font-weight: 700;
 }
 
 .work-card-head p {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .work-card-head h3,
 .card-head h3,
 .invoice-panel-head h3,
 .detail-card-head h3 {
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 
@@ -1288,7 +1294,7 @@ textarea::placeholder {
   display: grid;
   place-items: center;
   color: var(--blue);
-  font-size: 26px;
+  font-size: var(--fs-2xl);
   font-weight: 700;
   background: #f8faff;
   border: 1px solid #dbe6fb;
@@ -1318,7 +1324,7 @@ textarea::placeholder {
   border: 0;
   border-radius: 0;
   background: transparent;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .query-tips {
@@ -1330,8 +1336,8 @@ textarea::placeholder {
   color: var(--muted);
   background: #f8fafc;
   border: 1px solid var(--line-soft);
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
 }
 
 .query-tips strong { color: var(--text); }
@@ -1408,7 +1414,7 @@ textarea::placeholder {
   display: grid;
   place-items: center;
   background: var(--cinnabar);
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   transform: rotate(-2.5deg);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.22),
@@ -1417,7 +1423,7 @@ textarea::placeholder {
 
 .brand-seal span {
   font-family: "Songti SC", "SimSun", "Noto Serif CJK SC", serif;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   line-height: 1.05;
   color: #fff;
@@ -1436,14 +1442,14 @@ textarea::placeholder {
 }
 
 .brand-names .brand-title {
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--ink);
 }
 
 .brand-names .brand-sub {
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   color: #9a9287;
 }
 
@@ -1460,7 +1466,7 @@ textarea::placeholder {
 
 .login-card h2 {
   margin: 0 0 4px;
-  font-size: 19px;
+  font-size: var(--fs-xl);
   font-weight: 600;
   letter-spacing: 0.2px;
   color: var(--ink);
@@ -1469,7 +1475,7 @@ textarea::placeholder {
 .login-subtitle {
   margin: 0 0 20px;
   color: #9a9287;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .login-card label {
@@ -1480,7 +1486,7 @@ textarea::placeholder {
 .login-card label > span {
   display: block;
   margin-bottom: 5px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-soft);
 }
 
@@ -1488,10 +1494,10 @@ textarea::placeholder {
   width: 100%;
   height: 38px;
   padding: 0 11px;
-  border-radius: 5px;
+  border-radius: var(--radius);
   border: 1px solid var(--paper-line);
   background: #fff;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   box-sizing: border-box;
   transition: border-color .14s ease, box-shadow .14s ease;
 }
@@ -1510,10 +1516,10 @@ textarea::placeholder {
   height: 38px;
   margin-top: 4px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius);
   background: var(--ink);
   color: #fff;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   letter-spacing: 0.6px;
   cursor: pointer;
@@ -1542,7 +1548,7 @@ textarea::placeholder {
   border-radius: 0;
   background: transparent;
   color: #9a9287;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -1575,17 +1581,17 @@ textarea::placeholder {
   height: 38px;
   object-fit: cover;
   border: 1px solid var(--paper-line);
-  border-radius: 5px;
+  border-radius: var(--radius);
   cursor: pointer;
 }
 
 .captcha-row.sms-row button {
   height: 38px;
   border: 1px solid var(--paper-line);
-  border-radius: 5px;
+  border-radius: var(--radius);
   background: #fff;
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 500;
   cursor: pointer;
   transition: border-color .14s ease;
@@ -1594,7 +1600,7 @@ textarea::placeholder {
 .captcha-row.sms-row button:hover:not(:disabled) { border-color: var(--ink); }
 .captcha-row.sms-row button:disabled { color: #b8b2a8; cursor: not-allowed; }
 
-.login-tip { margin: 12px 0 0; color: #9a9287; font-size: 12px; }
+.login-tip { margin: 12px 0 0; color: #9a9287; font-size: var(--fs-xs); }
 .login-tip a { color: var(--cinnabar); font-weight: 500; }
 
 .login-register-entry {
@@ -1604,7 +1610,7 @@ textarea::placeholder {
   gap: 5px;
   margin-top: 16px;
   color: #9a9287;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
 }
 
 .login-register-entry a { color: var(--cinnabar); font-weight: 500; }
@@ -1618,7 +1624,7 @@ textarea::placeholder {
   gap: 5px;
   margin: 12px auto 0;
   color: #777066;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   transition: color .14s ease;
 }
 
@@ -1631,7 +1637,7 @@ textarea::placeholder {
   gap: 3px;
   margin: 2px 0 12px;
   color: #81796e;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   line-height: 1.6;
 }
 
@@ -1663,7 +1669,7 @@ textarea::placeholder {
 .login-foot {
   flex: 0 0 auto;
   padding: 0 0 20px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: #b3aca1;
   text-align: center;
 }
@@ -1696,7 +1702,7 @@ textarea::placeholder {
 .register-subtitle {
   margin: 0 0 20px;
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   line-height: 1.7;
 }
 
@@ -1711,7 +1717,7 @@ textarea::placeholder {
   display: flex;
   overflow: hidden;
   border: 1px solid #d6dee9;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #ffffff;
 }
 
@@ -1785,7 +1791,7 @@ textarea::placeholder {
 
 .toolbar-label {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .records-table-wrap,
@@ -1795,7 +1801,7 @@ textarea::placeholder {
   scrollbar-width: thin;
   scrollbar-color: #c9d5e5 transparent;
   border: 1px solid var(--line-soft);
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 
 .records-table {
@@ -1863,7 +1869,7 @@ textarea::placeholder {
   margin-top: 14px;
   padding-top: 14px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .pager select {
@@ -1873,14 +1879,14 @@ textarea::placeholder {
   border-radius: var(--radius-sm);
   background: #ffffff;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .pager .ghost-btn {
   height: 32px;
   min-height: 32px;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* ============================================================
@@ -1921,7 +1927,7 @@ textarea::placeholder {
 
 .cost-card h3 {
   margin: 0 0 14px;
-  font-size: 14.5px;
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 
@@ -1931,7 +1937,7 @@ textarea::placeholder {
   align-items: baseline;
   gap: 12px;
   padding: 7px 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .cost-row span { color: var(--muted); }
@@ -1952,12 +1958,12 @@ textarea::placeholder {
 
 .cost-total span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .cost-total strong {
   color: var(--blue);
-  font-size: 22px;
+  font-size: var(--fs-xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -1965,7 +1971,7 @@ textarea::placeholder {
 .cost-hint {
   margin: 10px 0 0;
   color: var(--faint);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.6;
 }
 
@@ -1981,7 +1987,7 @@ textarea::placeholder {
 .flow-card h4 {
   margin: 0 0 12px;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 
@@ -1999,7 +2005,7 @@ textarea::placeholder {
   align-items: flex-start;
   gap: 9px;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   line-height: 1.5;
   counter-increment: flow;
 }
@@ -2014,7 +2020,7 @@ textarea::placeholder {
   color: var(--blue);
   background: var(--blue-soft);
   border-radius: 50%;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
@@ -2058,25 +2064,20 @@ textarea::placeholder {
   min-width: 0;
 }
 
-.recharge-page .recharge-hero {
-  width: min(1560px, 100%);
-  margin: 0 auto 4px;
-}
-
 .compact-head {
   align-items: flex-start;
 }
 
 .compact-head h3 {
   margin: 0 0 6px;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 600;
 }
 
 .compact-head p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .package-list {
@@ -2118,14 +2119,14 @@ textarea::placeholder {
 
 .pkg-name {
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
 }
 
 .pkg-price {
   margin-top: 12px;
   color: var(--text);
-  font-size: 26px;
+  font-size: var(--fs-2xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -2133,13 +2134,13 @@ textarea::placeholder {
 .pkg-meta {
   margin-top: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .pkg-remark {
   margin-top: 10px;
   color: var(--blue);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
 }
 
 .pay-methods {
@@ -2177,7 +2178,7 @@ textarea::placeholder {
   border-radius: 999px;
   color: var(--blue);
   background: var(--blue-soft);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-style: normal;
 }
 
@@ -2208,7 +2209,7 @@ textarea::placeholder {
   gap: 20px;
   padding: 9px 0;
   border-bottom: 1px solid var(--line-soft);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .bank-box div:last-of-type,
@@ -2230,7 +2231,7 @@ textarea::placeholder {
 .bank-box p {
   margin: 12px 0 0;
   color: #b54708;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   line-height: 1.7;
 }
 
@@ -2258,7 +2259,7 @@ textarea::placeholder {
 .polling-text {
   margin-top: 16px !important;
   color: var(--muted) !important;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* ============================================================
@@ -2317,25 +2318,25 @@ textarea::placeholder {
 
 .status-header h3 {
   margin: 0 0 6px;
-  font-size: 19px;
+  font-size: var(--fs-xl);
   font-weight: 700;
 }
 
 .status-header p {
   margin: 0;
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
 }
 
 .reject-box {
   margin-top: 16px;
   padding: 13px 15px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   color: #b42318;
   background: var(--red-soft);
   border: 1px solid #fee4e2;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.7;
 }
 
@@ -2381,7 +2382,7 @@ textarea::placeholder {
 .cert-list-item em {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-style: normal;
 }
 
@@ -2391,7 +2392,7 @@ textarea::placeholder {
   border-radius: 999px;
   color: var(--muted);
   background: #f2f4f7;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-weight: 500;
 }
 
@@ -2422,14 +2423,14 @@ textarea::placeholder {
 
 .cert-panel .panel-head h3 {
   margin: 0 0 6px;
-  font-size: 19px;
+  font-size: var(--fs-xl);
   font-weight: 700;
 }
 
 .cert-panel .panel-head p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .cert-form-grid {
@@ -2448,7 +2449,7 @@ textarea::placeholder {
 .cert-form-grid span,
 .license-title span {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
 }
 
@@ -2457,7 +2458,7 @@ textarea::placeholder {
   height: 40px;
   padding: 0 12px;
   border: 1px solid #d6dee9;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #ffffff;
 }
 
@@ -2484,7 +2485,7 @@ textarea::placeholder {
 
 .license-title em {
   color: var(--faint);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-style: normal;
 }
 
@@ -2500,7 +2501,7 @@ textarea::placeholder {
   width: 148px;
   height: 110px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: #f8fafc;
 }
@@ -2543,7 +2544,7 @@ textarea::placeholder {
 
 .upload-tile strong {
   color: var(--blue);
-  font-size: 26px;
+  font-size: var(--fs-2xl);
   line-height: 1;
 }
 
@@ -2555,12 +2556,7 @@ textarea::placeholder {
    14. 各页共享 Hero / 统计条（发票、子账号、代理、消息、资料）
    ============================================================ */
 
-.invoice-hero,
-.recharge-hero,
-.cert-hero,
-.sub-hero,
 .agent-hero,
-.messages-hero,
 .profile-summary {
   display: flex;
   align-items: center;
@@ -2576,42 +2572,28 @@ textarea::placeholder {
   box-shadow: var(--shadow-xs);
 }
 
-.invoice-hero h2,
-.recharge-hero h2,
-.cert-hero h2,
-.sub-hero h2,
 .agent-hero h2,
-.messages-hero h2,
 .profile-summary h2 {
   margin: 0 0 6px;
   color: var(--text);
-  font-size: 19px;
+  font-size: var(--fs-xl);
   line-height: 1.3;
   font-weight: 700;
 }
 
-.invoice-hero p,
-.recharge-hero p,
-.cert-hero p,
-.sub-hero p,
-.sub-hero span,
 .agent-hero p,
 .agent-hero span,
-.messages-hero p,
 .profile-summary p {
   margin: 0;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
 }
 
 .eyebrow,
-.recharge-hero .eyebrow,
-.cert-hero .eyebrow,
-.sub-hero > div > p,
 .agent-hero .hero-copy > p {
   margin: 0 0 5px;
   color: var(--blue);
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.3px;
 }
@@ -2695,20 +2677,20 @@ textarea::placeholder {
   padding: 14px;
   background: #f8fafc;
   border: 1px solid var(--line-soft);
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 
 .report-summary span {
   display: block;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .report-summary strong {
   display: block;
   margin-top: 6px;
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   word-break: break-all;
 }
@@ -2726,7 +2708,7 @@ textarea::placeholder {
   overflow: auto;
   color: #334155;
   background: #f8fafc;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.7;
 }
 
@@ -2850,7 +2832,7 @@ textarea::placeholder {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 .notify-pref-label {
   color: #64748b;
@@ -2862,10 +2844,10 @@ textarea::placeholder {
   gap: 5px;
   padding: 4px 10px;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: #fff;
   color: #475569;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.6;
   cursor: pointer;
   transition: all .15s;
@@ -2879,11 +2861,11 @@ textarea::placeholder {
 }
 .notify-chip.off { background: #f8fafc; color: #94a3b8; }
 .notify-pref-link {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: #2168f3;
   text-decoration: underline;
 }
-.notify-pref-state { font-size: 12px; color: #8794a8; margin-left: auto; }
+.notify-pref-state { font-size: var(--fs-xs); color: #8794a8; margin-left: auto; }
 .notify-pref-state.ok { color: #0b9f62; }
 
 /* ============================================================
@@ -2894,25 +2876,26 @@ textarea::placeholder {
 .stat-card,
 .sub-card,
 .profile-detail-card,
-.report-detail-card,
+.report-detail-card {
+  box-shadow: none;
+}
 
 /* 表格：行高收紧，表头用细线而非底色块 */
 .data-table th {
   background: transparent;
   border-bottom: 1px solid var(--line);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.2px;
 }
 
 .data-table td {
   border-bottom: 1px solid var(--line-soft);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* 强调色：链接、激活态 */
-.primary-link,
-.page-eyebrow {
+.primary-link {
   color: var(--cinnabar);
 }
 
@@ -2980,7 +2963,7 @@ textarea::placeholder {
   }
 
   .topbar-context span { display: none; }
-  .topbar-context h1 { font-size: 16px; }
+  .topbar-context h1 { font-size: var(--fs-lg); }
 
   /* 用户菜单在窄屏只留头像 */
   .user-menu-copy,
@@ -3046,7 +3029,7 @@ textarea::placeholder {
     content: attr(data-label);
     flex: 0 0 auto;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     text-align: left;
   }
 
@@ -3085,7 +3068,7 @@ textarea::placeholder {
 @media (max-width: 480px) {
   .overview-metrics,
   .stats-grid { grid-template-columns: minmax(0, 1fr) !important; }
-  .topbar-context h1 { font-size: 15px; }
+  .topbar-context h1 { font-size: var(--fs-base); }
 }
 
 /* 触摸目标不小于 40px，避免手机上点不中 */
@@ -3152,7 +3135,7 @@ textarea::placeholder {
     grid-column: 1 / -1;
     margin-bottom: -4px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .toolbar-sep { display: none; }
@@ -3230,7 +3213,6 @@ textarea::placeholder {
 /* 强调色回归克制：朱砂只留给品牌印章，链接用中性深色，
    满屏红字在密集界面里过于刺眼 */
 .primary-link { color: var(--blue); }
-.page-eyebrow { color: var(--muted); }
 
 @media (max-width: 768px) {
   /* 窄屏内容面贴边，省出横向空间 */
@@ -3295,12 +3277,12 @@ textarea::placeholder {
   .stat-card strong,
   .metric-card strong,
   .stat-value {
-    font-size: 26px;
+    font-size: var(--fs-2xl);
     line-height: 1.2;
   }
 
   .stat-card small,
-  .metric-card small { font-size: 11.5px; }
+  .metric-card small { font-size: var(--fs-xs); }
 
   /* 4. 面板标题区紧凑，"查看全部"不换行 */
   .panel-head,
@@ -3310,43 +3292,27 @@ textarea::placeholder {
 
   .panel-head a,
   .panel-head .text-btn,
-  .detail-card-head a { white-space: nowrap; font-size: 13px; }
+  .detail-card-head a { white-space: nowrap; font-size: var(--fs-sm); }
 
   /* 5. 页面主标题降一档，长句不至于占三行 */
   .page-header h2,
-  .work-card-head h2 { font-size: 20px; }
-  .page-description,
-  .work-card-head p { font-size: 12.5px; line-height: 1.6; }
+  .work-card-head h2 { font-size: var(--fs-xl); }
+  .work-card-head p { font-size: var(--fs-xs); line-height: 1.6; }
 }
 
 /* Dashboard 移动端：类名是 welcome-row / new-query-btn / metric-card，
    不在前面那批通用选择器里，需单独处理 */
 @media (max-width: 768px) {
-  .welcome-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-
-  .welcome-row h2 { font-size: 21px; }
-  .welcome-row p { font-size: 12.5px; line-height: 1.6; }
-
-  .new-query-btn {
-    width: 100%;
-    justify-content: center;
-    white-space: nowrap;   /* 原先「发起背调查询」被折成两行 */
-    height: 42px;
-  }
 
   /* 指标卡收紧：四张卡原本占掉一屏还多 */
   .metric-grid { gap: 10px; }
 
   .metric-card { padding: 13px 14px 12px; }
-  .metric-card .metric-top span:first-child { font-size: 12.5px; }
+  .metric-card .metric-top span:first-child { font-size: var(--fs-xs); }
   .metric-card strong,
-  .metric-card .metric-value { font-size: 24px; }
+  .metric-card .metric-value { font-size: var(--fs-2xl); }
   .metric-card small,
-  .metric-card .metric-foot { font-size: 11px; }
+  .metric-card .metric-foot { font-size: var(--fs-xs); }
   .metric-icon { width: 30px; height: 30px; }
 }
 
@@ -3360,7 +3326,7 @@ textarea::placeholder {
 
 /* ---- 1. 顶栏 ---- */
 .topbar-context span {
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--text);
 }
@@ -3441,7 +3407,7 @@ textarea::placeholder {
   transform: translateY(-50%);
   padding: 5px 9px;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: #fff;
   background: var(--text);
   border-radius: var(--radius-sm);
@@ -3516,7 +3482,7 @@ textarea::placeholder {
 .metric-grid .metric-card:last-child { border-right: 0; }
 
 .metric-grid .metric-card strong,
-.metric-grid .metric-card .metric-value { font-size: 24px; }
+.metric-grid .metric-card .metric-value { font-size: var(--fs-2xl); }
 
 @media (max-width: 1024px) {
   .metric-grid .metric-card:nth-child(2) { border-right: 0; }
@@ -3526,7 +3492,7 @@ textarea::placeholder {
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric-grid .metric-card { padding: 12px 13px; }
   .metric-grid .metric-card strong,
-  .metric-grid .metric-card .metric-value { font-size: 20px; }
+  .metric-grid .metric-card .metric-value { font-size: var(--fs-xl); }
 }
 
 /* ============================================================
@@ -3537,12 +3503,6 @@ textarea::placeholder {
    ============================================================ */
 @media (max-width: 768px) {
   /* 各页头部统一：标题与操作分行，按钮占满不折字 */
-  .recharge-hero,
-  .invoice-hero,
-  .cert-hero,
-  .sub-hero,
-  .messages-hero,
-  .finance-page-header,
   .profile-summary {
     display: flex;
     flex-direction: column;
@@ -3550,28 +3510,7 @@ textarea::placeholder {
     gap: 12px;
   }
 
-  .recharge-hero > button,
-  .invoice-hero > button,
-  .cert-hero > button,
-  .sub-hero > button,
-  .messages-hero > button,
-  .recharge-hero .primary-btn,
-  .invoice-hero .primary-btn,
-  .cert-hero .primary-btn,
-  .sub-hero .primary-btn,
-  .messages-hero .primary-btn {
-    width: 100%;
-    justify-content: center;
-    white-space: nowrap;
-  }
-
-  .recharge-hero h2,
-  .invoice-hero h2,
-  .cert-hero h2,
-  .sub-hero h2,
-  .messages-hero h2 { font-size: 20px; }
-
-  .eyebrow { font-size: 11.5px; }
+  .eyebrow { font-size: var(--fs-xs); }
 
   /* 基本信息：仅头像区居中，标题与字段保持左对齐 */
   .profile-summary { align-items: center; }
@@ -3587,8 +3526,8 @@ textarea::placeholder {
     gap: 2px 12px;
     padding: 12px 0;
   }
-  .profile-row .row-label { grid-area: label; font-size: 12px; }
-  .profile-row .row-value { grid-area: value; font-size: 14px; word-break: break-all; }
+  .profile-row .row-label { grid-area: label; font-size: var(--fs-xs); }
+  .profile-row .row-value { grid-area: value; font-size: var(--fs-base); word-break: break-all; }
   .profile-row .row-action { grid-area: action; white-space: nowrap; }
 
   /* 充值套餐：单列 */
@@ -3633,12 +3572,6 @@ textarea::placeholder {
    - 套餐区无数据时空占大片，右侧支付栏被挤窄
    ============================================================ */
 
-.recharge-hero-actions {
-  display: flex;
-  align-items: stretch;   /* 两块等高，右上角不再高低不齐 */
-  gap: 12px;
-}
-
 /* 标题与刷新按钮同一行 —— 原先 flex-start 让按钮掉到了下面 */
 .compact-head {
   display: flex;
@@ -3657,10 +3590,6 @@ textarea::placeholder {
 }
 
 @media (max-width: 768px) {
-  .recharge-hero-actions {
-    flex-direction: column;
-    width: 100%;
-  }
   .compact-head { align-items: center; }
 }
 
@@ -3698,7 +3627,7 @@ textarea::placeholder {
   min-width: 132px;
   height: 40px;
   padding: 0 22px;
-  font-size: 14px;
+  font-size: var(--fs-base);
 }
 
 /* 流程块 */
@@ -3725,7 +3654,7 @@ textarea::placeholder {
   height: 40px;
   padding: 0 22px;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1;
   box-sizing: border-box;   /* .primary-action 带 1px 边框，不算进盒模型会比另一个高 2px */
   display: inline-flex;
@@ -3805,17 +3734,17 @@ textarea::placeholder {
     min-height: 0 !important;
     height: auto !important;
     line-height: 1.5 !important;
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
 
   .data-table tbody td::before,
   .records-table tbody td::before {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     line-height: 1.5;
   }
 
   /* 姓名与状态是扫视时最先找的两项，给一点视觉权重 */
-  .records-table tbody td[data-label="姓名"] { font-size: 15px; font-weight: 600; padding-bottom: 6px !important; }
+  .records-table tbody td[data-label="姓名"] { font-size: var(--fs-base); font-weight: 600; padding-bottom: 6px !important; }
   .records-table tbody td[data-label="状态"] { padding-top: 6px !important; }
 
   /* 操作行与上方内容拉开，并靠右 */
@@ -3872,7 +3801,7 @@ textarea::placeholder {
   min-height: 40px;
   border-radius: var(--radius);
   box-sizing: border-box;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
 }
 
 .toolbar .ghost-btn,
@@ -3885,7 +3814,7 @@ textarea::placeholder {
 .toolbar-label {
   margin-left: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   white-space: nowrap;
 }
 
@@ -3896,4 +3825,77 @@ textarea::placeholder {
 
 .toolbar input[type="date"] {
   min-width: 148px;
+}
+
+/* ============================================================
+   统一页头 —— 全站唯一的页面标题结构
+   ------------------------------------------------------------
+   此前 18 个页面用了 13 种页头写法（page-header / xxx-hero /
+   xxx-header / welcome-row / work-card-head…），每种的间距、
+   字号、对齐方式都不一样，是"页面看着乱"最直接的来源。
+   新页面一律用这套，旧页面逐步收敛过来。
+
+   结构：
+     <header class="page-head">
+       <div class="page-head-main">
+         <p class="page-head-eyebrow">账户中心</p>   （可选）
+         <h2>资金流水</h2>
+         <p class="page-head-desc">一句话说明</p>     （可选）
+       </div>
+       <div class="page-head-actions"> …按钮… </div>  （可选）
+     </header>
+   ============================================================ */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-5);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.page-head-main { min-width: 0; }
+
+.page-head-eyebrow {
+  margin: 0 0 var(--sp-1);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+.page-head h1,
+.page-head h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.page-head-desc {
+  margin: var(--sp-2) 0 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+
+.page-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: 0 0 auto;
+}
+
+@media (max-width: 768px) {
+  /* 窄屏改为上下排列，操作区占满一行——横向挤在一起会把标题压到折行 */
+  .page-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    padding-bottom: var(--sp-3);
+  }
+
+  .page-head-actions > * { flex: 1 1 auto; justify-content: center; }
 }

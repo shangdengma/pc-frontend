@@ -399,21 +399,21 @@ onMounted(async () => {
   margin: 12px 0 4px;
   padding: 14px 16px;
   border: 1px dashed #b7c4d6;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: #f5f8fc;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 .candidate-link-title {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: #33415c;
 }
 .candidate-link-url {
   word-break: break-all;
   color: #2563eb;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 .candidate-link-actions {
   display: flex;
@@ -424,10 +424,10 @@ onMounted(async () => {
   align-items: center;
   padding: 6px 14px;
   border: 1px solid #c3ccd9;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #fff;
   color: #33415c;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   text-decoration: none;
 }
@@ -436,7 +436,7 @@ onMounted(async () => {
   color: #2563eb;
 }
 .candidate-link-hint {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: #8794a8;
   margin: 0;
 }
@@ -448,23 +448,18 @@ onMounted(async () => {
   gap: 24px;
 }
 
-
-
-
-
-
 .auth-method-panel {
   margin-top: 18px;
   padding: 16px;
   border: 1px solid #e5edf8;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #fbfdff;
 }
 
 .auth-method-title {
   display: block;
   margin-bottom: 12px;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 700;
   color: #172033;
 }
@@ -473,7 +468,7 @@ onMounted(async () => {
   min-height: 72px;
   padding: 13px 15px;
   border: 1px solid #2563eb;
-  border-radius: 7px;
+  border-radius: var(--radius);
   background: #f4f8ff;
   box-shadow: inset 3px 0 0 #2563eb;
   text-align: left;
@@ -486,7 +481,7 @@ onMounted(async () => {
 
 .auth-method-current strong {
   color: #111827;
-  font-size: 15px;
+  font-size: var(--fs-base);
 }
 
 .auth-method-current small {
@@ -501,7 +496,6 @@ onMounted(async () => {
     gap: 14px;
   }
 
-
 }
 
 /* ---- 表单即时校验 ---- */
@@ -515,7 +509,7 @@ onMounted(async () => {
   display: block;
   margin-top: 4px;
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.4;
 }
 .field-error { color: #e35d5b; }
@@ -533,7 +527,7 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 .submit-hint {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: #8794a8;
 }
 .submit-hint.warn { color: #d67a00; }

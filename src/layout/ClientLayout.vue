@@ -18,6 +18,7 @@
           <router-link v-for="item in businessMenus" :key="item.path" class="nav-item" :to="item.path" :data-title="item.title" @click="navOpen = false">
             <component :is="item.icon" class="nav-icon" :size="18" :stroke-width="1.8" />
             <span>{{ item.title }}</span>
+            <em v-if="item.badge" class="nav-badge" :class="item.badgeTone">{{ item.badge }}</em>
           </router-link>
         </div>
 
@@ -26,6 +27,7 @@
           <router-link v-for="item in fundMenus" :key="item.path" class="nav-item" :to="item.path" :data-title="item.title" @click="navOpen = false">
             <component :is="item.icon" class="nav-icon" :size="18" :stroke-width="1.8" />
             <span>{{ item.title }}</span>
+            <em v-if="item.badge" class="nav-badge" :class="item.badgeTone">{{ item.badge }}</em>
           </router-link>
         </div>
 
@@ -34,6 +36,7 @@
           <router-link v-for="item in orgMenus" :key="item.path" class="nav-item" :to="item.path" :data-title="item.title" @click="navOpen = false">
             <component :is="item.icon" class="nav-icon" :size="18" :stroke-width="1.8" />
             <span>{{ item.title }}</span>
+            <em v-if="item.badge" class="nav-badge" :class="item.badgeTone">{{ item.badge }}</em>
           </router-link>
         </div>
 
@@ -42,6 +45,7 @@
           <router-link v-for="item in supportMenus" :key="item.path" class="nav-item" :to="item.path" :data-title="item.title" @click="navOpen = false">
             <component :is="item.icon" class="nav-icon" :size="18" :stroke-width="1.8" />
             <span>{{ item.title }}</span>
+            <em v-if="item.badge" class="nav-badge" :class="item.badgeTone">{{ item.badge }}</em>
           </router-link>
         </div>
       </nav>
@@ -153,6 +157,8 @@ import {
 } from '@lucide/vue'
 import { logout } from '../api/auth'
 import { getUserBalance, getUserProfile } from '../api/user'
+import { getUnreadCount } from '../api/notice'
+import { getMyEnterpriseCertList } from '../api/enterpriseCert'
 import { getUser, removeToken, setUser } from '../utils/auth'
 import { yuanFromFen } from '../utils/format'
 import { canRefresh, runRefresh, useRefreshState } from '../composables/pullRefresh'
@@ -169,7 +175,29 @@ function toggleRail() {
   railCollapsed.value = !railCollapsed.value
   localStorage.setItem('zk_rail_collapsed', railCollapsed.value ? '1' : '0')
 }
-watch(() => route.fullPath, () => { navOpen.value = false })
+watch(() => route.fullPath, (to, from) => {
+  navOpen.value = false
+  // 离开消息页时重算未读数，否则读完消息侧栏徽章还挂着
+  if (from === '/messages' || to === '/enterprise-cert') loadNavBadges()
+})
+const unreadCount = ref(0)
+// 未认证时在侧栏「企业认证」上打标：企业认证影响能不能正常下单，
+// 藏在二级页面里用户不会主动去看
+const certPending = ref(false)
+
+async function loadNavBadges() {
+  try {
+    const res = await getUnreadCount()
+    unreadCount.value = Number(res?.data ?? res?.count ?? 0) || 0
+  } catch (err) { /* 徽章是锦上添花，失败就不显示，不打扰主流程 */ }
+
+  try {
+    const res = await getMyEnterpriseCertList()
+    const list = Array.isArray(res?.data) ? res.data : (res?.rows || [])
+    certPending.value = !list.some(item => item.status === 'approved')
+  } catch (err) { certPending.value = false }
+}
+
 const balance = ref(0)
 const balanceText = computed(() => yuanFromFen(balance.value))
 // 余额为 0 时标红：这是唯一会直接挡住下单的账户状态，值得在每一页都看得见
@@ -189,7 +217,13 @@ const businessMenus = computed(() => [
   { title: '工作台', path: '/dashboard', icon: LayoutDashboard },
   { title: canOnlineTest.value ? '在线测试' : '发起背调', path: '/query/create', icon: ShieldCheck },
   { title: '查询记录', path: '/records', icon: ClipboardList },
-  { title: '消息通知', path: '/messages', icon: Bell }
+  {
+    title: '消息通知',
+    path: '/messages',
+    icon: Bell,
+    badge: unreadCount.value > 0 ? (unreadCount.value > 99 ? '99+' : String(unreadCount.value)) : '',
+    badgeTone: 'count'
+  }
 ])
 
 const rawFundMenus = [
@@ -200,15 +234,21 @@ const rawFundMenus = [
   { title: '代理中心', path: '/agent-center', icon: BadgePercent, agentOnly: true }
 ]
 
-const rawOrgMenus = [
+const rawOrgMenus = computed(() => [
   { title: '基础信息', path: '/account-profile', icon: UserRound },
-  { title: '企业认证', path: '/enterprise-cert', icon: Building2 },
+  {
+    title: '企业认证',
+    path: '/enterprise-cert',
+    icon: Building2,
+    badge: certPending.value ? '未认证' : '',
+    badgeTone: 'warn'
+  },
   { title: '子账号管理', path: '/sub-accounts', icon: UsersRound, mainOnly: true }
-]
+])
 
 const fundMenus = computed(() => rawFundMenus.filter(item => !item.agentOnly || isAgent.value))
 // 子账号本身不能再管理子账号，隐藏该入口
-const orgMenus = computed(() => rawOrgMenus.filter(item => !item.mainOnly || !isSubAccount.value))
+const orgMenus = computed(() => rawOrgMenus.value.filter(item => !item.mainOnly || !isSubAccount.value))
 const supportMenus = [
   { title: '常见问题', path: '/support/faq', icon: CircleHelp },
   { title: '意见反馈', path: '/support/feedback', icon: MessageSquareText },
@@ -299,6 +339,7 @@ async function onTouchEnd() {
 
 onMounted(() => {
   loadProfile()
+  loadNavBadges()
   document.addEventListener('click', handleDocumentClick)
   if (isTouchDevice()) {
     // passive:false 是必需的——要靠 preventDefault 压住浏览器自己的下拉刷新
@@ -324,6 +365,55 @@ onBeforeUnmount(() => {
   color: currentColor;
 }
 
+/* ---- 侧栏徽章 ----
+   未读消息数与「未认证」提示：这两件事都在二级页面里，
+   不在导航上给信号用户不会主动去看。 */
+.nav-item { position: relative; }
+
+.nav-badge {
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-style: normal;
+  font-weight: 600;
+  line-height: 17px;
+}
+
+/* 未读数：朱砂实心，扫一眼就知道有多少条 */
+.nav-badge.count {
+  min-width: 17px;
+  background: var(--cinnabar);
+  color: #fff;
+  text-align: center;
+}
+
+/* 未认证：提示性质，用描边而非实心，避免和未读数抢注意力 */
+.nav-badge.warn {
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  background: var(--orange-soft);
+}
+
+/* 侧栏收起时只剩图标，徽章缩成一个圆点挂在图标右上角 */
+.rail-collapsed .nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  min-width: 8px;
+  height: 8px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  text-indent: -99px;
+}
+
+.rail-collapsed .nav-badge.warn {
+  border: 0;
+  background: var(--orange);
+}
+
 /* ---- 顶栏主操作 ---- */
 .topbar-cta {
   display: inline-flex;
@@ -334,7 +424,7 @@ onBeforeUnmount(() => {
   border-radius: var(--radius);
   background: var(--text);
   color: #fff;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
@@ -367,11 +457,11 @@ onBeforeUnmount(() => {
 
 .topbar-balance .tb-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .topbar-balance strong {
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -384,7 +474,7 @@ onBeforeUnmount(() => {
   /* 窄屏只留金额，「余额」二字由货币符号代替 */
   .topbar-balance { height: 30px; padding: 0 9px; }
   .topbar-balance .tb-label { display: none; }
-  .topbar-balance strong { font-size: 13px; }
+  .topbar-balance strong { font-size: var(--fs-sm); }
 }
 
 /* ---- 下拉刷新指示器 ---- */

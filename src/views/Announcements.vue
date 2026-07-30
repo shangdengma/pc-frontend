@@ -1,11 +1,11 @@
 ﻿<template>
   <section class="messages-page">
-    <div class="messages-hero">
-      <div>
-        <p class="eyebrow">消息中心</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">日常业务</p>
         <h2>消息通知</h2>
       </div>
-    </div>
+    </header>
 
     <div class="message-tabs">
       <button :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</button>
@@ -130,43 +130,18 @@ useRefresh(loadMessages)
   margin: 0 auto;
 }
 
-.messages-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: auto;
-  padding: 0 0 18px;
-  border: 0;
-  border-bottom: 1px solid #e2e8f0;
-  border-radius: 0;
-  color: #101828;
-  background: transparent;
-  box-shadow: none;
-}
-
 .eyebrow {
   margin: 0 0 8px;
   color: var(--blue);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
-}
-
-.messages-hero h2 {
-  margin: 0;
-  font-size: 24px;
-}
-
-.messages-hero p:last-child {
-  margin: 10px 0 0;
-  color: var(--muted);
 }
 
 .ghost-light-btn {
   min-width: 92px;
   height: 38px;
   border: 1px solid #d8e1ee;
-  border-radius: 7px;
+  border-radius: var(--radius);
   color: #344054;
   background: #ffffff;
   font-weight: 700;
@@ -175,8 +150,9 @@ useRefresh(loadMessages)
 /* 下划线式切换，去掉胶囊底色块 */
 .message-tabs {
   display: flex;
-  gap: 24px;
-  margin: 14px 0 0;
+  gap: var(--sp-6);
+  /* 同上：Tab 与下方消息面板之间需要留出呼吸，否则两条横线叠在一起 */
+  margin: var(--sp-4) 0 var(--sp-5);
   padding: 0;
   width: 100%;
   border: 0;
@@ -194,7 +170,7 @@ useRefresh(loadMessages)
   border-radius: 0;
   color: var(--muted);
   background: transparent;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -251,17 +227,7 @@ useRefresh(loadMessages)
 
 .message-card:last-child { border-bottom: 0; }
 
-
-
-
-
-
-
-
-
 /* 标签退化为纯文字：一行里堆两三个彩色胶囊，整列看下来就是密密麻麻的色块 */
-
-
 
 .text-btn {
   border: 0;
@@ -288,12 +254,11 @@ useRefresh(loadMessages)
   width: 138px;
   height: 96px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   object-fit: cover;
 }
 
 @media (max-width: 760px) {
-  .messages-hero { align-items: stretch; flex-direction: column; }
   .ghost-light-btn { width: 100%; }
   .message-title-row { align-items: flex-start; flex-direction: column; gap: 6px; }
   .message-card { padding: 16px; }
@@ -301,7 +266,6 @@ useRefresh(loadMessages)
 
 /* 移动端：公告列表与正文改为上下排列 */
 @media (max-width: 768px) {
-  .messages-hero { flex-direction: column; align-items: stretch; gap: 10px; }
   .messages-layout { grid-template-columns: minmax(0, 1fr) !important; }
 }
 
@@ -338,7 +302,7 @@ useRefresh(loadMessages)
 
 .message-line-1 h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 500;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -353,7 +317,7 @@ useRefresh(loadMessages)
 
 .message-line-1 time {
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--faint);
   font-variant-numeric: tabular-nums;
 }
@@ -371,7 +335,7 @@ useRefresh(loadMessages)
   margin: 0;
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
   color: var(--muted);
   white-space: nowrap;
@@ -385,7 +349,7 @@ useRefresh(loadMessages)
   border: 0;
   background: none;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   cursor: pointer;
   opacity: 0;
   transition: opacity .14s ease, color .14s ease;

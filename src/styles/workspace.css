@@ -48,13 +48,7 @@ textarea:focus-visible {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.invoice-hero,
-.recharge-hero,
-.cert-hero,
-.sub-hero,
 .agent-hero,
-.messages-hero,
-.public-announcements-hero,
 .profile-summary,
 .records-head {
   min-height: auto;
@@ -67,33 +61,21 @@ textarea:focus-visible {
   box-shadow: none;
 }
 
-.invoice-hero h2,
-.recharge-hero h2,
-.cert-hero h2,
-.sub-hero h2,
 .agent-hero h2,
-.messages-hero h2,
-.public-announcements-hero h2,
 .profile-summary h2,
 .records-head h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--fs-xl);
   line-height: 1.35;
   font-weight: 700;
 }
 
-.invoice-hero p,
-.recharge-hero p,
-.cert-hero p,
-.sub-hero span,
 .agent-hero span,
-.messages-hero p,
-.public-announcements-hero p,
 .profile-summary p {
   max-width: 720px;
   margin-top: 5px;
   color: #667085;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .invoice-stats,
@@ -153,7 +135,7 @@ textarea:focus-visible {
 .records-card .toolbar select {
   height: 38px;
   border-color: var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: #fff;
 }
 
@@ -179,7 +161,7 @@ textarea:focus-visible {
   color: #475467;
   background: transparent;
   border-bottom: 1px solid var(--line);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .data-table td,
@@ -223,7 +205,7 @@ textarea:focus-visible {
 .editor-grid input,
 .password-editor input {
   min-height: 42px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   box-shadow: none;
 }
 
@@ -248,7 +230,7 @@ textarea:focus-visible {
   overflow: hidden;
   background: #fff;
   border: 1px solid #dce3ec;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 24px 72px rgba(15, 23, 42, 0.24);
 }
 
@@ -276,14 +258,14 @@ textarea:focus-visible {
 .app-modal__eyebrow {
   margin: 0 0 4px;
   color: #2563eb;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
 }
 
 .app-modal__header h3 {
   margin: 0;
   color: #101828;
-  font-size: 18px;
+  font-size: var(--fs-lg);
   line-height: 1.4;
   font-weight: 700;
 }
@@ -292,7 +274,7 @@ textarea:focus-visible {
   margin: 5px 0 0;
   color: #667085;
   max-width: 62ch;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.55;
 }
 
@@ -309,7 +291,7 @@ textarea:focus-visible {
   color: #667085;
   background: transparent;
   border: 1px solid #e4e9f0;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .app-modal__close:hover {
@@ -354,7 +336,7 @@ textarea:focus-visible {
 .app-modal .detail-content,
 .app-modal .announcement-detail-content {
   color: #344054;
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1.85;
 }
 
@@ -399,7 +381,7 @@ textarea:focus-visible {
   .app-modal--xl {
     width: 100%;
     max-height: calc(100dvh - 24px);
-    border-radius: 8px;
+    border-radius: var(--radius);
   }
   .app-modal__header { padding: 17px 62px 15px 18px; }
   .app-modal__close { top: 15px; right: 16px; }
@@ -419,7 +401,7 @@ textarea:focus-visible {
     justify-content: space-between;
     align-items: center;
     gap: 10px 12px;
-    font-size: 12.5px;
+    font-size: var(--fs-xs);
   }
 
   .pager select { grid-column: 2; justify-self: end; }
@@ -436,8 +418,10 @@ textarea:focus-visible {
    与消息通知页的 .message-tabs 同一套下划线语言，避免站内出现两种切换控件。 */
 .records-card .status-tabs {
   display: flex;
-  gap: 24px;
-  margin: 2px 0 0;
+  gap: var(--sp-6);
+  /* 下边距不能是 0：Tab 的下划线本身就是一条基线，
+     紧贴内容框会让两者糊成一块，看不出「切换器」和「结果区」的分界 */
+  margin: 2px 0 var(--sp-5);
   padding: 0;
   border-bottom: 1px solid var(--line);
 }
@@ -450,7 +434,7 @@ textarea:focus-visible {
   border-radius: 0;
   color: var(--muted);
   background: transparent;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -495,7 +479,7 @@ textarea:focus-visible {
     flex: 1 1 auto;
     min-width: 0;
     padding: 0 4px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
 
   /* 导出是低频操作，窄屏让位给主按钮 */

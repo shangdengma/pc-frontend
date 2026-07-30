@@ -1,7 +1,8 @@
 <template>
   <div class="account-ledger-page">
-    <header class="page-header">
-      <div>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">账户资金</p>
         <h2>资金流水</h2>
       </div>
     </header>
@@ -223,35 +224,34 @@ useRefresh(refreshPage)
 <style scoped>
 .account-ledger-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: #172033; }
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid var(--line); }
-.page-header h2 { margin: 10px 0 0; font-size: 25px; line-height: 1.3; letter-spacing: 0; }
-.page-header p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
-.back-link { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; color: var(--blue); background: transparent; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.refresh-btn { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; border: 1px solid var(--line); border-radius: 7px; color: var(--text-secondary); background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.page-header h2 { margin: 10px 0 0; font-size: var(--fs-2xl); line-height: 1.3; letter-spacing: 0; }
+.page-header p { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-base); }
+.back-link { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; color: var(--blue); background: transparent; font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; }
+.refresh-btn { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text-secondary); background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .refresh-btn:hover:not(:disabled) { border-color: #9fb4cf; background: #f8fafc; }
 .refresh-btn:disabled { opacity: .55; cursor: not-allowed; }
 
-
-.ledger-workspace { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
+.ledger-workspace { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
 .filter-bar { display: flex; align-items: flex-end; gap: 14px; padding: 18px 20px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
 .filter-bar label { display: grid; gap: 7px; }
-.filter-bar label > span { color: var(--muted); font-size: 12px; font-weight: 700; }
-.filter-bar select, .filter-bar input { height: 40px; border: 1px solid #d5deea; border-radius: 7px; outline: none; color: #273449; background: #fff; font: inherit; font-size: 13px; }
+.filter-bar label > span { color: var(--muted); font-size: var(--fs-xs); font-weight: 700; }
+.filter-bar select, .filter-bar input { height: 40px; border: 1px solid #d5deea; border-radius: var(--radius); outline: none; color: #273449; background: #fff; font: inherit; font-size: var(--fs-sm); }
 .filter-bar select { min-width: 185px; padding: 0 34px 0 12px; }
 .filter-bar input { width: min(420px, 36vw); padding: 0 12px; }
 .filter-bar select:focus, .filter-bar input:focus { border-color: #4f83e4; box-shadow: 0 0 0 3px rgba(47, 111, 228, .1); }
 .filter-actions { display: flex; gap: 8px; }
-.query-btn, .reset-btn { height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.query-btn, .reset-btn { height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; border-radius: var(--radius); font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; }
 .query-btn { border: 1px solid var(--blue); color: #fff; background: var(--blue); }
 .reset-btn { border: 1px solid var(--line); color: var(--muted); background: #fff; }
 .query-btn:disabled, .reset-btn:disabled { opacity: .55; cursor: not-allowed; }
 
-.error-banner { display: flex; align-items: center; gap: 9px; margin: 16px 20px 0; padding: 11px 12px; border: 1px solid #f0c9c9; border-radius: 6px; color: #b42318; background: #fff7f7; font-size: 13px; }
+.error-banner { display: flex; align-items: center; gap: 9px; margin: 16px 20px 0; padding: 11px 12px; border: 1px solid #f0c9c9; border-radius: var(--radius); color: #b42318; background: #fff7f7; font-size: var(--fs-sm); }
 .error-banner span { flex: 1; }
 .error-banner button { border: 0; color: #b42318; background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
 .table-wrap { overflow-x: auto; }
 .ledger-table { width: 100%; min-width: 1000px; border-collapse: collapse; table-layout: fixed; }
-.ledger-table th { padding: 12px 14px; border-bottom: 1px solid #dfe6ee; color: #637087; background: #f6f8fb; text-align: left; font-size: 12px; font-weight: 700; }
-.ledger-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: var(--text-secondary); font-size: 13px; vertical-align: middle; }
+.ledger-table th { padding: 12px 14px; border-bottom: 1px solid #dfe6ee; color: #637087; background: #f6f8fb; text-align: left; font-size: var(--fs-xs); font-weight: 700; }
+.ledger-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: var(--text-secondary); font-size: var(--fs-sm); vertical-align: middle; }
 .ledger-table tbody tr:last-child td { border-bottom: 0; }
 .ledger-table tbody tr:hover { background: #f9fbfd; }
 /* 各列宽度之和原为 1230px，而工作区容器只有 1136px，桌面端一直在横向溢出。
@@ -266,7 +266,7 @@ useRefresh(refreshPage)
 .amount-cell.expense { color: #c2413b; }
 .amount-cell.frozen { color: #b35c00; }
 .amount-cell.neutral { color: var(--blue); }
-.type-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border-radius: 5px; font-size: 12px; font-weight: 700; }
+.type-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border-radius: var(--radius); font-size: var(--fs-xs); font-weight: 700; }
 .type-badge.income { color: #137a54; background: #e9f8f0; }
 .type-badge.expense { color: #b93832; background: #fff0ef; }
 .type-badge.adjust { color: #75531a; background: #fff6df; }
@@ -274,20 +274,20 @@ useRefresh(refreshPage)
 .type-badge.released { color: #5d6675; background: #eef1f5; }
 .time-cell { white-space: nowrap; }
 .reason-cell, .trade-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.trade-cell { color: #5f6d82; font-family: Consolas, 'Courier New', monospace; font-size: 12px !important; }
+.trade-cell { color: #5f6d82; font-family: Consolas, 'Courier New', monospace; font-size: var(--fs-xs) !important; }
 .loading-row td { height: 210px; text-align: center; }
 .loading-row span { width: 28px; height: 28px; display: inline-block; border: 3px solid #dce6f6; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
 .empty-row { height: 230px; text-align: center; color: #8390a3 !important; }
 .empty-row svg, .empty-row strong, .empty-row span { display: block; margin: 0 auto; }
-.empty-row strong { margin-top: 10px; color: #5b687c; font-size: 14px; }
-.empty-row span { margin-top: 5px; font-size: 12px; }
-.pagination-bar { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 20px; border-top: 1px solid var(--line); color: #68758a; font-size: 13px; }
+.empty-row strong { margin-top: 10px; color: #5b687c; font-size: var(--fs-base); }
+.empty-row span { margin-top: 5px; font-size: var(--fs-xs); }
+.pagination-bar { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 20px; border-top: 1px solid var(--line); color: #68758a; font-size: var(--fs-sm); }
 .pagination-bar > div { display: flex; align-items: center; gap: 12px; }
-.pagination-bar select, .page-controls button { height: 34px; border: 1px solid var(--line); border-radius: 6px; color: var(--text-secondary); background: #fff; font: inherit; font-size: 12px; }
+.pagination-bar select, .page-controls button { height: 34px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text-secondary); background: #fff; font: inherit; font-size: var(--fs-xs); }
 .pagination-bar select { padding: 0 28px 0 10px; }
 .page-controls button { min-width: 66px; padding: 0 12px; cursor: pointer; }
 .page-controls button:disabled { color: #a8b2c1; background: #f7f9fb; cursor: not-allowed; }
-.page-controls strong { min-width: 62px; color: var(--text-secondary); text-align: center; font-size: 12px; }
+.page-controls strong { min-width: 62px; color: var(--text-secondary); text-align: center; font-size: var(--fs-xs); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -342,19 +342,19 @@ useRefresh(refreshPage)
   .ledger-table td[data-label="流水类型"] { grid-area: type; }
   .ledger-table td[data-label="变动金额"] {
     grid-area: amount;
-    font-size: 16px;
+    font-size: var(--fs-lg);
     font-weight: 700;
     text-align: right;
   }
   .ledger-table td[data-label="发生时间"] {
     grid-area: time;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
   .ledger-table td[data-label="变动后余额"] {
     grid-area: after;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     text-align: right;
   }
   .ledger-table td[data-label="变动后余额"]::before { content: "余额 "; }
@@ -366,13 +366,13 @@ useRefresh(refreshPage)
     grid-area: reason;
     margin-top: 6px;
     color: var(--text-secondary);
-    font-size: 12.5px;
+    font-size: var(--fs-xs);
     white-space: normal;
   }
   .ledger-table td[data-label="业务流水号"] {
     grid-area: trade;
     color: #8a94a6;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     word-break: break-all;
     white-space: normal;
   }

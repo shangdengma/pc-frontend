@@ -1,10 +1,10 @@
 <template>
   <section class="public-announcements-page">
-    <header class="public-announcements-hero">
-      <div>
-        <p class="eyebrow">公告中心</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">日常业务</p>
         <h2>平台公告</h2>
-        <p>查看系统公告、政策动态、平台活动和服务通知。</p>
+        <p class="page-head-desc">查看系统公告、政策动态、平台活动和服务通知。</p>
       </div>
     </header>
 
@@ -186,36 +186,11 @@ useRefresh(loadAnnouncements)
   margin: 0 auto;
 }
 
-.public-announcements-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: auto;
-  padding: 0 0 18px;
-  border: 0;
-  border-bottom: 1px solid #e2e8f0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
 .eyebrow {
   margin: 0 0 8px;
   color: var(--blue);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
-}
-
-.public-announcements-hero h2 {
-  margin: 0;
-  color: #17243a;
-  font-size: 24px;
-}
-
-.public-announcements-hero p:last-child {
-  margin: 8px 0 0;
-  color: var(--muted);
 }
 
 .refresh-btn {
@@ -229,37 +204,60 @@ useRefresh(loadAnnouncements)
   animation: spin 0.8s linear infinite;
 }
 
+/* 与查询记录、消息通知统一为下划线式。
+   原先是胶囊分段控件——同一个系统里出现两种 Tab 形态，
+   正是「规则不统一」的典型表现。 */
 .announcement-tabs {
   display: flex;
-  width: fit-content;
-  margin: 16px 0 12px;
-  padding: 3px;
-  border: 1px solid #dfe6ef;
-  border-radius: 7px;
-  background: #f7f9fc;
+  gap: var(--sp-6);
+  width: 100%;
+  margin: var(--sp-4) 0 var(--sp-5);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
 }
 
 .announcement-tabs button {
-  min-width: 72px;
-  height: 34px;
+  position: relative;
+  min-width: 0;
+  height: 36px;
+  padding: 0;
   border: 0;
-  border-radius: 5px;
-  color: #667085;
+  border-radius: 0;
+  color: var(--muted);
   background: transparent;
-  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
+  transition: color .14s ease;
 }
 
+.announcement-tabs button:hover { color: var(--text-secondary); }
+
 .announcement-tabs button.active {
-  color: #174ea6;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 35, 65, 0.09);
+  color: var(--text);
+  background: transparent;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.announcement-tabs button.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--text);
 }
 
 .announcements-panel {
   overflow: hidden;
   border: 1px solid #e1e7ef;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: var(--shadow-panel);
 }
@@ -276,14 +274,14 @@ useRefresh(loadAnnouncements)
 .announcements-panel-head h3 {
   margin: 0 0 5px;
   color: #17243a;
-  font-size: 18px;
+  font-size: var(--fs-lg);
 }
 
 .announcements-panel-head p,
 .announcements-panel-head > span {
   margin: 0;
   color: #7b8798;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .announcement-row {
@@ -318,8 +316,8 @@ useRefresh(loadAnnouncements)
   min-width: 48px;
   height: 28px;
   padding: 0 10px;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
@@ -338,7 +336,7 @@ useRefresh(loadAnnouncements)
 .announcement-content strong {
   overflow: hidden;
   color: #17243a;
-  font-size: 15px;
+  font-size: var(--fs-base);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -347,7 +345,7 @@ useRefresh(loadAnnouncements)
   overflow: hidden;
   margin-top: 7px;
   color: #7b8798;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -358,7 +356,7 @@ useRefresh(loadAnnouncements)
   gap: 3px;
   margin-right: 8px;
   color: #b42318;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
 }
 
@@ -369,7 +367,7 @@ useRefresh(loadAnnouncements)
   justify-content: flex-end;
   gap: 6px;
   color: #7b8798;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .announcement-loading {
@@ -379,7 +377,7 @@ useRefresh(loadAnnouncements)
 .announcement-skeleton {
   height: 72px;
   margin-top: 12px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: linear-gradient(90deg, #f2f4f7 25%, #f8fafc 50%, #f2f4f7 75%);
   background-size: 200% 100%;
   animation: skeleton 1.2s ease-in-out infinite;
@@ -399,7 +397,7 @@ useRefresh(loadAnnouncements)
   height: 36px;
   padding: 0 14px;
   border: 1px solid #d0d9e5;
-  border-radius: 6px;
+  border-radius: var(--radius);
   color: #344054;
   background: #ffffff;
   cursor: pointer;
@@ -428,10 +426,6 @@ useRefresh(loadAnnouncements)
 @keyframes skeleton { to { background-position: -200% 0; } }
 
 @media (max-width: 760px) {
-  .public-announcements-hero {
-    align-items: flex-start;
-    flex-direction: column;
-  }
 
   .announcement-tabs {
     width: 100%;
@@ -448,7 +442,7 @@ useRefresh(loadAnnouncements)
     flex: 1 1 auto;
     min-width: 0;
     padding: 0 8px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     white-space: nowrap;
   }
 
@@ -470,7 +464,7 @@ useRefresh(loadAnnouncements)
   .announcement-date {
     grid-area: date;
     justify-content: flex-end;
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .announcement-content { grid-area: body; }
@@ -480,7 +474,7 @@ useRefresh(loadAnnouncements)
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     white-space: normal;
-    font-size: 14.5px;
+    font-size: var(--fs-base);
     line-height: 1.45;
   }
 }

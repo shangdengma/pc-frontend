@@ -10,7 +10,7 @@ export const moduleDefinitions = {
   [MODULE_KEYS.EDUCATION]: {
     key: MODULE_KEYS.EDUCATION,
     title: '学历信息',
-    description: `请填写需要核验的学历证书编号，最多添加 ${MAX_EDUCATION_ITEMS} 条；暂无法提供时可留空。`,
+    description: `请填写需要核验的学历证书编号，最多添加 ${MAX_EDUCATION_ITEMS} 条；证书不在身边可勾选「暂时无法提供」。`,
     shortName: '学历核验'
   },
   [MODULE_KEYS.EMPLOYMENT]: {
@@ -47,7 +47,10 @@ function createLocalId() {
 export function createEducation() {
   return {
     id: createLocalId(),
-    credentialNo: ''
+    credentialNo: '',
+    // 显式声明「没有编号」，而不是让用户对着一个标着「选填」的空框猜。
+    // 两者对后端的含义也不同：留空可能是漏填，勾选是候选人的主动声明。
+    noCredential: false
   }
 }
 

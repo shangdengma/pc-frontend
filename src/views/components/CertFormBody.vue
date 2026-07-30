@@ -117,7 +117,7 @@ function onPick(event) {
 
 .fl {
   margin-bottom: 6px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text-secondary);
 }
 
@@ -126,7 +126,7 @@ function onPick(event) {
 .fn {
   margin-top: 6px;
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   line-height: 1.6;
 }
@@ -138,7 +138,7 @@ function onPick(event) {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   box-sizing: border-box;
   transition: border-color .14s ease, box-shadow .14s ease;
 }
@@ -192,9 +192,9 @@ function onPick(event) {
 
 .cl-upload:hover { border-color: var(--text); background: #f6f6f5; }
 .cl-upload input { display: none; }
-.cl-plus { font-size: 24px; line-height: 1; color: var(--muted); }
-.cl-upload strong { font-size: 13.5px; font-weight: 500; color: var(--text); }
-.cl-upload small { font-size: 12px; color: var(--muted); }
+.cl-plus { font-size: var(--fs-2xl); line-height: 1; color: var(--muted); }
+.cl-upload strong { font-size: var(--fs-sm); font-weight: 500; color: var(--text); }
+.cl-upload small { font-size: var(--fs-xs); color: var(--muted); }
 
 .cl-thumb {
   position: relative;
@@ -224,13 +224,13 @@ function onPick(event) {
   border-radius: var(--radius-sm);
   background: rgba(22, 24, 29, .72);
   color: #fff;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   cursor: pointer;
 }
 
 .cl-error {
   margin: 10px 0 0;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: #e35d5b;
 }
 

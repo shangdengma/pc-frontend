@@ -1,15 +1,17 @@
 <template>
   <div class="dashboard-page">
-    <div class="welcome-row">
-      <div>
-        <span class="welcome-kicker">企业背调工作台</span>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">企业背调工作台</p>
         <h2>{{ greeting }}，{{ displayName }}</h2>
       </div>
-      <router-link class="new-query-btn" to="/query/create">
-        <Plus :size="18" :stroke-width="2" />
-        {{ canOnlineTest ? '在线测试' : '发起背调' }}
-      </router-link>
-    </div>
+      <div class="page-head-actions">
+        <router-link class="primary-btn" to="/query/create">
+          <Plus :size="17" :stroke-width="2" />
+          {{ canOnlineTest ? '在线测试' : '发起背调' }}
+        </router-link>
+      </div>
+    </header>
 
     <section class="metric-grid">
       <article class="metric-card" v-for="item in metrics" :key="item.label">

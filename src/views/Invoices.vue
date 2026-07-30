@@ -1,15 +1,17 @@
 <template>
   <section class="invoice-page">
-    <div class="invoice-hero">
-      <div>
-        <p class="eyebrow">账户中心</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">账户资金</p>
         <h2>我的发票</h2>
-        <p>{{ isSubAccount ? '子账号可查看自己的开票记录，如需开票请联系主账号。' : '查看开票申请记录、处理进度和企业开票信息。' }}</p>
+        <p class="page-head-desc">{{ isSubAccount ? '子账号可查看自己的开票记录，如需开票请联系主账号。' : '查看开票申请记录、处理进度和企业开票信息。' }}</p>
       </div>
-      <button class="primary-btn invoice-apply-btn" :disabled="isSubAccount" :title="isSubAccount ? '子账号无权申请发票，请联系主账号开票' : ''" @click="openApplyDialog">
-        {{ isSubAccount ? '请联系主账号开票' : '我要开票' }}
-      </button>
-    </div>
+      <div class="page-head-actions">
+        <button class="primary-btn" :disabled="isSubAccount" :title="isSubAccount ? '子账号无权申请发票，请联系主账号开票' : ''" @click="openApplyDialog">
+          {{ isSubAccount ? '请联系主账号开票' : '我要开票' }}
+        </button>
+      </div>
+    </header>
 
     <div class="invoice-stats">
       <div class="stat-card total">
@@ -339,38 +341,11 @@ useRefresh(fetchInvoices)
   margin: 0 auto;
 }
 
-.invoice-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 28px;
-  min-height: auto;
-  margin-bottom: 16px;
-  padding: 0 0 18px;
-  border: 0;
-  border-bottom: 1px solid #e2e8f0;
-  border-radius: 0;
-  color: #101828;
-  background: transparent;
-  box-shadow: none;
-}
-
 .eyebrow {
   margin: 0 0 8px;
   color: var(--blue);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
-}
-
-.invoice-hero h2 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.2;
-}
-
-.invoice-hero p:last-child {
-  margin: 10px 0 0;
-  color: var(--muted);
 }
 
 .invoice-apply-btn {
@@ -395,7 +370,7 @@ useRefresh(fetchInvoices)
   overflow: hidden;
   margin-bottom: 20px;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #fff;
 }
 
@@ -422,14 +397,14 @@ useRefresh(fetchInvoices)
 
 .stat-card span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .stat-card strong {
   display: block;
   margin-top: 10px;
   color: #101828;
-  font-size: 28px;
+  font-size: var(--fs-2xl);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -440,7 +415,7 @@ useRefresh(fetchInvoices)
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 
 .stat-icon svg {
@@ -456,7 +431,7 @@ useRefresh(fetchInvoices)
 .invoice-panel {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #ffffff;
   box-shadow: var(--shadow-panel);
 }
@@ -473,13 +448,13 @@ useRefresh(fetchInvoices)
 
 .invoice-panel-head h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--fs-lg);
 }
 
 .invoice-panel-head p {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .invoice-table-wrap {
@@ -501,7 +476,7 @@ useRefresh(fetchInvoices)
   color: #52627a;
   background: #f6f9fd;
   border-bottom: 1px solid #e8eef7;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   text-align: left;
 }
@@ -539,7 +514,7 @@ useRefresh(fetchInvoices)
   height: 26px;
   padding: 0 11px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
@@ -560,7 +535,7 @@ useRefresh(fetchInvoices)
   display: grid;
   gap: 4px;
   color: #667085;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   text-align: left;
 }
 
@@ -583,7 +558,7 @@ useRefresh(fetchInvoices)
 .invoice-empty p {
   margin: 0;
   color: #667085;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .empty-illustration {
@@ -601,7 +576,7 @@ useRefresh(fetchInvoices)
   width: 72px;
   height: 92px;
   border: 5px solid #d5deea;
-  border-radius: 8px;
+  border-radius: var(--radius);
   transform: rotate(-20deg);
 }
 
@@ -643,7 +618,7 @@ useRefresh(fetchInvoices)
 
 .invoice-empty strong {
   color: #667085;
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 .invoice-form {
@@ -656,7 +631,7 @@ useRefresh(fetchInvoices)
   display: grid;
   gap: 8px;
   color: #344054;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
 }
 
@@ -669,7 +644,7 @@ useRefresh(fetchInvoices)
 .invoice-form textarea {
   width: 100%;
   border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  border-radius: var(--radius);
   color: #101828;
   background: #ffffff;
   outline: none;
@@ -727,10 +702,6 @@ useRefresh(fetchInvoices)
 }
 
 @media (max-width: 760px) {
-  .invoice-hero {
-    align-items: stretch;
-    flex-direction: column;
-  }
 
   .invoice-apply-btn {
     width: 100%;
@@ -795,28 +766,26 @@ useRefresh(fetchInvoices)
 
   .invoice-table td[data-label="发票抬头"] {
     grid-area: title;
-    font-size: 14px;
+    font-size: var(--fs-base);
     font-weight: 600;
   }
   .invoice-table td[data-label="发票金额"] {
     grid-area: amount;
-    font-size: 16px;
+    font-size: var(--fs-lg);
     font-weight: 700;
     text-align: right;
   }
   .invoice-table td[data-label="申请时间"] {
     grid-area: time;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
   .invoice-table td[data-label="开票状态"] { grid-area: status; text-align: right; }
   .invoice-table td[data-label="发票详情"] { grid-area: detail; margin-top: 6px; }
-  .invoice-table td[data-label="发票详情"] .detail-lines { font-size: 12px; }
+  .invoice-table td[data-label="发票详情"] .detail-lines { font-size: var(--fs-xs); }
   .invoice-table td[data-label="操作"] { grid-area: action; margin-top: 8px; }
   .invoice-table td[data-label="操作"] .text-btn { padding: 0; }
 
-  .invoice-hero { flex-direction: column; align-items: stretch; gap: 12px; }
-  .invoice-hero .primary-btn { width: 100%; justify-content: center; }
   .invoice-form-grid { grid-template-columns: minmax(0, 1fr) !important; }
 }
 </style>

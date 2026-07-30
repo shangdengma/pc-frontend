@@ -1,13 +1,13 @@
 ﻿<template>
   <div class="sub-page">
-    <section class="sub-hero">
-      <div>
-        <p>{{ labels.accountCenter }}</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">企业管理</p>
         <h2>{{ labels.subAccountManage }}</h2>
-        <span>{{ labels.heroDesc }}</span>
+        <p class="page-head-desc">{{ labels.heroDesc }}</p>
       </div>
       <button v-if="!isSubAccount" class="primary-btn" type="button" @click="openCreate"><Plus :size="17" />{{ labels.addSub }}</button>
-    </section>
+    </header>
 
     <!-- 页面级提示：停用与启用在列表上直接触发，结果需要在列表上方反馈。 -->
     <div v-if="pageMessage" class="form-message" :class="pageMessageType">{{ pageMessage }}</div>
@@ -51,7 +51,8 @@
           <div class="row-actions">
             <button type="button" @click="openRecords(item)">查询记录</button>
             <button type="button" @click="openLogs(item)">流水</button>
-            <button v-if="!isAccountDisabled(item)" type="button" @click="openQuota(item)">{{ labels.adjust }}</button>
+            <button v-if="!isAccountDisabled(item)" class="primary-action-btn" type="button" @click="openQuota(item)">{{ labels.adjust }}</button>
+            <button v-if="!isAccountDisabled(item)" type="button" @click="openResetPwd(item)">重置密码</button>
             <button
               v-if="!isAccountDisabled(item)"
               class="danger"
@@ -133,6 +134,46 @@
     </AppModal>
 
     <AppModal
+      :open="resetPwdVisible"
+      title="重置子账号密码"
+      eyebrow="子账号管理"
+      :description="resetPwdTarget ? `为「${resetPwdTarget.nickName || resetPwdTarget.userName}」设置新的登录密码` : ''"
+      size="md"
+      @close="closeResetPwd"
+    >
+      <div class="form-grid">
+        <label class="credential-field">
+          <span>新密码<b>*</b></span>
+          <input
+            v-model.trim="resetPwdForm.password"
+            type="password"
+            placeholder="8-20位，需同时包含英文和数字"
+            maxlength="20"
+            autocomplete="new-password"
+          />
+        </label>
+        <label class="credential-field">
+          <span>确认新密码<b>*</b></span>
+          <input
+            v-model.trim="resetPwdForm.confirm"
+            type="password"
+            placeholder="再次输入新密码"
+            maxlength="20"
+            autocomplete="new-password"
+          />
+        </label>
+      </div>
+      <p class="reset-pwd-hint">重置后该子账号的登录状态会立即失效，需用新密码重新登录。请通过可靠方式告知本人。</p>
+      <p v-if="resetPwdMessage" class="form-message">{{ resetPwdMessage }}</p>
+      <template #footer>
+        <button type="button" class="ghost-btn" @click="closeResetPwd">{{ labels.cancel }}</button>
+        <button type="button" class="primary-btn" :disabled="resetPwdSaving" @click="submitResetPwd">
+          {{ resetPwdSaving ? labels.saving : '确认重置' }}
+        </button>
+      </template>
+    </AppModal>
+
+    <AppModal
       :open="detailVisible && !isSubAccount"
       :title="`${detailAccount?.nickName || detailAccount?.userName || '子账号'} 的${detailType === 'records' ? '查询记录' : '账户流水'}`"
       eyebrow="子账号详情"
@@ -195,7 +236,7 @@ import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus, ShieldAlert } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
-import { createSubAccount, disableSubAccount, enableSubAccount, listSubAccountLogs, listSubAccountRecords, listSubAccounts, updateSubAccountQuota } from '../api/subAccount'
+import { createSubAccount, disableSubAccount, enableSubAccount, listSubAccountLogs, listSubAccountRecords, listSubAccounts, resetSubAccountPassword, updateSubAccountQuota } from '../api/subAccount'
 import { getUserProfile } from '../api/user'
 import { getUser, setUser } from '../utils/auth'
 import { listQueryTypeConfig } from '../api/queryType'
@@ -436,6 +477,46 @@ async function disable(item) {
   }
 }
 
+const resetPwdVisible = ref(false)
+const resetPwdTarget = ref(null)
+const resetPwdSaving = ref(false)
+const resetPwdMessage = ref('')
+const resetPwdForm = reactive({ password: '', confirm: '' })
+
+function openResetPwd(item) {
+  resetPwdTarget.value = item
+  resetPwdForm.password = ''
+  resetPwdForm.confirm = ''
+  resetPwdMessage.value = ''
+  resetPwdVisible.value = true
+}
+
+function closeResetPwd() {
+  resetPwdVisible.value = false
+  resetPwdTarget.value = null
+}
+
+async function submitResetPwd() {
+  resetPwdMessage.value = ''
+  if (!PASSWORD_PATTERN.test(resetPwdForm.password)) {
+    return (resetPwdMessage.value = '密码必须为8-20位，包含英文和数字，且不能有空格')
+  }
+  if (resetPwdForm.password !== resetPwdForm.confirm) {
+    return (resetPwdMessage.value = '两次输入的密码不一致')
+  }
+  resetPwdSaving.value = true
+  try {
+    const name = resetPwdTarget.value?.nickName || resetPwdTarget.value?.userName || '子账号'
+    await resetSubAccountPassword(resetPwdTarget.value.userId, { password: resetPwdForm.password })
+    closeResetPwd()
+    notify(`已重置「${name}」的登录密码`)
+  } catch (err) {
+    resetPwdMessage.value = err?.msg || err?.message || '重置失败，请稍后重试'
+  } finally {
+    resetPwdSaving.value = false
+  }
+}
+
 async function enable(item) {
   const name = item.nickName || item.userName
   if (!window.confirm(`确定重新启用子账号「${name}」吗？\n\n系统会恢复该账号原额度；若主账号当前可分配余额不足，将无法启用。`)) return
@@ -505,86 +586,200 @@ useRefresh(loadList)
 
 <style scoped>
 .sub-page { width: min(1360px, 100%); margin: 0 auto; display: grid; gap: 16px; }
-.no-permission-card { padding: 52px 40px; text-align: center; color: #52627a; }
-.no-permission-card h3 { margin: 14px 0 8px; color: #07162d; font-size: 24px; }
+.no-permission-card { padding: 52px 40px; text-align: center; color: var(--text-secondary); }
+.no-permission-card h3 { margin: 14px 0 8px; color: var(--text); font-size: var(--fs-2xl); }
 .no-permission-card p { margin: 0 auto; max-width: 560px; line-height: 1.8; }
-.no-permission-icon { width: 52px; height: 52px; margin: 0 auto; border-radius: 8px; display: grid; place-items: center; color: var(--blue); background: #eaf2ff; font-size: 24px; font-weight: 900; }
+.no-permission-icon { width: 52px; height: 52px; margin: 0 auto; border-radius: var(--radius); display: grid; place-items: center; color: var(--blue); background: var(--line-soft); font-size: var(--fs-2xl); font-weight: 900; }
 .sub-quota-view { margin: 26px auto 0; max-width: 760px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; text-align: left; }
-.sub-quota-view div { padding: 18px 20px; border: 1px solid #e4ebf5; border-radius: 8px; background: #f8fbff; }
-.sub-quota-view span { display: block; color: #66758c; font-size: 14px; }
-.sub-quota-view strong { display: block; margin-top: 8px; color: #07162d; font-size: 24px; }
-.sub-quota-view div:last-child strong { color: #0b9f62; }
-.sub-hero { min-height: auto; padding: 0 0 18px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; color: #101828; background: transparent; box-shadow: none; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
-.sub-hero p { margin: 0 0 6px; color: var(--blue); font-size: 13px; font-weight: 700; }
-.sub-hero h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
-.sub-hero span { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; }
-.primary-btn, .ghost-btn { border: 0; border-radius: 7px; font-weight: 700; cursor: pointer; }
+.sub-quota-view div { padding: 18px 20px; border: 1px solid #e4ebf5; border-radius: var(--radius); background: #f8fbff; }
+.sub-quota-view span { display: block; color: var(--muted); font-size: var(--fs-base); }
+.sub-quota-view strong { display: block; margin-top: 8px; color: var(--text); font-size: var(--fs-2xl); }
+.sub-quota-view div:last-child strong { color: var(--green); }
+.primary-btn, .ghost-btn { border: 0; border-radius: var(--radius); font-weight: 700; cursor: pointer; }
 .primary-btn { min-height: 42px; background: var(--blue); color: #fff; padding: 0 18px; box-shadow: none; }
 .primary-btn:disabled { opacity: .55; cursor: not-allowed; }
 .ghost-btn { background: #f4f7fb; color: var(--blue); padding: 10px 16px; border: 1px solid #dce6f5; }
-.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
-.sub-summary > div, .sub-card { background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+.sub-summary > div, .sub-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
 .sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
 .sub-summary > div:last-child { border-right: 0; }
-.sub-summary span, .quota-block span { color: #66758c; font-size: 14px; }
-.sub-summary strong { display: block; margin-top: 8px; font-size: 24px; color: #07162d; }
+.sub-summary span, .quota-block span { color: var(--muted); font-size: var(--fs-base); }
+.sub-summary strong { display: block; margin-top: 8px; font-size: var(--fs-2xl); color: var(--text); }
 .sub-card { overflow: hidden; }
-.card-head { min-height: 68px; padding: 14px 20px; border-bottom: 1px solid #edf1f7; display: flex; align-items: center; justify-content: space-between; }
-.card-head h3 { margin: 0; font-size: 18px; }
-.card-head p { margin: 8px 0 0; color: #66758c; }
+.card-head { min-height: 68px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; justify-content: space-between; }
+.card-head h3 { margin: 0; font-size: var(--fs-lg); }
+.card-head p { margin: 8px 0 0; color: var(--muted); }
 .empty-state { padding: 70px 20px; text-align: center; color: #7b8aa0; }
-.account-row { min-height: 88px; padding: 16px 20px; border-bottom: 1px solid #edf1f7; display: grid; grid-template-columns: minmax(200px, 1.25fr) repeat(3, 118px) minmax(280px, auto); gap: 14px; align-items: center; }
+/* 一行五区：主信息 / 三个额度 / 操作。额度收窄到 104px，
+   把富余宽度让给主信息与按钮区，避免按钮换行。 */
+.account-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.4fr) repeat(3, 104px) minmax(240px, auto);
+  gap: var(--sp-3);
+  align-items: center;
+  min-height: 76px;
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--line-soft);
+}
 .account-row:last-child { border-bottom: 0; }
-.account-row.disabled { background: #f8fafc; }
-.account-row.disabled .account-avatar { color: #66758c; background: #e8edf3; }
+.account-row.disabled { background: var(--line-soft); }
+.account-row.disabled .account-avatar { color: var(--muted); background: var(--line); }
 .account-main { display: flex; align-items: center; gap: 14px; }
-.account-avatar { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: #eaf2ff; color: var(--blue); font-size: 18px; font-weight: 800; }
-.account-main h4 { margin: 0 0 6px; font-size: 18px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.account-main p { margin: 0; color: #6c7a91; }
-.account-status { display: inline-flex; align-items: center; min-height: 22px; padding: 0 7px; border-radius: 999px; color: #0b7a4b; background: #e8f8ef; font-size: 12px; font-weight: 700; }
-.account-status.disabled { color: #66758c; background: #e8edf3; }
-.quota-block strong { display: block; margin-top: 6px; color: #07162d; font-size: 20px; }
-.quota-block.remain strong { color: #0b9f62; }
-.row-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.row-actions button { min-height: 34px; border: 1px solid var(--line); background: #fff; color: var(--blue); border-radius: 6px; padding: 0 11px; font-weight: 700; cursor: pointer; }
-.row-actions .danger { color: #e24a4a; background: #fff7f7; border-color: #ffdada; }
-.row-actions .enable { color: #0b7a4b; background: #f0faf5; border-color: #bfe8d2; }
+/* 头像缩小、去掉高饱和底色：它只是定位锚点，不该是行内最抢眼的元素 */
+.account-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  background: var(--line-soft);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+/* 人名原本 18px、额度数字 20px——比人名还大，视觉重心是反的。
+   现在人名 14px/600 为行内主体，额度降到同级但用常规字重。 */
+.account-main h4 {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: 0 0 2px;
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+.account-main p { margin: 0; color: var(--muted); font-size: var(--fs-xs); }
+.account-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 var(--sp-2);
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+.account-status.disabled { background: var(--line); color: var(--muted); }
+.quota-block span { color: var(--muted); font-size: var(--fs-xs); }
+.quota-block strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--text);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.quota-block.remain strong { color: var(--green); }
+/* 六个按钮原先同等权重一字排开，整行看过去全是边框。
+   现在只有「调额度」保持按钮形态，其余降为文字操作，
+   停用/启用因为不可逆才保留描边。 */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.row-actions button {
+  min-height: 30px;
+  padding: 0 var(--sp-2);
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+
+.row-actions button:hover:not(:disabled) {
+  background: var(--line-soft);
+  color: var(--text);
+}
+
+/* 调额度是这行最常用的动作，给它描边以示主次 */
+.row-actions .primary-action-btn {
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.row-actions .primary-action-btn:hover:not(:disabled) { border-color: var(--text); }
+.row-actions .danger { border: 1px solid var(--red-soft); color: var(--red); }
+.row-actions .danger:hover:not(:disabled) { background: var(--red-soft); color: var(--red); }
+.reset-pwd-hint { margin: 12px 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.7; }
+.row-actions .enable { border: 1px solid var(--green-soft); color: var(--green); }
+.row-actions .enable:hover:not(:disabled) { background: var(--green-soft); color: var(--green); }
 .row-actions button:disabled { opacity: .55; cursor: not-allowed; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.form-grid label { display: grid; gap: 9px; color: #24344d; font-weight: 800; }
+.form-grid label { display: grid; gap: 9px; color: var(--text-secondary); font-weight: 800; }
 .credential-field > span { display: inline-flex; align-items: center; gap: 4px; }
-.credential-field > span b { color: #df3f3f; font-size: 14px; }
-.credential-field small { min-height: 17px; color: #66758c; font-size: 12px; font-weight: 500; line-height: 1.45; }
-.credential-field small.invalid { color: #df3f3f; }
-.form-grid input { height: 42px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; font-size: 14px; outline: none; }
+.credential-field > span b { color: var(--red); font-size: var(--fs-base); }
+.credential-field small { min-height: 17px; color: var(--muted); font-size: var(--fs-xs); font-weight: 500; line-height: 1.45; }
+.credential-field small.invalid { color: var(--red); }
+.form-grid input { height: 42px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 12px; font-size: var(--fs-base); outline: none; }
 .form-grid input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22, 24, 29, .07); }
-.quota-field small { color: #66758c; font-size: 12px; font-weight: 500; }
-.form-message { margin: 8px 0 0; color: #e24a4a; }
-.detail-tabs { margin: 0; padding: 14px 24px 12px; border-bottom: 1px solid #edf1f7; display: flex; gap: 10px; background: #fff; }
-.detail-tabs button { height: 38px; padding: 0 18px; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: #64748b; font-weight: 700; cursor: pointer; }
+.quota-field small { color: var(--muted); font-size: var(--fs-xs); font-weight: 500; }
+.form-message { margin: 8px 0 0; color: var(--red); }
+.detail-tabs { margin: 0; padding: 14px 24px 12px; border-bottom: 1px solid var(--line-soft); display: flex; gap: 10px; background: #fff; }
+.detail-tabs button { height: 38px; padding: 0 18px; border-radius: var(--radius); border: 1px solid var(--line); background: #fff; color: var(--muted); font-weight: 700; cursor: pointer; }
 .detail-tabs .active { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); }
 .detail-body { overflow: auto; max-height: 56vh; padding: 0; }
-.detail-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.detail-table th { position: sticky; top: 0; background: #f6f8fb; color: #52627a; text-align: left; padding: 14px 12px; border-bottom: 1px solid #e5ebf4; white-space: nowrap; }
-.detail-table td { padding: 15px 12px; border-bottom: 1px solid #edf1f7; color: #17233c; vertical-align: top; }
-.status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; background: #eef4ff; color: var(--blue); white-space: nowrap; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: var(--fs-base); }
+.detail-table th { position: sticky; top: 0; background: var(--line-soft); color: var(--text-secondary); text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.detail-table td { padding: 15px 12px; border-bottom: 1px solid var(--line-soft); color: var(--text); vertical-align: top; }
+.status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: var(--fs-xs); font-weight: 800; background: var(--line-soft); color: var(--blue); white-space: nowrap; }
 .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.status-pill.success { background: #e8f8ef; color: #0b9f62; }
-.status-pill.warning { background: #fff4df; color: #d67a00; }
-.status-pill.danger { background: #ffecec; color: #df3f3f; }
+.status-pill.success { background: var(--green-soft); color: var(--green); }
+.status-pill.warning { background: var(--orange-soft); color: var(--orange); }
+.status-pill.danger { background: var(--red-soft); color: var(--red); }
 .amount { font-weight: 900; }
-.amount.plus { color: #0b9f62; }
-.amount.minus { color: #df3f3f; }
-.amount.frozen { color: #b35c00; }
-.pager { margin: 0; padding: 0; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-radius: 0; color: #64748b; }
-@media (max-width: 1180px) { .account-row { grid-template-columns: 1fr 1fr; } .row-actions { justify-content: flex-start; } .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 720px) { .sub-quota-view, .sub-summary, .form-grid { grid-template-columns: 1fr; } .sub-hero { align-items: stretch; flex-direction: column; } }
+.amount.plus { color: var(--green); }
+.amount.minus { color: var(--red); }
+.amount.frozen { color: var(--orange); }
+.pager { margin: 0; padding: 0; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-radius: 0; color: var(--muted); }
+/* 中屏：三个额度并排一行，主信息与操作各占整行。
+   原先粗暴改成两列，额度被拆成「两行两列」、操作区只分到半行宽，
+   五个按钮挤在 133px 里折成三行参差不齐。 */
+@media (max-width: 1180px) {
+  .account-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-3) var(--sp-2);
+    padding: var(--sp-4) var(--sp-5);
+  }
+
+  .account-main { grid-column: 1 / -1; }
+
+  .row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding-top: var(--sp-1);
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .sub-quota-view, .form-grid { grid-template-columns: 1fr; }
+
+  .account-row { padding: var(--sp-4); }
+
+  /* 窄屏按钮均分整行，避免最后一行只剩一个按钮孤零零挂着 */
+  .row-actions { gap: var(--sp-1); }
+  .row-actions button {
+    flex: 1 1 auto;
+    min-width: 62px;
+    padding: 0 var(--sp-1);
+  }
+
+  /* 额度数字在 375px 上要留得下「¥380.00」 */
+  .quota-block strong { font-size: var(--fs-sm); }
+}
 
 /* 移动端：四个额度指标两列排布 —— 原先 720px 断点把它压成单列，
    四条信息竖着占掉整整一屏，纵向浪费严重 */
 @media (max-width: 768px) {
-  .sub-hero { flex-direction: column; align-items: stretch; gap: 12px; }
-  .sub-hero .primary-btn { width: 100%; justify-content: center; height: 42px; }
 
   .sub-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -598,8 +793,8 @@ useRefresh(loadList)
   }
   .sub-summary > div:nth-child(2n) { border-right: 0; }
   .sub-summary > div:nth-last-child(-n+2) { border-bottom: 0; }
-  .sub-summary span { font-size: 12px; }
-  .sub-summary strong { font-size: 19px; }
+  .sub-summary span { font-size: var(--fs-xs); }
+  .sub-summary strong { font-size: var(--fs-xl); }
 
   /* 卡片头里的「刷新」被压成两行 */
   .sub-card .ghost-btn,

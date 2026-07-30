@@ -1,10 +1,10 @@
 <template>
   <section class="faq-page">
-    <header class="faq-header">
-      <div>
-        <p class="faq-eyebrow">服务支持</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">服务支持</p>
         <h2>常见问题</h2>
-        <p>查找账户、查询、报告与费用相关问题。</p>
+        <p class="page-head-desc">查找账户、查询、报告与费用相关问题。</p>
       </div>
       <label class="faq-search">
         <Search :size="17" aria-hidden="true" />
@@ -162,32 +162,11 @@ onMounted(loadFaqs)
   color: var(--text);
 }
 
-.faq-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 28px;
-  padding: 2px 0 24px;
-  border-bottom: 1px solid var(--line);
-}
-
 .faq-eyebrow {
   margin: 0 0 7px;
   color: var(--blue);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 800;
-}
-
-.faq-header h2 {
-  margin: 0;
-  font-size: 26px;
-  line-height: 1.3;
-}
-
-.faq-header > div > p:last-child {
-  margin: 7px 0 0;
-  color: var(--muted);
-  font-size: 14px;
 }
 
 .faq-search {
@@ -197,10 +176,10 @@ onMounted(loadFaqs)
   align-items: center;
   gap: 9px;
   padding: 0 12px;
-  border: 1px solid #d6dce5;
-  border-radius: 6px;
-  background: #fff;
-  color: #7b8797;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--muted);
 }
 
 .faq-search:focus-within {
@@ -223,7 +202,7 @@ onMounted(loadFaqs)
   place-items: center;
   border: 0;
   background: transparent;
-  color: #7b8797;
+  color: var(--muted);
   cursor: pointer;
 }
 
@@ -241,10 +220,10 @@ onMounted(loadFaqs)
   gap: 7px;
   padding: 8px 12px;
   border: 1px solid transparent;
-  border-radius: 5px;
+  border-radius: var(--radius);
   background: transparent;
-  color: #5d6878;
-  font-size: 13px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -253,22 +232,22 @@ onMounted(loadFaqs)
 .faq-categories button span {
   min-width: 20px;
   padding: 1px 5px;
-  border-radius: 9px;
-  background: #edf0f4;
-  color: #798392;
-  font-size: 11px;
+  border-radius: var(--radius);
+  background: var(--line);
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .faq-categories button:hover,
 .faq-categories button.active {
-  border-color: #cdd9ee;
-  background: #f2f6fc;
-  color: #174f9e;
+  border-color: var(--line);
+  background: var(--line-soft);
+  color: var(--cinnabar);
 }
 
 .faq-categories button.active span {
-  background: #dce8f8;
-  color: #174f9e;
+  background: var(--line-soft);
+  color: var(--cinnabar);
 }
 
 .faq-content {
@@ -281,8 +260,27 @@ onMounted(loadFaqs)
 }
 
 .faq-item {
+  position: relative;
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background: var(--card);
+  transition: background .16s ease;
+}
+
+/* 展开态：整块换浅底并在左缘压一条强调线。
+   原先展开与收起的背景完全一样，一屏里同时展开两三条就分不清
+   哪段答案属于哪个问题。 */
+.faq-item.open {
+  background: var(--line-soft);
+}
+
+.faq-item.open::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--cinnabar);
 }
 
 .faq-item:last-child {
@@ -295,8 +293,8 @@ onMounted(loadFaqs)
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) 24px;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px 14px 10px;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5) var(--sp-4) var(--sp-3);
   border: 0;
   background: transparent;
   color: inherit;
@@ -305,12 +303,12 @@ onMounted(loadFaqs)
 }
 
 .faq-item > button:hover {
-  background: #fafbfc;
+  background: var(--line-soft);
 }
 
 .faq-number {
-  color: #9aa5b3;
-  font-size: 12px;
+  color: var(--faint);
+  font-size: var(--fs-xs);
   font-weight: 800;
   text-align: center;
 }
@@ -322,17 +320,19 @@ onMounted(loadFaqs)
 }
 
 .faq-question strong {
-  font-size: 15px;
-  line-height: 1.45;
+  color: var(--text);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .faq-question small {
-  color: #8792a2;
-  font-size: 12px;
+  color: var(--faint);
+  font-size: var(--fs-xs);
 }
 
 .faq-item > button > svg {
-  color: #8995a4;
+  color: var(--muted);
   transition: transform .18s ease;
 }
 
@@ -340,12 +340,15 @@ onMounted(loadFaqs)
   transform: rotate(180deg);
 }
 
+/* 答案与问题原本同为 14px，仅靠字重区分，读起来是一团。
+   降一号字、转次级色、行高放大，再用左边线挂靠到上方问题下面。 */
 .faq-answer {
-  margin: -2px 52px 0 60px;
-  padding: 0 0 21px;
-  color: #526071;
-  font-size: 14px;
-  line-height: 1.85;
+  margin: 0 var(--sp-5) 0 62px;
+  padding: 0 0 var(--sp-5) var(--sp-4);
+  border-left: 2px solid var(--line);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  line-height: 1.9;
   white-space: pre-wrap;
 }
 
@@ -355,31 +358,31 @@ onMounted(loadFaqs)
   place-items: center;
   align-content: center;
   gap: 9px;
-  color: #7b8797;
+  color: var(--muted);
   text-align: center;
 }
 
 .faq-state strong {
-  color: #374151;
-  font-size: 15px;
+  color: var(--text);
+  font-size: var(--fs-base);
 }
 
 .faq-state span {
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .faq-state button {
   margin-top: 6px;
   padding: 8px 14px;
-  border: 1px solid #cbd5e1;
-  border-radius: 5px;
-  background: #fff;
-  color: #334155;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .faq-state--error svg {
-  color: #d92d20;
+  color: var(--red);
 }
 
 .faq-spinner {
@@ -393,17 +396,17 @@ onMounted(loadFaqs)
   gap: 20px;
   margin-top: 22px;
   padding: 16px 18px;
-  border: 1px solid #dfe4eb;
-  border-left: 3px solid #3469a8;
-  border-radius: 6px;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--cinnabar);
+  border-radius: var(--radius);
+  background: var(--card);
 }
 
 .faq-help > div {
   display: flex;
   align-items: center;
   gap: 11px;
-  color: #3469a8;
+  color: var(--cinnabar);
 }
 
 .faq-help span {
@@ -412,21 +415,21 @@ onMounted(loadFaqs)
 }
 
 .faq-help strong {
-  color: #273142;
-  font-size: 14px;
+  color: var(--text);
+  font-size: var(--fs-base);
 }
 
 .faq-help small {
-  color: #778293;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .faq-help a {
   padding: 8px 13px;
-  border-radius: 5px;
-  background: #234f85;
-  color: #fff;
-  font-size: 13px;
+  border-radius: var(--radius);
+  background: var(--cinnabar);
+  color: var(--card);
+  font-size: var(--fs-sm);
   font-weight: 700;
   text-decoration: none;
 }
@@ -436,11 +439,6 @@ onMounted(loadFaqs)
 }
 
 @media (max-width: 720px) {
-  .faq-header {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 18px;
-  }
 
   .faq-search {
     width: 100%;

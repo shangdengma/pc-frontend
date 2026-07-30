@@ -381,6 +381,11 @@ function validateForm() {
     if (formModel.educations.length > MAX_EDUCATION_ITEMS) {
       return `每份订单最多填写 ${MAX_EDUCATION_ITEMS} 个学历证书编号`
     }
+    // 既没填编号又没勾「暂时无法提供」，说明用户还没表态，不能静默放过——
+    // 这正是原先「选填」两个字造成的模糊地带
+    const undecided = formModel.educations.some(item => !item.credentialNo.trim() && !item.noCredential)
+    if (undecided) return '请填写学历证书编号，或勾选「暂时无法提供该证书编号」'
+
     const credentialNumbers = formModel.educations
       .map(item => item.credentialNo.trim().toUpperCase())
       .filter(Boolean)
@@ -450,7 +455,7 @@ function buildFormPayload() {
       email: formModel.candidate.email
     },
     educations: task.modules.includes(MODULE_KEYS.EDUCATION)
-      ? formModel.educations.map(item => ({ credentialNo: item.credentialNo }))
+      ? formModel.educations.map(item => ({ credentialNo: item.credentialNo, noCredential: !!item.noCredential }))
       : [],
     employments: task.modules.includes(MODULE_KEYS.EMPLOYMENT)
       ? formModel.employments.map(item => ({

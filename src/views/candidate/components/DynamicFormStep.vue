@@ -52,11 +52,13 @@
             <p>{{ moduleDefinitions.education.description }}</p>
           </div>
         </div>
-        <button type="button" class="candidate-guide-trigger" aria-haspopup="dialog" @click="educationGuideOpen = true">
-          <BookOpenCheck :size="17" />
-          证书编号填写指引
-        </button>
       </div>
+      <!-- 指引服务的是「填编号」这个动作，放在说明下方独立一行，
+           既不挤占标题行宽度，也离它真正服务的输入框更近 -->
+      <button type="button" class="candidate-guide-trigger" aria-haspopup="dialog" @click="educationGuideOpen = true">
+        <BookOpenCheck :size="17" />
+        证书编号填写指引
+      </button>
 
       <div
         v-for="(item, index) in model.educations"
@@ -75,9 +77,17 @@
             删除
           </button>
         </div>
-        <label class="candidate-field">
-          <span>学历证书编号（选填）</span>
-          <input v-model.trim="item.credentialNo" placeholder="暂无法提供时可留空" />
+        <label class="candidate-field candidate-field-compact">
+          <span>学历证书编号</span>
+          <input
+            v-model.trim="item.credentialNo"
+            :disabled="item.noCredential"
+            :placeholder="item.noCredential ? '已声明暂时无法提供' : '请输入证书编号'"
+          />
+        </label>
+        <label class="candidate-inline-check">
+          <input type="checkbox" :checked="item.noCredential" @change="toggleNoCredential(item, $event)" />
+          <span>暂时无法提供该证书编号</span>
         </label>
       </div>
       <button
@@ -346,6 +356,12 @@ defineEmits(['back', 'continue'])
 
 function hasModule(key) {
   return props.modules.includes(key)
+}
+// 勾选「暂时无法提供」时清掉已填内容：
+// 否则会出现「声明没有编号」却又带着编号提交的自相矛盾数据
+function toggleNoCredential(item, event) {
+  item.noCredential = event.target.checked
+  if (item.noCredential) item.credentialNo = ''
 }
 </script>
 

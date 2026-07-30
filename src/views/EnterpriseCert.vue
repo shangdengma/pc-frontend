@@ -1,12 +1,12 @@
 <template>
   <section class="enterprise-cert-page">
-    <div class="cert-hero">
-      <div>
-        <p class="eyebrow">账户中心</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">企业管理</p>
         <h2>企业认证</h2>
-        <p>{{ isSubAccount ? "认证信息继承自主账号。" : "提交企业资料，完成账户认证。" }}</p>
+        <p class="page-head-desc">{{ isSubAccount ? "认证信息继承自主账号。" : "提交企业资料，完成账户认证。" }}</p>
       </div>
-    </div>
+    </header>
 
     <div class="cert-layout">
       <div class="work-card cert-status-card" :class="mainStatusClass">
@@ -64,7 +64,6 @@
           <button type="button" class="primary-action" :disabled="saving" @click="submitAudit">提交审核</button>
         </div>
       </div>
-
 
       <div v-if="certList.length" class="work-card cert-history-card">
         <div class="work-card-head compact-head">
@@ -567,7 +566,7 @@ useRefresh(loadList)
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: var(--radius);
   color: #667085;
   background: #f2f4f7;
 }
@@ -587,23 +586,16 @@ useRefresh(loadList)
   margin-top: 18px;
   padding: 12px 14px;
   border: 1px solid #dbeafe;
-  border-radius: 8px;
+  border-radius: var(--radius);
   color: #2354a4;
   background: #eff6ff;
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1.6;
 }
 
 /* 认证流程步骤 */
 
-
-
-
-
 /* 连接竖线 */
-
-
-
 
 /* 认证记录项：左图标 + 信息 + 状态徽章 */
 .cert-list-item {
@@ -624,7 +616,7 @@ useRefresh(loadList)
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   color: var(--blue);
   background: #eaf1ff;
 }
@@ -641,14 +633,14 @@ useRefresh(loadList)
 
 .cert-item-main strong {
   display: block;
-  font-size: 15px;
+  font-size: var(--fs-base);
 }
 
 .cert-item-main em {
   display: block;
   margin-top: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-style: normal;
 }
 
@@ -690,13 +682,13 @@ useRefresh(loadList)
 
 .cert-facts dt {
   flex: 0 0 72px;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
 .cert-facts dd {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   color: var(--text);
   word-break: break-all;
 }
@@ -707,7 +699,7 @@ useRefresh(loadList)
   border: 0;
   background: none;
   color: var(--blue);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   text-decoration: underline;
 }
@@ -715,7 +707,7 @@ useRefresh(loadList)
 /* ---- 内联表单卡 ---- */
 .cert-form-desc {
   margin: 4px 0 0;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   line-height: 1.6;
 }
@@ -744,7 +736,7 @@ useRefresh(loadList)
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1;
 }
 

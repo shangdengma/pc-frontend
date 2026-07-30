@@ -1,10 +1,10 @@
 <template>
   <section class="feedback-page">
-    <header class="feedback-header">
-      <div>
-        <p>服务支持</p>
+    <header class="page-head">
+      <div class="page-head-main">
+        <p class="page-head-eyebrow">服务支持</p>
         <h2>意见反馈</h2>
-        <span>请描述您遇到的问题或建议，提交后可在右侧查看处理进度。</span>
+        <p class="page-head-desc">请描述您遇到的问题或建议，提交后可在下方查看处理进度。</p>
       </div>
     </header>
 
@@ -232,31 +232,6 @@ onMounted(loadHistory)
   color: var(--text);
 }
 
-.feedback-header {
-  padding: 2px 0 23px;
-  border-bottom: 1px solid var(--line);
-}
-
-.feedback-header p {
-  margin: 0 0 7px;
-  color: var(--blue);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.feedback-header h2 {
-  margin: 0;
-  font-size: 26px;
-  line-height: 1.3;
-}
-
-.feedback-header span {
-  display: block;
-  margin-top: 7px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
 .feedback-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
@@ -266,9 +241,9 @@ onMounted(loadHistory)
 
 .feedback-form,
 .feedback-history {
-  border: 1px solid #dfe4eb;
-  border-radius: 7px;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
 }
 
 .feedback-form {
@@ -285,12 +260,12 @@ onMounted(loadHistory)
   align-items: flex-start;
   gap: 11px;
   padding-bottom: 19px;
-  border-bottom: 1px solid #e6e9ee;
+  border-bottom: 1px solid var(--line);
 }
 
 .feedback-step {
-  color: #3469a8;
-  font-size: 12px;
+  color: var(--cinnabar);
+  font-size: var(--fs-xs);
   font-weight: 900;
   line-height: 24px;
 }
@@ -302,13 +277,13 @@ onMounted(loadHistory)
 
 .feedback-section-head h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 .feedback-section-head p {
   margin: 5px 0 0;
-  color: #7a8696;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
   line-height: 1.55;
 }
 
@@ -317,10 +292,10 @@ onMounted(loadHistory)
   height: 30px;
   display: grid;
   place-items: center;
-  border: 1px solid #dce1e8;
-  border-radius: 5px;
-  background: #fff;
-  color: #647184;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
@@ -339,13 +314,13 @@ legend,
 .feedback-field > span {
   display: block;
   margin-bottom: 9px;
-  color: #344054;
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
   font-weight: 800;
 }
 
 .feedback-field b {
-  color: #d92d20;
+  color: var(--red);
 }
 
 .feedback-types {
@@ -361,20 +336,20 @@ legend,
   justify-content: center;
   gap: 7px;
   padding: 8px;
-  border: 1px solid #d8dee7;
-  border-radius: 5px;
-  background: #fff;
-  color: #586577;
-  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
   font-weight: 700;
   cursor: pointer;
 }
 
 .feedback-types button:hover,
 .feedback-types button.active {
-  border-color: #7395bf;
-  background: #f0f5fb;
-  color: #214f85;
+  border-color: var(--text);
+  background: var(--line-soft);
+  color: var(--cinnabar);
 }
 
 .feedback-field {
@@ -386,11 +361,11 @@ legend,
 .feedback-field textarea,
 .feedback-field input {
   width: 100%;
-  border: 1px solid #d4dae3;
-  border-radius: 6px;
-  background: #fff;
-  color: #1f2937;
-  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--fs-base);
   outline: 0;
 }
 
@@ -408,7 +383,7 @@ legend,
 
 .feedback-field textarea:focus,
 .feedback-field input:focus {
-  border-color: #497bb8;
+  border-color: var(--text);
   box-shadow: 0 0 0 3px rgba(52, 105, 168, .1);
 }
 
@@ -416,8 +391,8 @@ legend,
   position: absolute;
   right: 12px;
   bottom: 9px;
-  color: #98a2b3;
-  font-size: 11px;
+  color: var(--faint);
+  font-size: var(--fs-xs);
 }
 
 .feedback-error,
@@ -426,15 +401,15 @@ legend,
   align-items: center;
   gap: 7px;
   margin: 15px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .feedback-error {
-  color: #b42318;
+  color: var(--red);
 }
 
 .feedback-success {
-  color: #067647;
+  color: var(--green);
 }
 
 .feedback-submit {
@@ -447,20 +422,20 @@ legend,
   margin-top: 20px;
   padding: 0 18px;
   border: 0;
-  border-radius: 5px;
-  background: #234f85;
-  color: #fff;
-  font-size: 13px;
+  border-radius: var(--radius);
+  background: var(--cinnabar);
+  color: var(--card);
+  font-size: var(--fs-sm);
   font-weight: 800;
   cursor: pointer;
 }
 
 .feedback-submit:hover:not(:disabled) {
-  background: #1b416f;
+  background: var(--blue-dark);
 }
 
 .feedback-submit:disabled {
-  background: #aab6c5;
+  background: var(--faint);
   cursor: not-allowed;
 }
 
@@ -471,7 +446,7 @@ legend,
 
 .feedback-records article {
   padding: 16px 2px;
-  border-bottom: 1px solid #e7eaf0;
+  border-bottom: 1px solid var(--line);
 }
 
 .feedback-records article:last-child {
@@ -486,51 +461,51 @@ legend,
 }
 
 .feedback-record-top > span {
-  color: #435166;
-  font-size: 12px;
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
   font-weight: 800;
 }
 
 .feedback-record-top b {
   padding: 3px 7px;
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
 }
 
 .feedback-record-top .pending {
-  color: #b54708;
-  background: #fffaeb;
+  color: var(--orange);
+  background: var(--orange-soft);
 }
 
 .feedback-record-top .processing {
-  color: #175cd3;
-  background: #eff8ff;
+  color: var(--cinnabar);
+  background: var(--line-soft);
 }
 
 .feedback-record-top .resolved {
-  color: #067647;
-  background: #ecfdf3;
+  color: var(--green);
+  background: var(--green-soft);
 }
 
 .feedback-record-top .rejected {
-  color: #667085;
-  background: #f2f4f7;
+  color: var(--muted);
+  background: var(--line-soft);
 }
 
 .feedback-records p {
   display: -webkit-box;
   margin: 10px 0 8px;
   overflow: hidden;
-  color: #4b586a;
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
   line-height: 1.65;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
 
 .feedback-records time {
-  color: #98a2b3;
-  font-size: 11px;
+  color: var(--faint);
+  font-size: var(--fs-xs);
 }
 
 .feedback-empty {
@@ -539,21 +514,21 @@ legend,
   place-items: center;
   align-content: center;
   gap: 8px;
-  color: #8390a0;
+  color: var(--muted);
   text-align: center;
 }
 
 .feedback-empty strong {
-  color: #435166;
-  font-size: 14px;
+  color: var(--text-secondary);
+  font-size: var(--fs-base);
 }
 
 .feedback-empty span {
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .feedback-empty.error svg {
-  color: #d92d20;
+  color: var(--red);
 }
 
 .feedback-spinner,
