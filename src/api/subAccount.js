@@ -12,8 +12,12 @@ export function updateSubAccountQuota(userId, data) {
   return request({ url: `/system/sub-account/${userId}/quota`, method: 'put', data })
 }
 
-export function deleteSubAccount(userId) {
-  return request({ url: `/system/sub-account/${userId}`, method: 'delete' })
+export function disableSubAccount(userId) {
+  return request({ url: `/system/sub-account/${userId}/disable`, method: 'put' })
+}
+
+export function enableSubAccount(userId) {
+  return request({ url: `/system/sub-account/${userId}/enable`, method: 'put' })
 }
 
 export function listSubAccountRecords(userId, params) {

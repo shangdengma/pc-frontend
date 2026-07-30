@@ -9,8 +9,7 @@
       <button v-if="!isSubAccount" class="primary-btn" type="button" @click="openCreate"><Plus :size="17" />{{ labels.addSub }}</button>
     </section>
 
-    <!-- 页面级提示：弹窗里的 message 只在弹窗打开时可见，
-         而删除是在列表上直接触发的，失败信息必须有地方落 -->
+    <!-- 页面级提示：停用与启用在列表上直接触发，结果需要在列表上方反馈。 -->
     <div v-if="pageMessage" class="form-message" :class="pageMessageType">{{ pageMessage }}</div>
 
     <section v-if="isSubAccount" class="sub-card no-permission-card">
@@ -26,7 +25,7 @@
 
     <section v-if="!isSubAccount" class="sub-summary">
       <div><span>{{ labels.mainBalance }}</span><strong>&yen;{{ formatMoney(mainBalance) }}</strong></div>
-      <div><span>{{ labels.subCount }}</span><strong>{{ accounts.length }}</strong></div>
+      <div><span>{{ labels.subCount }}</span><strong>{{ activeAccounts.length }} / {{ accounts.length }}</strong></div>
       <div><span>{{ labels.totalQuota }}</span><strong>&yen;{{ formatMoney(totalQuota) }}</strong></div>
       <div><span>{{ labels.totalUsed }}</span><strong>&yen;{{ formatMoney(totalUsed) }}</strong></div>
     </section>
@@ -38,15 +37,36 @@
       <div v-if="loading" class="empty-state">{{ labels.loading }}</div>
       <div v-else-if="!accounts.length" class="empty-state">{{ labels.empty }}</div>
       <div v-else class="account-list">
-        <article v-for="item in accounts" :key="item.userId" class="account-row">
+        <article v-for="item in accounts" :key="item.userId" class="account-row" :class="{ disabled: isAccountDisabled(item) }">
           <div class="account-main">
             <div class="account-avatar">{{ initial(item) }}</div>
-            <div><h4>{{ item.nickName || item.userName }}</h4><p>{{ item.userName }}<span v-if="item.phonenumber"> · {{ item.phonenumber }}</span></p></div>
+            <div>
+              <h4>{{ item.nickName || item.userName }}<span class="account-status" :class="{ disabled: isAccountDisabled(item) }">{{ isAccountDisabled(item) ? labels.disabled : labels.enabled }}</span></h4>
+              <p>{{ item.userName }}<span v-if="item.phonenumber"> · {{ item.phonenumber }}</span></p>
+            </div>
           </div>
           <div class="quota-block"><span>{{ labels.quota }}</span><strong>&yen;{{ formatMoney(item.subAccountQuota) }}</strong></div>
           <div class="quota-block"><span>{{ labels.used }}</span><strong>&yen;{{ formatMoney(item.subAccountUsed) }}</strong></div>
           <div class="quota-block remain"><span>{{ labels.remaining }}</span><strong>&yen;{{ formatMoney(remaining(item)) }}</strong></div>
-          <div class="row-actions"><button type="button" @click="openRecords(item)">查询记录</button><button type="button" @click="openLogs(item)">流水</button><button type="button" @click="openQuota(item)">{{ labels.adjust }}</button><button class="danger" type="button" @click="remove(item)">{{ labels.delete }}</button></div>
+          <div class="row-actions">
+            <button type="button" @click="openRecords(item)">查询记录</button>
+            <button type="button" @click="openLogs(item)">流水</button>
+            <button v-if="!isAccountDisabled(item)" type="button" @click="openQuota(item)">{{ labels.adjust }}</button>
+            <button
+              v-if="!isAccountDisabled(item)"
+              class="danger"
+              type="button"
+              :disabled="accountActionId === item.userId"
+              @click="disable(item)"
+            >{{ accountActionId === item.userId ? labels.processing : labels.disable }}</button>
+            <button
+              v-else
+              class="enable"
+              type="button"
+              :disabled="accountActionId === item.userId"
+              @click="enable(item)"
+            >{{ accountActionId === item.userId ? labels.processing : labels.enable }}</button>
+          </div>
         </article>
       </div>
     </section>
@@ -60,10 +80,45 @@
       @close="closeDialog"
     >
       <div class="form-grid">
-          <label v-if="!editing">{{ labels.loginName }}<input v-model.trim="form.userName" :placeholder="labels.loginNamePlaceholder" /></label>
-          <label v-if="!editing">{{ labels.nickName }}<input v-model.trim="form.nickName" :placeholder="labels.nickNamePlaceholder" /></label>
-          <label v-if="!editing">{{ labels.phone }}<input v-model.trim="form.phonenumber" :placeholder="labels.optional" /></label>
-          <label v-if="!editing">{{ labels.password }}<input v-model.trim="form.password" type="password" :placeholder="labels.passwordPlaceholder" /></label>
+          <label v-if="!editing" class="credential-field">
+            <span>{{ labels.loginName }}<b>*</b></span>
+            <input
+              v-model.trim="form.userName"
+              :placeholder="labels.loginNamePlaceholder"
+              maxlength="20"
+              autocomplete="off"
+              @blur="validateCredentialField('userName')"
+              @input="revalidateCredentialField('userName')"
+            />
+            <small :class="{ invalid: credentialErrors.userName }">{{ credentialErrors.userName || labels.loginNameRule }}</small>
+          </label>
+          <label v-if="!editing">{{ labels.nickName }}<input v-model.trim="form.nickName" :placeholder="labels.nickNamePlaceholder" maxlength="30" /></label>
+          <label v-if="!editing" class="credential-field">
+            <span>{{ labels.phone }}<b>*</b></span>
+            <input
+              v-model="form.phonenumber"
+              :placeholder="labels.phonePlaceholder"
+              maxlength="11"
+              inputmode="numeric"
+              autocomplete="tel"
+              @input="normalizePhone"
+              @blur="validateCredentialField('phonenumber')"
+            />
+            <small :class="{ invalid: credentialErrors.phonenumber }">{{ credentialErrors.phonenumber || labels.phoneRule }}</small>
+          </label>
+          <label v-if="!editing" class="credential-field">
+            <span>{{ labels.password }}<b>*</b></span>
+            <input
+              v-model="form.password"
+              type="password"
+              :placeholder="labels.passwordPlaceholder"
+              maxlength="20"
+              autocomplete="new-password"
+              @blur="validateCredentialField('password')"
+              @input="revalidateCredentialField('password')"
+            />
+            <small :class="{ invalid: credentialErrors.password }">{{ credentialErrors.password || labels.passwordRule }}</small>
+          </label>
           <label class="quota-field">
             {{ labels.quotaYuan }}
             <input v-model.trim="form.subAccountQuota" type="number" min="0" :max="maxQuotaForForm" step="0.01" placeholder="500" />
@@ -140,7 +195,7 @@ import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus, ShieldAlert } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
-import { createSubAccount, deleteSubAccount, listSubAccountLogs, listSubAccountRecords, listSubAccounts, updateSubAccountQuota } from '../api/subAccount'
+import { createSubAccount, disableSubAccount, enableSubAccount, listSubAccountLogs, listSubAccountRecords, listSubAccounts, updateSubAccountQuota } from '../api/subAccount'
 import { getUserProfile } from '../api/user'
 import { getUser, setUser } from '../utils/auth'
 import { listQueryTypeConfig } from '../api/queryType'
@@ -152,7 +207,7 @@ const labels = {
   heroDesc: '\u7edf\u4e00\u7ba1\u7406\u5b50\u8d26\u53f7\u53ca\u53ef\u7528\u989d\u5ea6\u3002',
   addSub: '\u6dfb\u52a0\u5b50\u8d26\u53f7',
   mainBalance: '\u4e3b\u8d26\u53f7\u53ef\u652f\u914d\u4f59\u989d',
-  subCount: '\u5b50\u8d26\u53f7\u6570',
+  subCount: '\u542f\u7528 / \u5168\u90e8',
   totalQuota: '\u5df2\u5206\u914d\u989d\u5ea6',
   totalUsed: '\u5df2\u6d88\u8d39\u989d\u5ea6',
   subList: '\u5b50\u8d26\u53f7\u5217\u8868',
@@ -163,16 +218,23 @@ const labels = {
   used: '\u5df2\u6d88\u8d39',
   remaining: '\u5269\u4f59\u989d\u5ea6',
   adjust: '\u8c03\u989d\u5ea6',
-  delete: '\u5220\u9664',
+  disable: '\u505c\u7528',
+  enable: '\u91cd\u65b0\u542f\u7528',
+  enabled: '\u6b63\u5e38',
+  disabled: '\u5df2\u505c\u7528',
+  processing: '\u5904\u7406\u4e2d...',
   adjustQuota: '\u8c03\u6574\u5b50\u8d26\u53f7\u989d\u5ea6',
   loginName: '\u767b\u5f55\u8d26\u53f7',
-  loginNamePlaceholder: '\u8bf7\u8f93\u5165\u767b\u5f55\u8d26\u53f7',
+  loginNamePlaceholder: '\u8bf7\u8f93\u51656-20\u4f4d\u767b\u5f55\u8d26\u53f7',
+  loginNameRule: '6-20\u4f4d\uff0c\u4ec5\u652f\u6301\u82f1\u6587\u548c\u6570\u5b57\uff0c\u4e14\u5fc5\u987b\u540c\u65f6\u5305\u542b',
   nickName: '\u6635\u79f0',
   nickNamePlaceholder: '\u8bf7\u8f93\u5165\u6635\u79f0',
   phone: '\u624b\u673a\u53f7',
-  optional: '\u8bf7\u8f93\u5165\u624b\u673a\u53f7',
+  phonePlaceholder: '\u8bf7\u8f93\u516511\u4f4d\u624b\u673a\u53f7',
+  phoneRule: '\u624b\u673a\u53f7\u7528\u4e8e\u767b\u5f55\u4e0e\u8d26\u53f7\u5b89\u5168\u9a8c\u8bc1\uff0c\u521b\u5efa\u540e\u4e0d\u53ef\u4e0e\u5176\u4ed6\u8d26\u53f7\u91cd\u590d',
   password: '\u521d\u59cb\u5bc6\u7801',
-  passwordPlaceholder: '\u8bf7\u8f93\u5165\u521d\u59cb\u5bc6\u7801',
+  passwordPlaceholder: '\u8bf7\u8f93\u51658-20\u4f4d\u521d\u59cb\u5bc6\u7801',
+  passwordRule: '8-20\u4f4d\uff0c\u5fc5\u987b\u540c\u65f6\u5305\u542b\u82f1\u6587\u548c\u6570\u5b57\uff0c\u4e0d\u5141\u8bb8\u7a7a\u683c',
   quotaYuan: '\u53ef\u4f7f\u7528\u989d\u5ea6\uff08\u5143\uff09',
   cancel: '\u53d6\u6d88',
   confirm: '\u786e\u8ba4',
@@ -181,8 +243,6 @@ const labels = {
   inputPassword: '\u8bf7\u8f93\u5165\u521d\u59cb\u5bc6\u7801',
   inputQuota: '\u8bf7\u8f93\u5165\u6b63\u786e\u7684\u989d\u5ea6',
   submitFail: '\u63d0\u4ea4\u5931\u8d25',
-  deleteConfirmPrefix: '\u786e\u5b9a\u5220\u9664\u5b50\u8d26\u53f7\u300c',
-  deleteConfirmSuffix: '\u300d\u5417\uff1f',
   defaultInitial: '\u5b50'
 }
 
@@ -192,6 +252,7 @@ const accounts = ref([])
 const mainBalance = ref(0)
 const loading = ref(false)
 const saving = ref(false)
+const accountActionId = ref(null)
 const dialogVisible = ref(false)
 const editing = ref(null)
 const message = ref('')
@@ -206,6 +267,10 @@ function notify(text, type = 'info') {
   pageMessageTimer = setTimeout(() => { pageMessage.value = '' }, 3000)
 }
 const form = reactive({ userName: '', nickName: '', phonenumber: '', password: '', subAccountQuota: '' })
+const credentialErrors = reactive({ userName: '', phonenumber: '', password: '' })
+const ACCOUNT_PATTERN = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/
+const PHONE_PATTERN = /^1[3-9]\d{9}$/
+const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d)[!-~]{8,20}$/
 const queryTypeMap = ref({})
 const detailVisible = ref(false)
 const detailType = ref('records')
@@ -217,9 +282,10 @@ const detailPage = reactive({ pageNum: 1, pageSize: 8 })
 const subTotalQuotaYuan = computed(() => Number(profile.value?.subAccountQuota || 0) / 100)
 const subUsedQuotaYuan = computed(() => Number(profile.value?.subAccountUsed || 0) / 100)
 const subRemainingQuotaYuan = computed(() => Math.max(0, (Number(profile.value?.subAccountQuota || 0) - Number(profile.value?.subAccountUsed || 0)) / 100))
-const totalQuota = computed(() => accounts.value.reduce((sum, item) => sum + Number(item.subAccountQuota || 0), 0))
-const totalUsed = computed(() => accounts.value.reduce((sum, item) => sum + Number(item.subAccountUsed || 0), 0))
-const totalRemaining = computed(() => accounts.value.reduce((sum, item) => sum + remaining(item), 0))
+const activeAccounts = computed(() => accounts.value.filter(item => !isAccountDisabled(item)))
+const totalQuota = computed(() => activeAccounts.value.reduce((sum, item) => sum + Number(item.subAccountQuota || 0), 0))
+const totalUsed = computed(() => activeAccounts.value.reduce((sum, item) => sum + Number(item.subAccountUsed || 0), 0))
+const totalRemaining = computed(() => activeAccounts.value.reduce((sum, item) => sum + remaining(item), 0))
 const maxQuotaForForm = computed(() => {
   const available = Number(mainBalance.value || 0)
   if (!editing.value) return Math.max(0, available - totalRemaining.value)
@@ -232,7 +298,11 @@ const maxQuotaForForm = computed(() => {
 function formatMoney(value) {
   return Number(value || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-function remaining(item) { return Math.max(0, Number(item.subAccountQuota || 0) - Number(item.subAccountUsed || 0)) }
+function isAccountDisabled(item) { return String(item?.status ?? '') === '1' }
+function remaining(item) {
+  if (isAccountDisabled(item)) return 0
+  return Math.max(0, Number(item.subAccountQuota || 0) - Number(item.subAccountUsed || 0))
+}
 function initial(item) { return String(item.nickName || item.userName || labels.defaultInitial).slice(0, 1) }
 
 function maskPhone(value) {
@@ -293,15 +363,50 @@ function resetForm() {
   form.phonenumber = ''
   form.password = ''
   form.subAccountQuota = ''
+  credentialErrors.userName = ''
+  credentialErrors.phonenumber = ''
+  credentialErrors.password = ''
   message.value = ''
 }
+function validateCredentialField(field) {
+  let error = ''
+  if (field === 'userName') {
+    if (!form.userName) error = '\u8bf7\u8f93\u5165\u767b\u5f55\u8d26\u53f7'
+    else if (!ACCOUNT_PATTERN.test(form.userName)) error = '\u8d26\u53f7\u5fc5\u987b\u4e3a6-20\u4f4d\u82f1\u6587\u548c\u6570\u5b57\u7ec4\u5408'
+  } else if (field === 'phonenumber') {
+    if (!form.phonenumber) error = '\u8bf7\u8f93\u5165\u624b\u673a\u53f7'
+    else if (!PHONE_PATTERN.test(form.phonenumber)) error = '\u8bf7\u8f93\u5165\u6b63\u786e\u768411\u4f4d\u624b\u673a\u53f7'
+  } else if (field === 'password') {
+    if (!form.password) error = '\u8bf7\u8f93\u5165\u521d\u59cb\u5bc6\u7801'
+    else if (!PASSWORD_PATTERN.test(form.password)) error = '\u5bc6\u7801\u5fc5\u987b\u4e3a8-20\u4f4d\uff0c\u5305\u542b\u82f1\u6587\u548c\u6570\u5b57\uff0c\u4e14\u4e0d\u80fd\u6709\u7a7a\u683c'
+  }
+  credentialErrors[field] = error
+  return !error
+}
+function revalidateCredentialField(field) {
+  if (credentialErrors[field]) validateCredentialField(field)
+}
+function normalizePhone(event) {
+  form.phonenumber = String(event?.target?.value || '').replace(/\D/g, '').slice(0, 11)
+  revalidateCredentialField('phonenumber')
+}
 function openCreate() { if (isSubAccount.value) return; editing.value = null; resetForm(); dialogVisible.value = true }
-function openQuota(item) { if (isSubAccount.value) return; editing.value = item; resetForm(); form.subAccountQuota = item.subAccountQuota || 0; dialogVisible.value = true }
+function openQuota(item) {
+  if (isSubAccount.value || isAccountDisabled(item)) return
+  editing.value = item
+  resetForm()
+  form.subAccountQuota = item.subAccountQuota || 0
+  dialogVisible.value = true
+}
 function closeDialog() { dialogVisible.value = false; editing.value = null; resetForm() }
 async function submit() {
   message.value = ''
-  if (!editing.value && !form.userName) return (message.value = labels.inputLogin)
-  if (!editing.value && !form.password) return (message.value = labels.inputPassword)
+  if (!editing.value) {
+    const credentialsValid = ['userName', 'phonenumber', 'password']
+      .map(validateCredentialField)
+      .every(Boolean)
+    if (!credentialsValid) return (message.value = '\u8bf7\u6309\u8981\u6c42\u5b8c\u5584\u5b50\u8d26\u53f7\u767b\u5f55\u4fe1\u606f')
+  }
   if (form.subAccountQuota === '' || Number(form.subAccountQuota) < 0) return (message.value = labels.inputQuota)
   if (Number(form.subAccountQuota) > maxQuotaForForm.value) {
     return (message.value = `额度超出主账号可分配范围，本次最高可设置 ¥${formatMoney(maxQuotaForForm.value)}`)
@@ -316,17 +421,34 @@ async function submit() {
     message.value = err.msg || err.message || labels.submitFail
   } finally { saving.value = false }
 }
-async function remove(item) {
+async function disable(item) {
   const name = item.nickName || item.userName
-  if (!window.confirm(`${labels.deleteConfirmPrefix}${name}${labels.deleteConfirmSuffix}`)) return
+  if (!window.confirm(`确定停用子账号「${name}」吗？\n\n停用后该账号将无法登录，未消费额度会释放；查询记录、资金流水和历史报告仍会保留。存在未完成订单时系统会拒绝停用。`)) return
+  accountActionId.value = item.userId
   try {
-    await deleteSubAccount(item.userId)
-    notify(`已删除子账号「${name}」`)
+    await disableSubAccount(item.userId)
+    notify(`已停用子账号「${name}」`)
+    await loadList()
   } catch (err) {
-    // 后端可能因该子账号仍有未结订单而拒绝；不提示的话用户会以为删掉了
-    notify(err?.msg || err?.message || '删除失败，请稍后重试', 'error')
+    notify(err?.msg || err?.message || '停用失败，请稍后重试', 'error')
+  } finally {
+    accountActionId.value = null
   }
-  await loadList()
+}
+
+async function enable(item) {
+  const name = item.nickName || item.userName
+  if (!window.confirm(`确定重新启用子账号「${name}」吗？\n\n系统会恢复该账号原额度；若主账号当前可分配余额不足，将无法启用。`)) return
+  accountActionId.value = item.userId
+  try {
+    await enableSubAccount(item.userId)
+    notify(`已重新启用子账号「${name}」`)
+    await loadList()
+  } catch (err) {
+    notify(err?.msg || err?.message || '启用失败，请稍后重试', 'error')
+  } finally {
+    accountActionId.value = null
+  }
 }
 
 function openRecords(item) {
@@ -413,17 +535,27 @@ useRefresh(loadList)
 .empty-state { padding: 70px 20px; text-align: center; color: #7b8aa0; }
 .account-row { min-height: 88px; padding: 16px 20px; border-bottom: 1px solid #edf1f7; display: grid; grid-template-columns: minmax(200px, 1.25fr) repeat(3, 118px) minmax(280px, auto); gap: 14px; align-items: center; }
 .account-row:last-child { border-bottom: 0; }
+.account-row.disabled { background: #f8fafc; }
+.account-row.disabled .account-avatar { color: #66758c; background: #e8edf3; }
 .account-main { display: flex; align-items: center; gap: 14px; }
 .account-avatar { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; background: #eaf2ff; color: var(--blue); font-size: 18px; font-weight: 800; }
-.account-main h4 { margin: 0 0 6px; font-size: 18px; }
+.account-main h4 { margin: 0 0 6px; font-size: 18px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .account-main p { margin: 0; color: #6c7a91; }
+.account-status { display: inline-flex; align-items: center; min-height: 22px; padding: 0 7px; border-radius: 999px; color: #0b7a4b; background: #e8f8ef; font-size: 12px; font-weight: 700; }
+.account-status.disabled { color: #66758c; background: #e8edf3; }
 .quota-block strong { display: block; margin-top: 6px; color: #07162d; font-size: 20px; }
 .quota-block.remain strong { color: #0b9f62; }
 .row-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .row-actions button { min-height: 34px; border: 1px solid var(--line); background: #fff; color: var(--blue); border-radius: 6px; padding: 0 11px; font-weight: 700; cursor: pointer; }
 .row-actions .danger { color: #e24a4a; background: #fff7f7; border-color: #ffdada; }
+.row-actions .enable { color: #0b7a4b; background: #f0faf5; border-color: #bfe8d2; }
+.row-actions button:disabled { opacity: .55; cursor: not-allowed; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .form-grid label { display: grid; gap: 9px; color: #24344d; font-weight: 800; }
+.credential-field > span { display: inline-flex; align-items: center; gap: 4px; }
+.credential-field > span b { color: #df3f3f; font-size: 14px; }
+.credential-field small { min-height: 17px; color: #66758c; font-size: 12px; font-weight: 500; line-height: 1.45; }
+.credential-field small.invalid { color: #df3f3f; }
 .form-grid input { height: 42px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; font-size: 14px; outline: none; }
 .form-grid input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(22, 24, 29, .07); }
 .quota-field small { color: #66758c; font-size: 12px; font-weight: 500; }
