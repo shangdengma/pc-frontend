@@ -28,9 +28,9 @@
   /* 中性色 */
   --bg: #f4f5f7;            /* 中性浅灰底，衬托白色内容面 */
   --card: #ffffff;
-  --text: #101828;
-  --text-secondary: #475467;
-  --muted: #667085;
+  --text: var(--text);
+  --text-secondary: var(--text-secondary);
+  --muted: var(--muted);
   --faint: #98a2b3;
   --line: #e3e5e9;
   --line-soft: #eef0f3;
@@ -832,7 +832,7 @@ textarea:focus-visible {
 .notice-tag.system { color: #175cd3; background: #eff6ff; }
 .notice-tag.policy { color: #027a48; background: #ecfdf3; }
 .notice-tag.activity { color: #b54708; background: #fffaeb; }
-.notice-tag.notice { color: #475467; background: #f2f4f7; }
+.notice-tag.notice { color: var(--text-secondary); background: #f2f4f7; }
 .notice-tag.top { color: #b42318; background: #fef3f2; }
 
 .notice-item strong {
@@ -1033,7 +1033,7 @@ textarea:focus-visible {
 .data-table th {
   height: 40px;
   color: var(--muted);
-  background: #f8fafc;
+  background: var(--line-soft);
   font-size: var(--fs-xs);
   font-weight: 600;
 }
@@ -1334,7 +1334,7 @@ textarea::placeholder {
   margin-top: 16px;
   padding: 12px 14px;
   color: var(--muted);
-  background: #f8fafc;
+  background: var(--line-soft);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
   font-size: var(--fs-sm);
@@ -1831,7 +1831,7 @@ textarea::placeholder {
 .records-table th,
 .invoice-table th,
 .detail-table th {
-  background: #f8fafc;
+  background: var(--line-soft);
 }
 
 .records-table .record-name,
@@ -2191,14 +2191,14 @@ textarea::placeholder {
 
 .pay-dot.alipay { background: #1677ff; }
 .pay-dot.wechat { background: #13c15a; }
-.pay-dot.bank { background: #667085; }
+.pay-dot.bank { background: var(--muted); }
 
 .bank-box,
 .order-summary {
   margin-top: 18px;
   padding: 16px 18px;
   border-radius: var(--radius);
-  background: #f8fafc;
+  background: var(--line-soft);
   border: 1px solid var(--line-soft);
 }
 
@@ -2469,7 +2469,7 @@ textarea::placeholder {
 
 .cert-form-grid input:disabled {
   color: var(--muted);
-  background: #f8fafc;
+  background: var(--line-soft);
 }
 
 .license-section {
@@ -2503,7 +2503,7 @@ textarea::placeholder {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--line-soft);
 }
 
 .license-thumb img {
@@ -2675,7 +2675,7 @@ textarea::placeholder {
 
 .report-summary > div {
   padding: 14px;
-  background: #f8fafc;
+  background: var(--line-soft);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
 }
@@ -2707,7 +2707,7 @@ textarea::placeholder {
   padding: 16px;
   overflow: auto;
   color: #334155;
-  background: #f8fafc;
+  background: var(--line-soft);
   font-size: var(--fs-xs);
   line-height: 1.7;
 }
@@ -2835,7 +2835,7 @@ textarea::placeholder {
   font-size: var(--fs-sm);
 }
 .notify-pref-label {
-  color: #64748b;
+  color: var(--muted);
   cursor: help;
 }
 .notify-chip {
@@ -2859,7 +2859,7 @@ textarea::placeholder {
   background: #eef4ff;
   color: #1b4fc0;
 }
-.notify-chip.off { background: #f8fafc; color: #94a3b8; }
+.notify-chip.off { background: var(--line-soft); color: #94a3b8; }
 .notify-pref-link {
   font-size: var(--fs-xs);
   color: #2168f3;

@@ -362,7 +362,7 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 
 <style scoped>
 .account-profile-page { width: min(1180px, 100%); margin: 0 auto; display: grid; gap: 16px; }
-.profile-summary { min-height: auto; padding: 0 0 18px; display: flex; align-items: center; gap: 18px; background: transparent; color: #101828; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
+.profile-summary { min-height: auto; padding: 0 0 18px; display: flex; align-items: center; gap: 18px; background: transparent; color: var(--text); border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
 .summary-avatar { flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: #fff; color: #1d5baa; font-weight: 800; }
 .summary-avatar { width: 64px; height: 64px; border: 1px solid #dce6f3; border-radius: var(--radius); font-size: var(--fs-2xl); background: #eef4ff; }
 .summary-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -397,11 +397,11 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .profile-message { position: fixed; top: 84px; left: 50%; z-index: 70; margin: 0; padding: 11px 18px; transform: translateX(-50%); border: 1px solid #abefc6; border-radius: var(--radius); background: #ecfdf3; color: #027a48; box-shadow: 0 10px 25px rgba(16, 24, 40, .12); }
 .profile-message.error { border-color: #fecdca; background: #fef3f2; color: #b42318; }
 .editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.editor-grid label { display: grid; gap: 8px; color: #344054; font-weight: 600; }
+.editor-grid label { display: grid; gap: 8px; color: var(--text-secondary); font-weight: 600; }
 .editor-grid input, .editor-grid select { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: var(--radius); background: #fff; color: #17243a; font: inherit; outline: none; }
 .editor-grid input:focus, .editor-grid select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
 .password-editor { display: grid; gap: 18px; }
-.password-editor > label:not(.password-visibility) { display: grid; gap: 8px; color: #344054; font-weight: 600; }
+.password-editor > label:not(.password-visibility) { display: grid; gap: 8px; color: var(--text-secondary); font-weight: 600; }
 .password-editor input[type="password"], .password-editor input[type="text"] { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: var(--radius); background: #fff; color: #17243a; font: inherit; outline: none; }
 .password-editor input[type="password"]:focus, .password-editor input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47,111,228,.1); }
 .verification-code-row { display: grid; grid-template-columns: minmax(0, 1fr) 124px; gap: 10px; }
@@ -411,7 +411,7 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .password-visibility { width: fit-content; display: inline-flex; align-items: center; gap: 8px; color: #59677a; font-size: var(--fs-base); cursor: pointer; }
 .password-visibility input { width: 16px; height: 16px; accent-color: #2168d5; }
 .password-rule { margin: 0; padding: 12px 14px; border-left: 3px solid #7aa7ee; background: #f5f8fd; color: #66758a; font-size: var(--fs-sm); line-height: 1.65; }
-.ghost-btn { min-width: 96px; height: 42px; border: 1px solid #d8e0eb; border-radius: var(--radius); background: #fff; color: #344054; font: inherit; cursor: pointer; }
+.ghost-btn { min-width: 96px; height: 42px; border: 1px solid #d8e0eb; border-radius: var(--radius); background: #fff; color: var(--text-secondary); font: inherit; cursor: pointer; }
 @media (max-width: 760px) {
   .profile-summary { padding: 24px; flex-wrap: wrap; }
   .profile-summary .primary-btn { width: 100%; }

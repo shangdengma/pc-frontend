@@ -357,7 +357,7 @@ useRefresh(fetchInvoices)
 }
 
 .invoice-apply-btn:disabled {
-  color: #64748b;
+  color: var(--muted);
   background: #e5ecf6;
   box-shadow: none;
   cursor: not-allowed;
@@ -403,7 +403,7 @@ useRefresh(fetchInvoices)
 .stat-card strong {
   display: block;
   margin-top: 10px;
-  color: #101828;
+  color: var(--text);
   font-size: var(--fs-2xl);
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -484,7 +484,7 @@ useRefresh(fetchInvoices)
 .invoice-table td {
   min-height: 62px;
   padding: 16px 18px;
-  color: #344054;
+  color: var(--text-secondary);
   border-bottom: 1px solid #edf2f7;
   word-break: break-word;
 }
@@ -498,7 +498,7 @@ useRefresh(fetchInvoices)
 }
 
 .title-cell {
-  color: #111827;
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -534,7 +534,7 @@ useRefresh(fetchInvoices)
 .detail-lines {
   display: grid;
   gap: 4px;
-  color: #667085;
+  color: var(--muted);
   font-size: var(--fs-sm);
   text-align: left;
 }
@@ -557,7 +557,7 @@ useRefresh(fetchInvoices)
 
 .invoice-empty p {
   margin: 0;
-  color: #667085;
+  color: var(--muted);
   font-size: var(--fs-sm);
 }
 
@@ -617,7 +617,7 @@ useRefresh(fetchInvoices)
 }
 
 .invoice-empty strong {
-  color: #667085;
+  color: var(--muted);
   font-size: var(--fs-lg);
 }
 
@@ -630,7 +630,7 @@ useRefresh(fetchInvoices)
 .invoice-form label {
   display: grid;
   gap: 8px;
-  color: #344054;
+  color: var(--text-secondary);
   font-size: var(--fs-sm);
   font-weight: 700;
 }
@@ -645,7 +645,7 @@ useRefresh(fetchInvoices)
   width: 100%;
   border: 1px solid #d8e1ee;
   border-radius: var(--radius);
-  color: #101828;
+  color: var(--text);
   background: #ffffff;
   outline: none;
 }
@@ -687,11 +687,11 @@ useRefresh(fetchInvoices)
 }
 
 .detail-grid span {
-  color: #667085;
+  color: var(--muted);
 }
 
 .detail-grid strong {
-  color: #101828;
+  color: var(--text);
   word-break: break-word;
 }
 

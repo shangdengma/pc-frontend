@@ -228,7 +228,7 @@ useRefresh(refreshPage)
 .page-header p { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-base); }
 .back-link { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; color: var(--blue); background: transparent; font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; }
 .refresh-btn { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--text-secondary); background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-.refresh-btn:hover:not(:disabled) { border-color: #9fb4cf; background: #f8fafc; }
+.refresh-btn:hover:not(:disabled) { border-color: #9fb4cf; background: var(--line-soft); }
 .refresh-btn:disabled { opacity: .55; cursor: not-allowed; }
 
 .ledger-workspace { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }

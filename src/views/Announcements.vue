@@ -142,7 +142,7 @@ useRefresh(loadMessages)
   height: 38px;
   border: 1px solid #d8e1ee;
   border-radius: var(--radius);
-  color: #344054;
+  color: var(--text-secondary);
   background: #ffffff;
   font-weight: 700;
 }
@@ -203,7 +203,7 @@ useRefresh(loadMessages)
   display: grid;
   place-items: center;
   border: 0;
-  color: #667085;
+  color: var(--muted);
   background: #ffffff;
 }
 
@@ -238,7 +238,7 @@ useRefresh(loadMessages)
 
 .detail-content {
   margin: 0;
-  color: #344054;
+  color: var(--text-secondary);
   line-height: 1.9;
   white-space: pre-wrap;
 }

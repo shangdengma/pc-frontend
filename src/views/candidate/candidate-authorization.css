@@ -80,7 +80,7 @@
 .candidate-back-button,
 .candidate-dialog-close {
   border: 0;
-  color: #637188;
+  color: var(--muted);
   background: transparent;
   cursor: pointer;
 }
@@ -90,12 +90,13 @@
   min-height: 38px;
   padding: 0 10px;
   border-radius: 6px;
+  text-decoration: none;
 }
 
 .candidate-help-button:hover,
 .candidate-back-button:hover {
   color: var(--cinnabar);
-  background: #eff5ff;
+  background: var(--line-soft);
 }
 
 .candidate-progress-wrap {
@@ -216,7 +217,7 @@
 .candidate-lead,
 .candidate-page-heading p {
   margin: 12px 0 0;
-  color: #637188;
+  color: var(--muted);
   font-size: var(--fs-base);
   line-height: 1.8;
 }
@@ -712,7 +713,7 @@
 .candidate-complete-icon.is-success { color: #0c9963; background: var(--green-soft); }
 .candidate-complete-icon.is-warn    { color: #b54708; background: #fef6e7; }
 .candidate-complete-icon.is-danger  { color: #b42318; background: #fdeceb; }
-.candidate-complete-icon.is-neutral { color: #667085; background: #f0f2f5; }
+.candidate-complete-icon.is-neutral { color: var(--muted); background: #f0f2f5; }
 
 .candidate-complete-step p {
   max-width: 460px;
@@ -1105,7 +1106,7 @@
 .candidate-consent-note {
   display: block;
   margin-top: 4px;
-  color: #6b7280;
+  color: var(--muted);
   font-style: normal;
   font-size: var(--fs-sm);
   line-height: 1.6;

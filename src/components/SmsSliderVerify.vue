@@ -239,7 +239,7 @@ onBeforeUnmount(stopPointerListeners)
 
 .slider-header p {
   margin: 5px 0 0;
-  color: #64748b;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -248,7 +248,7 @@ onBeforeUnmount(stopPointerListeners)
   height: 32px;
   border: 0;
   background: transparent;
-  color: #64748b;
+  color: var(--muted);
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
@@ -279,7 +279,7 @@ onBeforeUnmount(stopPointerListeners)
   inset: 0;
   display: grid;
   place-items: center;
-  color: #64748b;
+  color: var(--muted);
   font-size: 14px;
   pointer-events: none;
 }
@@ -291,8 +291,8 @@ onBeforeUnmount(stopPointerListeners)
   z-index: 2;
   width: 46px;
   height: 46px;
-  border: 1px solid #2563eb;
-  background: #2563eb;
+  border: 1px solid var(--blue);
+  background: var(--blue);
   color: #fff;
   cursor: grab;
   touch-action: none;

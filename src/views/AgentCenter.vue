@@ -559,7 +559,7 @@ useRefresh(loadAll)
 .workspace-tabs button::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: transparent; }
 .workspace-tabs button.active { color: var(--blue); }
 .workspace-tabs button.active::after { background: var(--blue); }
-.workspace-tabs button > span { min-width: 22px; height: 20px; display: inline-grid; place-items: center; padding: 0 6px; border-radius: var(--radius-lg); color: #64748b; background: #e9eef5; font-size: var(--fs-xs); }
+.workspace-tabs button > span { min-width: 22px; height: 20px; display: inline-grid; place-items: center; padding: 0 6px; border-radius: var(--radius-lg); color: var(--muted); background: #e9eef5; font-size: var(--fs-xs); }
 .workspace-tabs button.active > span { color: var(--blue); background: #e7efff; }
 .workspace-content { padding: 24px; }
 .section-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
@@ -604,7 +604,7 @@ useRefresh(loadAll)
 .invite-code { color: var(--text); font-size: var(--fs-base); letter-spacing: .04em; }
 .status-pill { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: var(--radius-sm); font-size: var(--fs-xs); font-weight: 700; }
 .status-pill.ok { color: #087443; background: #e8f7ef; }
-.status-pill.off { color: #667085; background: #eef1f5; }
+.status-pill.off { color: var(--muted); background: #eef1f5; }
 /* 已过期 / 已用完：状态是"启用"但实际不可用，用警示色区分 */
 .status-pill.warn { color: #b54708; background: #fffaeb; }
 .remark-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

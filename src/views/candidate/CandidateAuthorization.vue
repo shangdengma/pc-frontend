@@ -8,10 +8,17 @@
           <small>候选人信息授权</small>
         </span>
       </div>
-      <button type="button" class="candidate-help-button" title="联系客服">
+      <!-- 新窗口打开：候选人多半填到一半，当前页导航走会丢掉已填内容 -->
+      <a
+        class="candidate-help-button"
+        :href="contactUrl"
+        target="_blank"
+        rel="noopener"
+        title="联系客服"
+      >
         <CircleHelp :size="18" />
         <span>客服与帮助</span>
-      </button>
+      </a>
     </header>
 
     <div v-if="!terminalState && currentStep > 0" class="candidate-progress-wrap">
@@ -120,7 +127,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { CheckCircle2, ChevronLeft, CircleHelp, CircleSlash, Clock3, ShieldCheck, TriangleAlert, X } from '@lucide/vue'
 import ConsentStep from './components/ConsentStep.vue'
 import DynamicFormStep from './components/DynamicFormStep.vue'
@@ -145,6 +152,8 @@ import {
 import './candidate-authorization.css'
 
 const route = useRoute()
+const router = useRouter()
+const contactUrl = computed(() => router.resolve({ name: 'contactUs' }).href)
 const progressSteps = ['阅读授权', '填写信息', '确认签署']
 const currentStep = ref(0)
 const countdown = ref(0)

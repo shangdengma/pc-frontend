@@ -324,7 +324,7 @@ useRefresh(loadAnnouncements)
 .announcement-tag.system { color: #175cd3; background: #eff8ff; }
 .announcement-tag.policy { color: #027a48; background: #ecfdf3; }
 .announcement-tag.activity { color: #b54708; background: #fff6ed; }
-.announcement-tag.notice { color: #475467; background: #f2f4f7; }
+.announcement-tag.notice { color: var(--text-secondary); background: #f2f4f7; }
 
 .announcement-content,
 .announcement-content strong,
@@ -378,7 +378,7 @@ useRefresh(loadAnnouncements)
   height: 72px;
   margin-top: 12px;
   border-radius: var(--radius);
-  background: linear-gradient(90deg, #f2f4f7 25%, #f8fafc 50%, #f2f4f7 75%);
+  background: linear-gradient(90deg, #f2f4f7 25%, var(--line-soft) 50%, #f2f4f7 75%);
   background-size: 200% 100%;
   animation: skeleton 1.2s ease-in-out infinite;
 }
@@ -398,7 +398,7 @@ useRefresh(loadAnnouncements)
   padding: 0 14px;
   border: 1px solid #d0d9e5;
   border-radius: var(--radius);
-  color: #344054;
+  color: var(--text-secondary);
   background: #ffffff;
   cursor: pointer;
 }
@@ -417,7 +417,7 @@ useRefresh(loadAnnouncements)
 .announcement-detail-content {
   padding-top: 22px;
   border-top: 1px solid var(--line-soft);
-  color: #344054;
+  color: var(--text-secondary);
   line-height: 1.9;
   white-space: pre-wrap;
 }

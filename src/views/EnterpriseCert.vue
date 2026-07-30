@@ -567,7 +567,7 @@ useRefresh(loadList)
   display: grid;
   place-items: center;
   border-radius: var(--radius);
-  color: #667085;
+  color: var(--muted);
   background: #f2f4f7;
 }
 
@@ -607,7 +607,7 @@ useRefresh(loadList)
 
 .cert-list-item:hover {
   border-color: #cfd9e7;
-  background: #f8fafc;
+  background: var(--line-soft);
 }
 
 .cert-item-ico {

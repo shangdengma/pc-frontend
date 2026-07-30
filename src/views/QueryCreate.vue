@@ -412,7 +412,7 @@ onMounted(async () => {
 }
 .candidate-link-url {
   word-break: break-all;
-  color: #2563eb;
+  color: var(--cinnabar);
   font-size: var(--fs-sm);
 }
 .candidate-link-actions {
@@ -432,8 +432,8 @@ onMounted(async () => {
   text-decoration: none;
 }
 .candidate-link-actions .ghost-btn:hover {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--text);
+  color: var(--cinnabar);
 }
 .candidate-link-hint {
   font-size: var(--fs-xs);
@@ -467,10 +467,10 @@ onMounted(async () => {
 .auth-method-current {
   min-height: 72px;
   padding: 13px 15px;
-  border: 1px solid #2563eb;
+  border: 1px solid var(--text);
   border-radius: var(--radius);
-  background: #f4f8ff;
-  box-shadow: inset 3px 0 0 #2563eb;
+  background: var(--line-soft);
+  box-shadow: inset 3px 0 0 var(--text);
   text-align: left;
 }
 
@@ -480,13 +480,13 @@ onMounted(async () => {
 }
 
 .auth-method-current strong {
-  color: #111827;
+  color: var(--text);
   font-size: var(--fs-base);
 }
 
 .auth-method-current small {
   margin-top: 6px;
-  color: #667085;
+  color: var(--muted);
 }
 
 @media (max-width: 900px) {
