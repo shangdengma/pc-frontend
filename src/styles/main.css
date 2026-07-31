@@ -1813,13 +1813,16 @@ textarea::placeholder {
   table-layout: fixed;
 }
 
+/* 操作列原为 13%：table-layout 是 fixed，13% 在 860px 下只有 112px，
+   而「复制链接 重发短信」两个按钮实测就要 207px，加上左右 padding 约 239px。
+   装不下又设了 nowrap，内容便溢出到列外向右延伸，表头还留在原处，看着就是错位。 */
 .records-table .record-col-name { width: 8%; }
-.records-table .record-col-type { width: 16%; }
-.records-table .record-col-id { width: 17%; }
-.records-table .record-col-phone { width: 12%; }
-.records-table .record-col-time { width: 12%; }
-.records-table .record-col-status { width: 22%; }
-.records-table .record-col-actions { width: 13%; }
+.records-table .record-col-type { width: 14%; }
+.records-table .record-col-id { width: 15%; }
+.records-table .record-col-phone { width: 11%; }
+.records-table .record-col-time { width: 11%; }
+.records-table .record-col-status { width: 19%; }
+.records-table .record-col-actions { width: 22%; }
 
 .records-table th,
 .records-table td {
@@ -1840,7 +1843,8 @@ textarea::placeholder {
 .records-table .record-time,
 .records-table .status-pill,
 .records-table .actions-cell {
-  white-space: nowrap;
+  /* 不再 nowrap：窄屏放不下时让按钮换行，也不要溢出到列外 */
+  white-space: normal;
 }
 
 .records-table .record-name,
@@ -1856,7 +1860,7 @@ textarea::placeholder {
 }
 
 .records-table .actions-cell .text-btn + .text-btn {
-  margin-left: 12px;
+  margin-left: 10px;
 }
 
 .actions-cell { white-space: nowrap; }
