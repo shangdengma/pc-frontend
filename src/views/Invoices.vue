@@ -60,7 +60,7 @@
       </div>
 
       <div class="invoice-table-wrap">
-        <table class="invoice-table">
+        <table class="data-table invoice-table">
           <thead>
             <tr>
               <th>申请时间</th>
@@ -463,38 +463,15 @@ useRefresh(fetchInvoices)
   overflow-x: auto;
 }
 
+/* 同资金流水：表头与行样式继承全局 .data-table，这里只留最小宽度和换行策略。
+   原先自带 54px 表头、700 字重、#f6f9fd 灰底和 #e8eef7/#edf2f7 两个硬编码边框色。 */
 .invoice-table {
-  width: 100%;
-  border-collapse: collapse;
   table-layout: fixed;
   min-width: 980px;
 }
 
-.invoice-table th {
-  height: 54px;
-  padding: 0 18px;
-  color: #52627a;
-  background: #f6f9fd;
-  border-bottom: 1px solid #e8eef7;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  text-align: left;
-}
-
 .invoice-table td {
-  min-height: 62px;
-  padding: 16px 18px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid #edf2f7;
   word-break: break-word;
-}
-
-.invoice-table tbody tr {
-  transition: background 0.15s ease;
-}
-
-.invoice-table tbody tr:hover td {
-  background: #f8fbff;
 }
 
 .title-cell {

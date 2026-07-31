@@ -41,7 +41,7 @@
       </div>
 
       <div class="table-wrap">
-        <table class="ledger-table">
+        <table class="data-table ledger-table">
           <thead>
             <tr>
               <th>发生时间</th>
@@ -249,11 +249,11 @@ useRefresh(refreshPage)
 .error-banner span { flex: 1; }
 .error-banner button { border: 0; color: #b42318; background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
 .table-wrap { overflow-x: auto; }
-.ledger-table { width: 100%; min-width: 1000px; border-collapse: collapse; table-layout: fixed; }
-.ledger-table th { padding: 12px 14px; border-bottom: 1px solid #dfe6ee; color: #637087; background: #f6f8fb; text-align: left; font-size: var(--fs-xs); font-weight: 700; }
-.ledger-table td { padding: 14px; border-bottom: 1px solid #e9edf3; color: var(--text-secondary); font-size: var(--fs-sm); vertical-align: middle; }
-.ledger-table tbody tr:last-child td { border-bottom: 0; }
-.ledger-table tbody tr:hover { background: #f9fbfd; }
+/* 表头背景、字重、行高、边框色一律继承全局 .data-table，
+   这里只留本页特有的列宽与最小宽度。原先这套私有样式让资金流水的
+   表头是灰底 700 字重、行高 54px、边框用 #dfe6ee/#e9edf3 两个硬编码色，
+   和查询记录（透明表头、600、51px、token 色）明显不是一套。 */
+.ledger-table { min-width: 1000px; table-layout: fixed; }
 /* 各列宽度之和原为 1230px，而工作区容器只有 1136px，桌面端一直在横向溢出。
    收紧固定列，把「变动原因」留成弹性列吃掉剩余宽度。 */
 .ledger-table th:nth-child(1) { width: 150px; }
