@@ -184,7 +184,7 @@ onMounted(loadFaqs)
 
 .faq-search:focus-within {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+  box-shadow: 0 0 0 3px rgba(22, 24, 29, .1);
 }
 
 .faq-search input {
