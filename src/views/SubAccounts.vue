@@ -36,19 +36,37 @@
       </div>
       <div v-if="loading" class="empty-state">{{ labels.loading }}</div>
       <div v-else-if="!accounts.length" class="empty-state">{{ labels.empty }}</div>
-      <div v-else class="account-list">
-        <article v-for="item in accounts" :key="item.userId" class="account-row" :class="{ disabled: isAccountDisabled(item) }">
-          <div class="account-main">
+      <!-- 原先是 div 列表：76px 行高、没有表头，三个额度各自带标签重复出现，
+           跟查询记录、资金流水那几页完全不是一套。改成表格后列义由表头承担，
+           行内不再重复「已分配/已消费/剩余」，样式跟着全局 .data-table 走。 -->
+      <div v-else class="sub-table-wrap">
+        <table class="data-table sub-table">
+          <thead>
+            <tr>
+              <th>子账号</th>
+              <th>状态</th>
+              <th class="numeric">{{ labels.quota }}</th>
+              <th class="numeric">{{ labels.used }}</th>
+              <th class="numeric">{{ labels.remaining }}</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+        <tr v-for="item in accounts" :key="item.userId" :class="{ disabled: isAccountDisabled(item) }">
+          <td data-label="子账号">
+            <div class="account-main">
             <div class="account-avatar">{{ initial(item) }}</div>
             <div>
-              <h4>{{ item.nickName || item.userName }}<span class="account-status" :class="{ disabled: isAccountDisabled(item) }">{{ isAccountDisabled(item) ? labels.disabled : labels.enabled }}</span></h4>
+              <h4>{{ item.nickName || item.userName }}</h4>
               <p>{{ item.userName }}<span v-if="item.phonenumber"> · {{ item.phonenumber }}</span></p>
             </div>
           </div>
-          <div class="quota-block"><span>{{ labels.quota }}</span><strong>&yen;{{ formatMoney(item.subAccountQuota) }}</strong></div>
-          <div class="quota-block"><span>{{ labels.used }}</span><strong>&yen;{{ formatMoney(item.subAccountUsed) }}</strong></div>
-          <div class="quota-block remain"><span>{{ labels.remaining }}</span><strong>&yen;{{ formatMoney(remaining(item)) }}</strong></div>
-          <div class="row-actions">
+          </td>
+          <td data-label="状态"><span class="account-status" :class="{ disabled: isAccountDisabled(item) }">{{ isAccountDisabled(item) ? labels.disabled : labels.enabled }}</span></td>
+          <td :data-label="labels.quota" class="numeric">&yen;{{ formatMoney(item.subAccountQuota) }}</td>
+          <td :data-label="labels.used" class="numeric">&yen;{{ formatMoney(item.subAccountUsed) }}</td>
+          <td :data-label="labels.remaining" class="numeric remain">&yen;{{ formatMoney(remaining(item)) }}</td>
+          <td data-label="操作" class="row-actions">
             <button type="button" @click="openRecords(item)">查询记录</button>
             <button type="button" @click="openLogs(item)">流水</button>
             <button v-if="!isAccountDisabled(item)" class="primary-action-btn" type="button" @click="openQuota(item)">{{ labels.adjust }}</button>
@@ -67,8 +85,10 @@
               :disabled="accountActionId === item.userId"
               @click="enable(item)"
             >{{ accountActionId === item.userId ? labels.processing : labels.enable }}</button>
-          </div>
-        </article>
+          </td>
+        </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -603,27 +623,24 @@ useRefresh(loadList)
 .sub-summary > div, .sub-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
 .sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
 .sub-summary > div:last-child { border-right: 0; }
-.sub-summary span, .quota-block span { color: var(--muted); font-size: var(--fs-base); }
+.sub-summary span { color: var(--muted); font-size: var(--fs-base); }
 .sub-summary strong { display: block; margin-top: 8px; font-size: var(--fs-2xl); color: var(--text); }
 .sub-card { overflow: hidden; }
 .card-head { min-height: 68px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; justify-content: space-between; }
 .card-head h3 { margin: 0; font-size: var(--fs-lg); }
 .card-head p { margin: 8px 0 0; color: var(--muted); }
 .empty-state { padding: 70px 20px; text-align: center; color: #7b8aa0; }
-/* 一行五区：主信息 / 三个额度 / 操作。额度收窄到 104px，
-   把富余宽度让给主信息与按钮区，避免按钮换行。 */
-.account-row {
-  display: grid;
-  grid-template-columns: minmax(190px, 1.4fr) repeat(3, 104px) minmax(240px, auto);
-  gap: var(--sp-3);
-  align-items: center;
-  min-height: 76px;
-  padding: var(--sp-3) var(--sp-5);
-  border-bottom: 1px solid var(--line-soft);
-}
-.account-row:last-child { border-bottom: 0; }
-.account-row.disabled { background: var(--line-soft); }
-.account-row.disabled .account-avatar { color: var(--muted); background: var(--line); }
+/* 行高、内边距、边框、hover 全部继承全局 .data-table，
+   这里只留本页的列宽与停用态。 */
+.sub-table-wrap { overflow-x: auto; }
+.sub-table { min-width: 940px; table-layout: fixed; }
+.sub-table th:nth-child(1) { width: 26%; }
+.sub-table th:nth-child(2) { width: 86px; }
+.sub-table th:nth-child(3),
+.sub-table th:nth-child(4),
+.sub-table th:nth-child(5) { width: 116px; }
+.sub-table tbody tr.disabled { background: var(--line-soft); }
+.sub-table tbody tr.disabled .account-avatar { color: var(--muted); background: var(--line); }
 .account-main { display: flex; align-items: center; gap: 14px; }
 /* 头像缩小、去掉高饱和底色：它只是定位锚点，不该是行内最抢眼的元素 */
 .account-avatar {
@@ -661,16 +678,9 @@ useRefresh(loadList)
   font-weight: 500;
 }
 .account-status.disabled { background: var(--line); color: var(--muted); }
-.quota-block span { color: var(--muted); font-size: var(--fs-xs); }
-.quota-block strong {
-  display: block;
-  margin-top: 2px;
-  color: var(--text);
-  font-size: var(--fs-base);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.quota-block.remain strong { color: var(--green); }
+.sub-table td.numeric { font-variant-numeric: tabular-nums; text-align: right; }
+.sub-table td.remain { color: var(--green); font-weight: 600; }
+.sub-table th.numeric { text-align: right; }
 /* 六个按钮原先同等权重一字排开，整行看过去全是边框。
    现在只有「调额度」保持按钮形态，其余降为文字操作，
    停用/启用因为不可逆才保留描边。 */
@@ -739,42 +749,22 @@ useRefresh(loadList)
 .amount.minus { color: var(--red); }
 .amount.frozen { color: var(--orange); }
 .pager { margin: 0; padding: 0; display: flex; justify-content: flex-end; align-items: center; gap: 12px; border: 0; border-radius: 0; color: var(--muted); }
-/* 中屏：三个额度并排一行，主信息与操作各占整行。
-   原先粗暴改成两列，额度被拆成「两行两列」、操作区只分到半行宽，
-   五个按钮挤在 133px 里折成三行参差不齐。 */
+/* 表格改造后，窄屏的行堆叠由全局 .data-table 的移动端规则接管
+   （td 变 flex + data-label 补出字段名），这里不再需要针对
+   .account-row 的 grid 覆盖。只保留按钮在窄屏的排布。 */
 @media (max-width: 1180px) {
-  .account-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--sp-3) var(--sp-2);
-    padding: var(--sp-4) var(--sp-5);
-  }
-
-  .account-main { grid-column: 1 / -1; }
-
-  .row-actions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    padding-top: var(--sp-1);
-    border-top: 1px solid var(--line-soft);
-  }
-
   .sub-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
   .sub-quota-view, .form-grid { grid-template-columns: 1fr; }
 
-  .account-row { padding: var(--sp-4); }
-
   /* 窄屏按钮均分整行，避免最后一行只剩一个按钮孤零零挂着 */
-  .row-actions { gap: var(--sp-1); }
+  .row-actions { gap: var(--sp-1); flex-wrap: wrap; }
   .row-actions button {
     flex: 1 1 auto;
     min-width: 62px;
     padding: 0 var(--sp-1);
   }
-
-  /* 额度数字在 375px 上要留得下「¥380.00」 */
-  .quota-block strong { font-size: var(--fs-sm); }
 }
 
 /* 移动端：四个额度指标两列排布 —— 原先 720px 断点把它压成单列，
