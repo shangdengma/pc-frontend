@@ -14,7 +14,13 @@
       </div>
     </header>
 
-    <section v-if="!isAgent && !loading" class="no-permission">
+    <!-- 身份未确认前既不能说「未开通」，也不该把空的代理中心摆出来，
+         否则非代理会先看到完整页面再闪回无权限 -->
+    <section v-if="!identityReady" class="identity-checking">
+      <span class="loading-table"><span></span></span>
+    </section>
+
+    <section v-else-if="!isAgent && !loading" class="no-permission">
       <span class="empty-icon"><ShieldAlert :size="25" :stroke-width="1.8" /></span>
       <h3>当前账号未开通代理权限</h3>
       <p>请联系平台管理员完成代理身份配置。</p>
@@ -244,7 +250,8 @@ import {
 } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
 import { allocateAgentCustomerBalance, createAgentInviteCode, getAgentOverview, listAgentCustomers, listAgentInviteCodes, updateAgentInviteCode } from '../api/agent'
-import { getUser } from '../utils/auth'
+import { getUser, setUser } from '../utils/auth'
+import { getUserProfile } from '../api/user'
 
 const router = useRouter()
 
@@ -254,9 +261,36 @@ const router = useRouter()
 // 用户对着一个数据全空的代理中心，以为自己是代理商。
 const isAgent = ref(isAgentFromCache())
 
+// isAgent 由 profile 接口在响应根上返回，登录时存的 user 里没有，
+// 要等 ClientLayout 拉完 profile 才写进缓存。本页若在那之前挂载，
+// 缓存里读不到就会直接判定「未开通代理权限」——用户得刷新几次才正常。
+// 所以身份没确认之前不下结论，缓存里没有这个字段就自己拉一次。
+const identityReady = ref(hasAgentFlagInCache())
+
 function isAgentFromCache() {
   const user = getUser() || {}
   return user.isAgent === true || user.isAgent === 1 || user.isAgent === '1'
+}
+
+function hasAgentFlagInCache() {
+  const user = getUser() || {}
+  return 'isAgent' in user
+}
+
+async function ensureIdentity() {
+  if (identityReady.value) return
+  try {
+    const response = await getUserProfile()
+    const user = response.data || response.user || {}
+    const flag = response.isAgent ?? user.isAgent
+    isAgent.value = flag === true || flag === 1 || flag === '1'
+    // 顺手补进缓存，避免其他页面重复这一次请求
+    setUser({ ...getUser(), ...user, isAgent: flag })
+  } catch (err) {
+    // 拉不到就维持缓存里的结论，不要因为一次网络抖动把人踢成非代理
+  } finally {
+    identityReady.value = true
+  }
 }
 const loading = ref(false)
 const customerLoading = ref(false)
@@ -520,7 +554,10 @@ async function saveAllocation() {
   }
 }
 
-onMounted(loadAll)
+onMounted(async () => {
+  await ensureIdentity()
+  if (isAgent.value) loadAll()
+})
 // 移动端下拉刷新复用同一个加载函数
 useRefresh(loadAll)
 </script>
@@ -625,6 +662,7 @@ useRefresh(loadAll)
 .loading-table { display: grid; gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--line-soft); }
 .loading-table span { height: 58px; background: linear-gradient(90deg, var(--line-soft) 25%, var(--line-soft) 40%, var(--line-soft) 65%); background-size: 400% 100%; animation: loading 1.4s ease infinite; }
 @keyframes loading { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+.identity-checking { padding: 8px 0; }
 .no-permission { margin-top: 10px; padding: 52px 24px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; text-align: center; }
 .empty-icon { width: 52px; height: 52px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: var(--radius-lg); color: var(--blue); background: var(--line-soft); }
 .no-permission h3 { margin: 0 0 8px; font-size: var(--fs-lg); }
