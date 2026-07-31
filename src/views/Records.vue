@@ -81,8 +81,10 @@
               >
                 {{ smsLoadingId === item.id ? '发送中…' : '重发短信' }}
               </button>
-              <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="openReport(item)">查看报告</button>
-              <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="downloadPdf(item)">下载PDF</button>
+              <!-- 报告类操作只在出结果后出现：没出结果时摆一对灰按钮既占位又没意义，
+                   待授权行还要跟复制链接、重发短信挤在一起 -->
+              <button v-if="String(item.displayStatus) === 'success'" class="text-btn" @click="openReport(item)">查看报告</button>
+              <button v-if="String(item.displayStatus) === 'success'" class="text-btn" @click="downloadPdf(item)">下载PDF</button>
             </td>
           </tr>
         </tbody>
