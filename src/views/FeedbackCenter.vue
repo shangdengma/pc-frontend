@@ -224,7 +224,7 @@ useRefresh(loadHistory)
 
 <style scoped>
 .feedback-page {
-  width: min(100%, 1120px);
+  width: min(100%, 1040px);
   margin: 0 auto;
   color: var(--text);
 }

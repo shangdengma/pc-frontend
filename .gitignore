@@ -14,3 +14,8 @@ Thumbs.db
 
 .env.local
 .env.*.local
+
+# 本地安装的第三方 agent skills（npx skills add），属开发工具而非项目产物
+.agents/
+.claude/
+skills-lock.json
