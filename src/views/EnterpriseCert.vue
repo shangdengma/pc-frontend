@@ -568,7 +568,7 @@ useRefresh(loadList)
   place-items: center;
   border-radius: var(--radius);
   color: var(--muted);
-  background: var(--line-soft);
+  background: #f2f4f7;
 }
 
 .cert-status-icon svg {
@@ -577,7 +577,7 @@ useRefresh(loadList)
 }
 
 .cert-status-icon.approved { color: #12b76a; background: #ecfdf3; }
-.cert-status-icon.draft { color: var(--blue); background: var(--line-soft); }
+.cert-status-icon.draft { color: var(--blue); background: #eaf1ff; }
 .cert-status-icon.pending,
 .cert-status-icon.reviewing { color: #f79009; background: #fff7ed; }
 .cert-status-icon.rejected { color: #f04438; background: #fef3f2; }
@@ -585,10 +585,10 @@ useRefresh(loadList)
 .inherit-tip {
   margin-top: 18px;
   padding: 12px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid #dbeafe;
   border-radius: var(--radius);
-  color: var(--cinnabar);
-  background: var(--line-soft);
+  color: #2354a4;
+  background: #eff6ff;
   font-size: var(--fs-base);
   line-height: 1.6;
 }
@@ -606,7 +606,7 @@ useRefresh(loadList)
 }
 
 .cert-list-item:hover {
-  border-color: var(--line);
+  border-color: #cfd9e7;
   background: var(--line-soft);
 }
 
@@ -618,7 +618,7 @@ useRefresh(loadList)
   place-items: center;
   border-radius: var(--radius-lg);
   color: var(--blue);
-  background: var(--line-soft);
+  background: #eaf1ff;
 }
 
 .cert-item-ico svg {
@@ -656,7 +656,7 @@ useRefresh(loadList)
 .upload-tile:hover {
   color: var(--blue);
   border-color: var(--blue);
-  background: var(--line-soft);
+  background: #f4f8ff;
 }
 
 @media (max-width: 1280px) {

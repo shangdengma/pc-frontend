@@ -15,20 +15,7 @@
     </header>
 
     <main class="contact-main">
-      <!-- 嵌在工作台里时跟「常见问题」「意见反馈」用同一套页头，
-           三页在同一菜单下切换不该长得不一样；
-           独立页（未登录直接访问）仍保留宋体大标题的品牌感 -->
-      <header v-if="embedded" class="page-head">
-        <div class="page-head-main">
-          <p class="page-head-eyebrow">服务支持</p>
-          <h2>{{ contact.title || '联系我们' }}</h2>
-          <p class="page-head-desc">
-            {{ contact.content || '如您在使用平台时遇到问题，请通过以下方式联系我们。' }}
-          </p>
-        </div>
-      </header>
-
-      <section v-else class="contact-intro">
+      <section class="contact-intro">
         <p>客户服务</p>
         <h1>{{ contact.title || '联系我们' }}</h1>
         <div class="contact-rule"></div>
@@ -227,7 +214,7 @@ onMounted(loadContact)
 }
 
 .contact-page--embedded .contact-main {
-  width: min(1040px, 100%);
+  width: min(920px, 100%);
   padding: 8px 0 32px;
 }
 

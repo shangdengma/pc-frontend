@@ -591,17 +591,17 @@ useRefresh(loadList)
 .no-permission-card p { margin: 0 auto; max-width: 560px; line-height: 1.8; }
 .no-permission-icon { width: 52px; height: 52px; margin: 0 auto; border-radius: var(--radius); display: grid; place-items: center; color: var(--blue); background: var(--line-soft); font-size: var(--fs-2xl); font-weight: 900; }
 .sub-quota-view { margin: 26px auto 0; max-width: 760px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; text-align: left; }
-.sub-quota-view div { padding: 18px 20px; border: 1px solid var(--line-soft); border-radius: var(--radius); background: var(--line-soft); }
+.sub-quota-view div { padding: 18px 20px; border: 1px solid #e4ebf5; border-radius: var(--radius); background: #f8fbff; }
 .sub-quota-view span { display: block; color: var(--muted); font-size: var(--fs-base); }
 .sub-quota-view strong { display: block; margin-top: 8px; color: var(--text); font-size: var(--fs-2xl); }
 .sub-quota-view div:last-child strong { color: var(--green); }
 .primary-btn, .ghost-btn { border: 0; border-radius: var(--radius); font-weight: 700; cursor: pointer; }
 .primary-btn { min-height: 42px; background: var(--blue); color: #fff; padding: 0 18px; box-shadow: none; }
 .primary-btn:disabled { opacity: .55; cursor: not-allowed; }
-.ghost-btn { background: var(--line-soft); color: var(--blue); padding: 10px 16px; border: 1px solid var(--line-soft); }
+.ghost-btn { background: #f4f7fb; color: var(--blue); padding: 10px 16px; border: 1px solid #dce6f5; }
 .sub-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
 .sub-summary > div, .sub-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
-.sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid var(--line-soft); border-radius: 0; box-shadow: none; }
+.sub-summary > div { min-height: 100px; padding: 18px 20px; border: 0; border-right: 1px solid #edf1f6; border-radius: 0; box-shadow: none; }
 .sub-summary > div:last-child { border-right: 0; }
 .sub-summary span, .quota-block span { color: var(--muted); font-size: var(--fs-base); }
 .sub-summary strong { display: block; margin-top: 8px; font-size: var(--fs-2xl); color: var(--text); }
@@ -609,7 +609,7 @@ useRefresh(loadList)
 .card-head { min-height: 68px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; justify-content: space-between; }
 .card-head h3 { margin: 0; font-size: var(--fs-lg); }
 .card-head p { margin: 8px 0 0; color: var(--muted); }
-.empty-state { padding: 70px 20px; text-align: center; color: var(--muted); }
+.empty-state { padding: 70px 20px; text-align: center; color: #7b8aa0; }
 /* 一行五区：主信息 / 三个额度 / 操作。额度收窄到 104px，
    把富余宽度让给主信息与按钮区，避免按钮换行。 */
 .account-row {

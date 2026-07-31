@@ -358,7 +358,7 @@ useRefresh(fetchInvoices)
 
 .invoice-apply-btn:disabled {
   color: var(--muted);
-  background: var(--line-soft);
+  background: #e5ecf6;
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -369,7 +369,7 @@ useRefresh(fetchInvoices)
   gap: 0;
   overflow: hidden;
   margin-bottom: 20px;
-  border: 1px solid var(--line-soft);
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius);
   background: #fff;
 }
@@ -381,7 +381,7 @@ useRefresh(fetchInvoices)
   gap: 12px;
   padding: 18px 20px;
   border: 0;
-  border-right: 1px solid var(--line-soft);
+  border-right: 1px solid #edf1f6;
   border-radius: 0;
   background: #ffffff;
   box-shadow: none;
@@ -391,8 +391,8 @@ useRefresh(fetchInvoices)
 .stat-card:last-child { border-right: 0; }
 
 .stat-card:hover {
-  border-color: var(--line);
-  background: var(--line-soft);
+  border-color: #cddcf6;
+  background: #fbfdff;
 }
 
 .stat-card span {
@@ -423,7 +423,7 @@ useRefresh(fetchInvoices)
   height: 20px;
 }
 
-.stat-card.total .stat-icon { color: var(--blue); background: var(--line-soft); }
+.stat-card.total .stat-icon { color: var(--blue); background: #eaf1ff; }
 .stat-card.pending .stat-icon { color: #d97706; background: #fff7ed; }
 .stat-card.issued .stat-icon { color: #067647; background: #ecfdf3; }
 .stat-card.rejected .stat-icon { color: #d92d20; background: #fef3f2; }
@@ -473,9 +473,9 @@ useRefresh(fetchInvoices)
 .invoice-table th {
   height: 54px;
   padding: 0 18px;
-  color: var(--text-secondary);
-  background: var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
+  color: #52627a;
+  background: #f6f9fd;
+  border-bottom: 1px solid #e8eef7;
   font-size: var(--fs-sm);
   font-weight: 700;
   text-align: left;
@@ -485,7 +485,7 @@ useRefresh(fetchInvoices)
   min-height: 62px;
   padding: 16px 18px;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid #edf2f7;
   word-break: break-word;
 }
 
@@ -494,7 +494,7 @@ useRefresh(fetchInvoices)
 }
 
 .invoice-table tbody tr:hover td {
-  background: var(--line-soft);
+  background: #f8fbff;
 }
 
 .title-cell {
@@ -503,7 +503,7 @@ useRefresh(fetchInvoices)
 }
 
 .amount-cell {
-  color: var(--text);
+  color: #17376d;
   font-weight: 800;
 }
 
@@ -527,7 +527,7 @@ useRefresh(fetchInvoices)
 }
 
 .invoice-status.pending { color: #b54708; background: #fffaeb; }
-.invoice-status.processing { color: var(--cinnabar); background: var(--line-soft); }
+.invoice-status.processing { color: #175cd3; background: #eff8ff; }
 .invoice-status.issued { color: #067647; background: #ecfdf3; }
 .invoice-status.rejected { color: #b42318; background: #fef3f2; }
 
@@ -552,7 +552,7 @@ useRefresh(fetchInvoices)
   place-items: center;
   align-content: center;
   gap: 10px;
-  color: var(--muted);
+  color: #98a2b3;
 }
 
 .invoice-empty p {
@@ -575,7 +575,7 @@ useRefresh(fetchInvoices)
   top: 24px;
   width: 72px;
   height: 92px;
-  border: 5px solid var(--line);
+  border: 5px solid #d5deea;
   border-radius: var(--radius);
   transform: rotate(-20deg);
 }
@@ -588,7 +588,7 @@ useRefresh(fetchInvoices)
   width: 18px;
   height: 62px;
   border-radius: 999px;
-  background: var(--line);
+  background: #d5deea;
   transform: rotate(28deg);
 }
 
@@ -596,7 +596,7 @@ useRefresh(fetchInvoices)
 .empty-illustration span::after {
   content: '';
   position: absolute;
-  background: var(--line);
+  background: #d5deea;
   border-radius: 999px;
 }
 
@@ -643,7 +643,7 @@ useRefresh(fetchInvoices)
 .invoice-form select,
 .invoice-form textarea {
   width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid #d8e1ee;
   border-radius: var(--radius);
   color: var(--text);
   background: #ffffff;
@@ -667,7 +667,7 @@ useRefresh(fetchInvoices)
 .invoice-form select:focus,
 .invoice-form textarea:focus {
   border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(22, 24, 29, 0.1);
+  box-shadow: 0 0 0 3px rgba(47, 111, 228, 0.1);
 }
 
 .span-2,
@@ -715,7 +715,7 @@ useRefresh(fetchInvoices)
 
   .stat-card {
     padding: 14px 16px;
-    border-bottom: 1px solid var(--line-soft);
+    border-bottom: 1px solid #edf1f6;
   }
 
   .stat-card:nth-child(2n) { border-right: 0; }

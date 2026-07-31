@@ -256,7 +256,7 @@ useRefresh(loadAnnouncements)
 
 .announcements-panel {
   overflow: hidden;
-  border: 1px solid var(--line-soft);
+  border: 1px solid #e1e7ef;
   border-radius: var(--radius);
   background: #ffffff;
   box-shadow: var(--shadow-panel);
@@ -273,14 +273,14 @@ useRefresh(loadAnnouncements)
 
 .announcements-panel-head h3 {
   margin: 0 0 5px;
-  color: var(--text);
+  color: #17243a;
   font-size: var(--fs-lg);
 }
 
 .announcements-panel-head p,
 .announcements-panel-head > span {
   margin: 0;
-  color: var(--muted);
+  color: #7b8798;
   font-size: var(--fs-sm);
 }
 
@@ -305,7 +305,7 @@ useRefresh(loadAnnouncements)
 }
 
 .announcement-row:hover {
-  background: var(--line-soft);
+  background: #f8fbff;
 }
 
 .announcement-tag {
@@ -321,10 +321,10 @@ useRefresh(loadAnnouncements)
   font-weight: 700;
 }
 
-.announcement-tag.system { color: var(--cinnabar); background: var(--line-soft); }
+.announcement-tag.system { color: #175cd3; background: #eff8ff; }
 .announcement-tag.policy { color: #027a48; background: #ecfdf3; }
 .announcement-tag.activity { color: #b54708; background: #fff6ed; }
-.announcement-tag.notice { color: var(--text-secondary); background: var(--line-soft); }
+.announcement-tag.notice { color: var(--text-secondary); background: #f2f4f7; }
 
 .announcement-content,
 .announcement-content strong,
@@ -335,7 +335,7 @@ useRefresh(loadAnnouncements)
 
 .announcement-content strong {
   overflow: hidden;
-  color: var(--text);
+  color: #17243a;
   font-size: var(--fs-base);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -344,7 +344,7 @@ useRefresh(loadAnnouncements)
 .announcement-summary {
   overflow: hidden;
   margin-top: 7px;
-  color: var(--muted);
+  color: #7b8798;
   font-size: var(--fs-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -366,7 +366,7 @@ useRefresh(loadAnnouncements)
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  color: var(--muted);
+  color: #7b8798;
   font-size: var(--fs-sm);
 }
 
@@ -378,7 +378,7 @@ useRefresh(loadAnnouncements)
   height: 72px;
   margin-top: 12px;
   border-radius: var(--radius);
-  background: linear-gradient(90deg, var(--line-soft) 25%, var(--line-soft) 50%, var(--line-soft) 75%);
+  background: linear-gradient(90deg, #f2f4f7 25%, var(--line-soft) 50%, #f2f4f7 75%);
   background-size: 200% 100%;
   animation: skeleton 1.2s ease-in-out infinite;
 }
@@ -396,7 +396,7 @@ useRefresh(loadAnnouncements)
 .announcement-error button {
   height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--line);
+  border: 1px solid #d0d9e5;
   border-radius: var(--radius);
   color: var(--text-secondary);
   background: #ffffff;

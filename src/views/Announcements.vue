@@ -140,7 +140,7 @@ useRefresh(loadMessages)
 .ghost-light-btn {
   min-width: 92px;
   height: 38px;
-  border: 1px solid var(--line);
+  border: 1px solid #d8e1ee;
   border-radius: var(--radius);
   color: var(--text-secondary);
   background: #ffffff;

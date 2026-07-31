@@ -191,7 +191,7 @@ watch(docKey, loadDocument, { immediate: true })
 <style scoped>
 .legal-page {
   min-height: 100vh;
-  color: var(--text);
+  color: #20232a;
   background: #faf9f6;
 }
 
@@ -279,7 +279,7 @@ watch(docKey, loadDocument, { immediate: true })
 
 .legal-heading h1 {
   margin: 0 0 12px;
-  color: var(--text);
+  color: #17191e;
   font-size: 32px;
   font-weight: 650;
   letter-spacing: 0;
@@ -311,7 +311,7 @@ watch(docKey, loadDocument, { immediate: true })
 .legal-rich-text :deep(h2),
 .legal-rich-text :deep(h3),
 .legal-rich-text :deep(h4) {
-  color: var(--text);
+  color: #20232a;
   font-weight: 650;
   letter-spacing: 0;
 }

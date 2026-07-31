@@ -453,7 +453,7 @@ onBeforeUnmount(() => {
   transition: border-color .14s ease, background .14s ease;
 }
 
-.topbar-balance:hover { border-color: var(--line); background: var(--line-soft); }
+.topbar-balance:hover { border-color: #c9cdd4; background: var(--line-soft); }
 
 .topbar-balance .tb-label {
   color: var(--muted);

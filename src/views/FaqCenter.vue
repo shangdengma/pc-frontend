@@ -64,8 +64,7 @@
               <strong>{{ item.title }}</strong>
               <small>{{ item.category || '通用问题' }}</small>
             </span>
-            <Minus v-if="openIds.has(item.id)" :size="17" aria-hidden="true" />
-            <Plus v-else :size="17" aria-hidden="true" />
+            <ChevronDown :size="18" aria-hidden="true" />
           </button>
           <div v-if="openIds.has(item.id)" class="faq-answer">{{ item.content }}</div>
         </article>
@@ -88,8 +87,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import {
-  Minus,
-  Plus,
+  ChevronDown,
   CircleAlert,
   LoaderCircle,
   MessageSquareText,
@@ -311,8 +309,7 @@ onMounted(loadFaqs)
 .faq-number {
   color: var(--faint);
   font-size: var(--fs-xs);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
+  font-weight: 800;
   text-align: center;
 }
 
@@ -336,16 +333,16 @@ onMounted(loadFaqs)
 
 .faq-item > button > svg {
   color: var(--muted);
+  transition: transform .18s ease;
 }
 
 .faq-item.open > button > svg {
-  color: var(--cinnabar);
+  transform: rotate(180deg);
 }
 
 /* 答案与问题原本同为 14px，仅靠字重区分，读起来是一团。
    降一号字、转次级色、行高放大，再用左边线挂靠到上方问题下面。 */
 .faq-answer {
-  max-width: 68ch;
   margin: 0 var(--sp-5) 0 62px;
   padding: 0 0 var(--sp-5) var(--sp-4);
   border-left: 2px solid var(--line);

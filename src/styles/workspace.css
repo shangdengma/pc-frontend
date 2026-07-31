@@ -94,7 +94,7 @@ textarea:focus-visible {
 .agent-summary .summary-card {
   min-height: 104px;
   border: 0;
-  border-right: 1px solid var(--line-soft);
+  border-right: 1px solid #edf1f6;
   border-radius: 0;
   box-shadow: none;
 }
@@ -110,7 +110,7 @@ textarea:focus-visible {
 .agent-summary .summary-card:hover {
   transform: none;
   box-shadow: none;
-  background: var(--line-soft);
+  background: #fafcff;
 }
 
 .records-card {
@@ -229,7 +229,7 @@ textarea:focus-visible {
   max-height: min(calc(100dvh - 64px), 860px);
   overflow: hidden;
   background: #fff;
-  border: 1px solid var(--line);
+  border: 1px solid #dce3ec;
   border-radius: var(--radius-lg);
   box-shadow: 0 24px 72px rgba(15, 23, 42, 0.24);
 }
@@ -248,7 +248,7 @@ textarea:focus-visible {
   flex: 0 0 auto;
   min-height: 72px;
   padding: 19px 68px 17px 24px;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid #e8edf3;
 }
 
 .app-modal__heading {
@@ -290,14 +290,14 @@ textarea:focus-visible {
   padding: 0;
   color: var(--muted);
   background: transparent;
-  border: 1px solid var(--line-soft);
+  border: 1px solid #e4e9f0;
   border-radius: var(--radius);
 }
 
 .app-modal__close:hover {
   color: var(--text);
-  background: var(--line-soft);
-  border-color: var(--line);
+  background: #edf1f6;
+  border-color: #dce3ec;
 }
 
 .app-modal__body {
@@ -319,8 +319,8 @@ textarea:focus-visible {
   flex: 0 0 auto;
   min-height: 64px;
   padding: 13px 24px;
-  background: var(--line-soft);
-  border-top: 1px solid var(--line-soft);
+  background: #fafbfc;
+  border-top: 1px solid #e8edf3;
 }
 
 .app-modal-fade-enter-active,

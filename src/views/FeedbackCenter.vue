@@ -224,7 +224,7 @@ useRefresh(loadHistory)
 
 <style scoped>
 .feedback-page {
-  width: min(100%, 1040px);
+  width: min(100%, 1120px);
   margin: 0 auto;
   color: var(--text);
 }
@@ -363,7 +363,7 @@ legend,
 .feedback-field textarea:focus,
 .feedback-field input:focus {
   border-color: var(--text);
-  box-shadow: 0 0 0 3px rgba(22, 24, 29, .1);
+  box-shadow: 0 0 0 3px rgba(52, 105, 168, .1);
 }
 
 .feedback-field > small {

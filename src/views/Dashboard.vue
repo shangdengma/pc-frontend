@@ -182,21 +182,19 @@ async function renderTrendChart() {
     animationDuration: 260,
     grid: { top: 24, right: 18, bottom: 32, left: 38 },
     tooltip: { trigger: 'axis', valueFormatter: value => `${value} 次` },
-    // 下面这些颜色不能写 var(--x)：ECharts 绘制在 canvas 上，
-    // 不走 CSS 变量解析，写了等于没设置。值已对齐全站灰阶。
     xAxis: {
       type: 'category',
       boundaryGap: false,
       data: trendSeries.value.labels,
-      axisLine: { lineStyle: { color: '#e3e5e9' } },
+      axisLine: { lineStyle: { color: '#dce4ee' } },
       axisTick: { show: false },
-      axisLabel: { color: '#667085', interval: 4, fontSize: 11 }
+      axisLabel: { color: '#7a8799', interval: 4, fontSize: 11 }
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
-      axisLabel: { color: '#667085', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#eef0f3' } }
+      axisLabel: { color: '#7a8799', fontSize: 11 },
+      splitLine: { lineStyle: { color: '#edf1f6' } }
     },
     series: [{
       name: '查询量',
@@ -204,8 +202,6 @@ async function renderTrendChart() {
       data: trendSeries.value.values,
       smooth: 0.28,
       symbol: 'none',
-      // 图表用蓝：这是数据可视化的取色，不是品牌装饰，跟全站去蓝无关。
-      // 另外 ECharts 画在 canvas 上，不认 CSS 变量，这里必须写实际色值。
       lineStyle: { color: '#2563eb', width: 2.5 },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [

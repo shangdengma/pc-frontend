@@ -216,7 +216,7 @@ onBeforeUnmount(stopPointerListeners)
 .slider-dialog {
   width: min(390px, 100%);
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid #dbe4f0;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2);
@@ -227,12 +227,12 @@ onBeforeUnmount(stopPointerListeners)
   align-items: flex-start;
   justify-content: space-between;
   padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid #e8edf4;
 }
 
 .slider-header h3 {
   margin: 0;
-  color: var(--text);
+  color: #0f172a;
   font-size: 19px;
   line-height: 1.4;
 }
@@ -262,8 +262,8 @@ onBeforeUnmount(stopPointerListeners)
   position: relative;
   height: 46px;
   overflow: hidden;
-  border: 1px solid var(--line);
-  background: var(--line-soft);
+  border: 1px solid #d9e2ef;
+  background: #f1f5f9;
   user-select: none;
   touch-action: none;
 }

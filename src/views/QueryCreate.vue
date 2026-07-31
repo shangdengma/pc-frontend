@@ -397,9 +397,9 @@ onMounted(async () => {
 .candidate-link-panel {
   margin: 12px 0 4px;
   padding: 14px 16px;
-  border: 1px dashed var(--faint);
+  border: 1px dashed #b7c4d6;
   border-radius: var(--radius-lg);
-  background: var(--line-soft);
+  background: #f5f8fc;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -407,7 +407,7 @@ onMounted(async () => {
 .candidate-link-title {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--text);
+  color: #33415c;
 }
 .candidate-link-url {
   word-break: break-all;
@@ -422,10 +422,10 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   padding: 6px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid #c3ccd9;
   border-radius: var(--radius);
   background: #fff;
-  color: var(--text);
+  color: #33415c;
   font-size: var(--fs-sm);
   cursor: pointer;
   text-decoration: none;
@@ -436,7 +436,7 @@ onMounted(async () => {
 }
 .candidate-link-hint {
   font-size: var(--fs-xs);
-  color: var(--muted);
+  color: #8794a8;
   margin: 0;
 }
 
@@ -450,9 +450,9 @@ onMounted(async () => {
 .auth-method-panel {
   margin-top: 18px;
   padding: 16px;
-  border: 1px solid var(--line-soft);
+  border: 1px solid #e5edf8;
   border-radius: var(--radius);
-  background: var(--line-soft);
+  background: #fbfdff;
 }
 
 .auth-method-title {
@@ -460,7 +460,7 @@ onMounted(async () => {
   margin-bottom: 12px;
   font-size: var(--fs-base);
   font-weight: 700;
-  color: var(--text);
+  color: #172033;
 }
 
 .auth-method-current {
@@ -512,7 +512,7 @@ onMounted(async () => {
   line-height: 1.4;
 }
 .field-error { color: #e35d5b; }
-.field-ok { color: var(--muted); }
+.field-ok { color: #8794a8; }
 
 /* ---- 提交区 ---- */
 .submit-area {
@@ -527,7 +527,7 @@ onMounted(async () => {
 }
 .submit-hint {
   font-size: var(--fs-xs);
-  color: var(--muted);
+  color: #8794a8;
 }
 .submit-hint.warn { color: #d67a00; }
 
