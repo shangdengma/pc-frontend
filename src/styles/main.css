@@ -1816,13 +1816,13 @@ textarea::placeholder {
 /* 操作列原为 13%：table-layout 是 fixed，13% 在 860px 下只有 112px，
    而「复制链接 重发短信」两个按钮实测就要 207px，加上左右 padding 约 239px。
    装不下又设了 nowrap，内容便溢出到列外向右延伸，表头还留在原处，看着就是错位。 */
-.records-table .record-col-name { width: 8%; }
-.records-table .record-col-type { width: 14%; }
-.records-table .record-col-id { width: 15%; }
-.records-table .record-col-phone { width: 11%; }
-.records-table .record-col-time { width: 11%; }
-.records-table .record-col-status { width: 19%; }
-.records-table .record-col-actions { width: 22%; }
+.records-table .record-col-name { width: 9%; }
+.records-table .record-col-type { width: 19%; }
+.records-table .record-col-id { width: 19%; }
+.records-table .record-col-phone { width: 13%; }
+.records-table .record-col-time { width: 12%; }
+.records-table .record-col-status { width: 12%; }
+.records-table .record-col-actions { width: 16%; }
 
 .records-table th,
 .records-table td {
@@ -1837,22 +1837,26 @@ textarea::placeholder {
   background: var(--line-soft);
 }
 
+/* 这几类内容都短，不该在列里被折断 */
 .records-table .record-name,
 .records-table .record-identity,
 .records-table .record-phone,
 .records-table .record-time,
-.records-table .status-pill,
-/* 操作列是最后一列，内容靠右贴边才整齐；
-   左对齐会让按钮右侧空出一大片，整列看着散，还容易跟状态列黏在一起。
-   表头一起右对齐，否则标题和按钮又对不上。 */
+.records-table .status-pill {
+  white-space: nowrap;
+}
+
+/* 操作列例外：窄屏放不下时宁可让按钮换行，也不要溢出到列外 */
+.records-table .actions-cell {
+  white-space: normal;
+}
+
+/* 操作列是最后一列，内容靠右贴边才整齐。只作用于这一列——
+   注意上面那组选择器是以逗号连写的，规则要独立成条，
+   否则会被整组吞并，把姓名、证件号等也一起右对齐。 */
 .records-table th:last-child,
 .records-table .actions-cell {
   text-align: right;
-}
-
-.records-table .actions-cell {
-  /* 不再 nowrap：窄屏放不下时让按钮换行，也不要溢出到列外 */
-  white-space: normal;
 }
 
 .records-table .record-name,
