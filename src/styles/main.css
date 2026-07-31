@@ -3901,3 +3901,45 @@ textarea::placeholder {
 
   .page-head-actions > * { flex: 1 1 auto; justify-content: center; }
 }
+
+/* 记录页：短信被拦时手动转发授权链接的兜底面板。
+   只在 clipboard 不可用（非 HTTPS）时出现，让用户能选中复制。 */
+.fallback-link-panel {
+  margin-top: var(--sp-4);
+  padding: var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line-soft);
+}
+
+.fallback-link-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.fallback-link-head strong {
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+
+.fallback-link-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  box-sizing: border-box;
+}
+
+.fallback-link-hint {
+  margin: var(--sp-2) 0 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+}

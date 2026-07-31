@@ -16,6 +16,14 @@ export function getData(id) {
   })
 }
 
+// 短信被运营商拦截时的兜底：把候选人授权链接取回来，由企业侧自行转发
+export function getCandidateLink(id) {
+  return request({
+    url: `/system/data/${id}/candidateLink`,
+    method: 'get'
+  })
+}
+
 export function getAllData(data) {
   return request({
     url: '/interface/call/getAllData',

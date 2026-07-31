@@ -64,6 +64,15 @@
               <button class="text-btn mobile-only-btn" @click="toggleRow(item.id)">
                 {{ expandedRows[item.id] ? '收起' : '详情' }}
               </button>
+              <!-- 邀请短信可能被运营商拦截，待授权的单子给一个手动转发链接的兜底 -->
+              <button
+                v-if="String(item.displayStatus) === 'waiting_auth'"
+                class="text-btn"
+                :disabled="linkLoadingId === item.id"
+                @click="copyCandidateLink(item)"
+              >
+                {{ linkLoadingId === item.id ? '获取中…' : '复制授权链接' }}
+              </button>
               <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="openReport(item)">查看报告</button>
               <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="downloadPdf(item)">下载PDF</button>
             </td>
@@ -84,6 +93,19 @@
       <button class="ghost-btn" :disabled="filters.pageNum >= totalPages" @click="changePage(1)">下一页</button>
     </div>
 
+    <!-- clipboard 在非 HTTPS 下不可用，这时把链接摊出来让用户自己选中复制 -->
+    <div v-if="fallbackLink" class="fallback-link-panel">
+      <div class="fallback-link-head">
+        <strong>候选人授权链接</strong>
+        <button type="button" class="text-btn" @click="fallbackLink = ''">关闭</button>
+      </div>
+      <input class="fallback-link-input" :value="fallbackLink" readonly @focus="$event.target.select()">
+      <p class="fallback-link-hint">
+        请把链接发给候选人本人。候选人需用本单预留手机号
+        {{ fallbackPhone }} 接收验证码后才能进入填写。
+      </p>
+    </div>
+
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
   </section>
 </template>
@@ -92,7 +114,7 @@
 import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { listData } from '../api/data'
+import { listData, getCandidateLink } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserProfile } from '../api/user'
 import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
@@ -122,6 +144,10 @@ function toggleRow(id) {
   expandedRows.value = { ...expandedRows.value, [id]: !expandedRows.value[id] }
 }
 const queryTypeMap = ref({})
+const linkLoadingId = ref(null)
+// 复制失败（非 HTTPS 下 clipboard 不可用）时把链接摊在页面上，让用户能手动选中
+const fallbackLink = ref('')
+const fallbackPhone = ref('')
 const message = ref('')
 const messageType = ref('info')
 const profile = ref({})
@@ -214,6 +240,31 @@ function resetFilters() {
   filters.keyword = ''
   filters.status = ''
   search()
+}
+
+// 邀请短信被运营商拦截时，企业侧自己把链接转给候选人
+async function copyCandidateLink(item) {
+  if (linkLoadingId.value) return
+  linkLoadingId.value = item.id
+  fallbackLink.value = ''
+  try {
+    const res = await getCandidateLink(item.id)
+    const link = res?.candidateLink
+    if (!link) throw new Error('未获取到链接')
+    fallbackPhone.value = res.candidatePhone || ''
+    try {
+      await navigator.clipboard.writeText(link)
+      show(`已复制 ${item.name} 的授权链接，可直接发给候选人`, 'success')
+    } catch (e) {
+      // clipboard 需要 HTTPS，失败就把链接显示出来兜底
+      fallbackLink.value = link
+      show('自动复制不可用，请手动复制下方链接', 'info')
+    }
+  } catch (e) {
+    show(e?.msg || e?.message || '获取授权链接失败', 'error')
+  } finally {
+    linkLoadingId.value = null
+  }
 }
 
 function show(text, type = 'info') {
