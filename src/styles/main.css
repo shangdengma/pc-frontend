@@ -628,8 +628,6 @@ textarea:focus-visible {
    3. 卡片 / 面板
    ============================================================ */
 
-/* 卡片只靠边框划分区域：叠加的 0.04 阴影肉眼不可见，却让每块都多一层
-   若有若无的浮起感。要表达层级用边框和留白，不用影子。 */
 .metric-card,
 .panel,
 .work-card,
@@ -638,13 +636,12 @@ textarea:focus-visible {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
 }
 
-/* 原先 hover 把 border-color 设回默认的 --line，鼠标移上去毫无变化。
-   层次：--line 默认 → --muted 悬停 → --blue 选中，三级递进 */
 .metric-card:hover,
 .quick-card:hover {
-  border-color: var(--muted);
+  border-color: var(--line);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2118,13 +2115,7 @@ textarea::placeholder {
 }
 
 .pc-package-item:hover {
-  border-color: var(--muted);
-  background: var(--line-soft);
-}
-
-/* 套餐是要点选的，按下去得有物理反馈 */
-.pc-package-item:active {
-  transform: scale(0.995);
+  border-color: var(--line);
 }
 
 .pc-package-item.active {
@@ -2592,6 +2583,7 @@ textarea::placeholder {
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
 }
 
 .agent-hero h2,
@@ -2635,6 +2627,7 @@ textarea::placeholder {
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
 }
 
 .invoice-stats .stat-card:hover,
@@ -2653,6 +2646,7 @@ textarea::placeholder {
 .messages-panel {
   border: 1px solid var(--line);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
 }
 
 .messages-panel {
@@ -3201,6 +3195,7 @@ textarea::placeholder {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 /* 内容面内部保持紧凑内边距 */
@@ -3488,6 +3483,7 @@ textarea::placeholder {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
 
