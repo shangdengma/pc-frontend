@@ -1822,10 +1822,12 @@ textarea::placeholder {
 .records-table .record-col-phone { width: 14%; }
 .records-table .record-col-time { width: 13%; }
 .records-table .record-col-status { width: 11%; }
-/* 收到刚够装下两个按钮即可：列给宽了，右对齐后左边就空一大片，
-   跟状态列之间断开；给窄了内容又会溢出。按钮组实测约 115px，
-   加左右 padding 32px，12% 在常见宽度下正好。 */
-.records-table .record-col-actions { width: 12%; }
+/* 固定宽度而不是百分比：两组按钮宽度只差几像素
+   （「复制链接 重发短信」122px、「查看报告 下载PDF」115px），
+   用百分比时列宽随窗口变，总有一个宽度正好卡在临界点上，
+   出现一组换行另一组不换行。170px = 内容 138px + 左右 padding 32px，
+   两组都装得下且不随窗口浮动。 */
+.records-table .record-col-actions { width: 170px; }
 
 .records-table th,
 .records-table td {
@@ -1849,18 +1851,14 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
-/* 操作列例外：窄屏放不下时宁可让按钮换行，也不要溢出到列外 */
+/* 列宽已固定为 170px，容得下两个按钮，可以安全地禁止折行 */
 .records-table .actions-cell {
-  white-space: normal;
+  white-space: nowrap;
 }
 
-/* 操作列是最后一列，内容靠右贴边才整齐。只作用于这一列——
-   注意上面那组选择器是以逗号连写的，规则要独立成条，
-   否则会被整组吞并，把姓名、证件号等也一起右对齐。 */
-.records-table th:last-child,
-.records-table .actions-cell {
-  text-align: right;
-}
+/* 操作列跟其余列一样左对齐，表头「操作」与下面的按钮同起点。
+   之前改成右对齐是为了迁就 22% 的过宽列（左对齐时右边空一大片），
+   列收到 170px 之后不需要了——右侧只余十几像素，保持全表一致更好。 */
 
 .records-table .record-name,
 .records-table .record-identity,
