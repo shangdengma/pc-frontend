@@ -24,6 +24,14 @@ export function getCandidateLink(id) {
   })
 }
 
+// 重发邀请短信。后端限制累计 2 次 + 60 秒冷却
+export function resendCandidateSms(id) {
+  return request({
+    url: `/system/data/${id}/resendCandidateSms`,
+    method: 'post'
+  })
+}
+
 export function getAllData(data) {
   return request({
     url: '/interface/call/getAllData',

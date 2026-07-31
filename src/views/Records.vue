@@ -71,7 +71,15 @@
                 :disabled="linkLoadingId === item.id"
                 @click="copyCandidateLink(item)"
               >
-                {{ linkLoadingId === item.id ? '获取中…' : '复制授权链接' }}
+                {{ linkLoadingId === item.id ? '获取中…' : '复制链接' }}
+              </button>
+              <button
+                v-if="String(item.displayStatus) === 'waiting_auth'"
+                class="text-btn"
+                :disabled="smsLoadingId === item.id"
+                @click="resendSms(item)"
+              >
+                {{ smsLoadingId === item.id ? '发送中…' : '重发短信' }}
               </button>
               <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="openReport(item)">查看报告</button>
               <button class="text-btn" :disabled="String(item.displayStatus) !== 'success'" @click="downloadPdf(item)">下载PDF</button>
@@ -114,7 +122,7 @@
 import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { listData, getCandidateLink } from '../api/data'
+import { listData, getCandidateLink, resendCandidateSms } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserProfile } from '../api/user'
 import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
@@ -145,6 +153,7 @@ function toggleRow(id) {
 }
 const queryTypeMap = ref({})
 const linkLoadingId = ref(null)
+const smsLoadingId = ref(null)
 // 复制失败（非 HTTPS 下 clipboard 不可用）时把链接摊在页面上，让用户能手动选中
 const fallbackLink = ref('')
 const fallbackPhone = ref('')
@@ -240,6 +249,20 @@ function resetFilters() {
   filters.keyword = ''
   filters.status = ''
   search()
+}
+
+// 重发邀请短信。后端限制累计 2 次 + 60 秒冷却，超限会返回明确原因
+async function resendSms(item) {
+  if (smsLoadingId.value) return
+  smsLoadingId.value = item.id
+  try {
+    const res = await resendCandidateSms(item.id)
+    show(res?.msg || `已向 ${item.name} 重新发送邀请短信`, 'success')
+  } catch (e) {
+    show(e?.msg || e?.message || '短信发送失败', 'error')
+  } finally {
+    smsLoadingId.value = null
+  }
 }
 
 // 邀请短信被运营商拦截时，企业侧自己把链接转给候选人
