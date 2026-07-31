@@ -62,6 +62,8 @@
       <router-link v-if="!profile.email" class="notify-pref-link" to="/account-profile">配置邮箱</router-link>
       <small v-if="notifySaving" class="notify-pref-state">保存中…</small>
       <small v-else-if="notifySaved" class="notify-pref-state ok">已保存</small>
+      <!-- 允许一个都不选，但要让用户知道代价：报告完成后不会有任何提醒 -->
+      <small v-else-if="!notifyChannels.length" class="notify-pref-state warn">不接收提醒，需自行查看记录</small>
     </div>
 
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
@@ -244,9 +246,6 @@ async function toggleNotify(channel) {
   const next = notifyChannels.value.includes(channel)
     ? notifyChannels.value.filter(item => item !== channel)
     : [...notifyChannels.value, channel]
-  if (next.length === 0) {
-    return show('至少保留一种通知方式，否则报告完成后你将收不到任何提醒', 'error')
-  }
   const previous = notifyChannels.value
   notifyChannels.value = next
   notifySaving.value = true

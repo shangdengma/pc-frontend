@@ -28,9 +28,9 @@
   /* 中性色 */
   --bg: #f4f5f7;            /* 中性浅灰底，衬托白色内容面 */
   --card: #ffffff;
-  --text: var(--text);
-  --text-secondary: var(--text-secondary);
-  --muted: var(--muted);
+  --text: #101828;
+  --text-secondary: #475467;
+  --muted: #667085;
   --faint: #98a2b3;
   --line: #e3e5e9;
   --line-soft: #eef0f3;
@@ -2865,8 +2865,10 @@ textarea::placeholder {
   color: #2168f3;
   text-decoration: underline;
 }
-.notify-pref-state { font-size: var(--fs-xs); color: #8794a8; margin-left: auto; }
-.notify-pref-state.ok { color: #0b9f62; }
+.notify-pref-state { font-size: var(--fs-xs); color: var(--muted); margin-left: auto; }
+.notify-pref-state.ok { color: var(--green); }
+/* 一个渠道都没选是允许的，但用告警色提示用户这意味着收不到任何提醒 */
+.notify-pref-state.warn { color: var(--orange); }
 
 /* ============================================================
    去卡片化补充：分隔靠细线，不靠投影与圆角

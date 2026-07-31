@@ -323,11 +323,22 @@
   transform: translateY(-1px);
 }
 
+/* 原先禁用态是淡蓝底，在墨黑主按钮体系里看着像「另一个可点的蓝按钮」，
+   用户会反复点它却毫无反应。改成中性灰 + 降透明度，明确表达不可用 */
 .candidate-primary-button:disabled {
-  border-color: #b7c8e7;
-  background: #b7c8e7;
+  border-color: var(--line);
+  background: var(--line);
+  color: var(--muted);
   box-shadow: none;
   cursor: not-allowed;
+}
+
+/* 说明为什么点不动——长文档下用户往往没注意到末尾的勾选框 */
+.candidate-consent-hint {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-align: center;
 }
 
 .candidate-secondary-button {
@@ -1006,19 +1017,28 @@
     overflow: visible;
   }
 
-  .candidate-consent-step .candidate-check-row,
+  /* 勾选行本身没有背景，sticky 时必须补一层不透明底遮住下方正文 */
+  .candidate-consent-step .candidate-check-row {
+    position: sticky;
+    z-index: 4;
+    bottom: 64px;
+    margin: 0 -20px;
+    padding: 14px 20px 8px;
+    border-top: 1px solid var(--line);
+    background: var(--card);
+  }
+
+  /* 按钮自带墨黑（禁用时为灰）底色，之前跟着上面一起被塞了 background:#fff，
+     而按钮文字是白色——移动端上勾选完按钮就变成白底白字，整个看不见了 */
   .candidate-consent-step > .candidate-primary-button {
     position: sticky;
     z-index: 4;
     bottom: 0;
-    background: #fff;
   }
 
-  .candidate-consent-step .candidate-check-row {
-    bottom: 64px;
-    margin: 0 -20px;
-    padding: 14px 20px 8px;
-    border-top: 1px solid #e5ebf3;
+  /* 移动端勾选行与按钮都吸底、同屏可见，提示语反而被挤出视口，无谓占位 */
+  .candidate-consent-hint {
+    display: none;
   }
 
   .candidate-consent-step > .candidate-primary-button {

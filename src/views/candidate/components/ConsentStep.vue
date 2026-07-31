@@ -109,6 +109,8 @@
       同意授权，填写个人信息
       <ArrowRight :size="18" />
     </button>
+
+    <p v-if="!accepted" class="candidate-consent-hint">请先勾选上方的同意声明后继续</p>
   </section>
 </template>
 
