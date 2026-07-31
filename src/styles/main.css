@@ -1842,6 +1842,14 @@ textarea::placeholder {
 .records-table .record-phone,
 .records-table .record-time,
 .records-table .status-pill,
+/* 操作列是最后一列，内容靠右贴边才整齐；
+   左对齐会让按钮右侧空出一大片，整列看着散，还容易跟状态列黏在一起。
+   表头一起右对齐，否则标题和按钮又对不上。 */
+.records-table th:last-child,
+.records-table .actions-cell {
+  text-align: right;
+}
+
 .records-table .actions-cell {
   /* 不再 nowrap：窄屏放不下时让按钮换行，也不要溢出到列外 */
   white-space: normal;
