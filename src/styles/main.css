@@ -12,9 +12,6 @@
   --blue: #16181d;          /* 主操作色：墨黑，替代原亮蓝 */
   --blue-dark: #262a33;
   --blue-soft: #eef0f4;
-  --navy: #0f2a52;          /* 仅登录页品牌区使用 */
-  --navy-dark: #0b2142;
-  --navy-active: #1e3a66;
   --green: #16a34a;
   --green-soft: #ecfdf3;
   --orange: #d97706;
@@ -129,7 +126,7 @@ textarea:focus-visible {
 
 ::selection {
   color: var(--text);
-  background: #d7e4ff;
+  background: var(--line);
 }
 
 /* ============================================================
@@ -204,7 +201,7 @@ textarea:focus-visible {
   padding: 14px 12px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #d5dce6 transparent;
+  scrollbar-color: var(--line) transparent;
 }
 
 .nav-group + .nav-group {
@@ -236,7 +233,7 @@ textarea:focus-visible {
 
 .nav-item:hover {
   color: var(--text);
-  background: #f3f6fa;
+  background: var(--line-soft);
 }
 
 .nav-item.router-link-active {
@@ -270,7 +267,7 @@ textarea:focus-visible {
   min-height: 52px;
   padding: 10px 12px;
   color: var(--muted);
-  background: #f7f9fc;
+  background: var(--line-soft);
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
 }
@@ -358,7 +355,7 @@ textarea:focus-visible {
 
 .user-menu-btn:hover {
   border-color: var(--line);
-  background: #f7f9fc;
+  background: var(--line-soft);
 }
 
 .avatar-btn {
@@ -564,8 +561,8 @@ textarea:focus-visible {
 
 .ghost-btn:hover:not(:disabled) {
   color: var(--blue-dark);
-  border-color: #c3d4f2;
-  background: #f8faff;
+  border-color: var(--line);
+  background: var(--line-soft);
 }
 
 .ghost-light-btn {
@@ -578,7 +575,7 @@ textarea:focus-visible {
 }
 
 .ghost-light-btn:hover {
-  background: #f7f9fc;
+  background: var(--line-soft);
 }
 
 .text-btn {
@@ -644,7 +641,7 @@ textarea:focus-visible {
 
 .metric-card:hover,
 .quick-card:hover {
-  border-color: #d3dce8;
+  border-color: var(--line);
   box-shadow: var(--shadow-sm);
 }
 
@@ -829,10 +826,10 @@ textarea:focus-visible {
   line-height: 24px;
 }
 
-.notice-tag.system { color: #175cd3; background: #eff6ff; }
+.notice-tag.system { color: var(--text-secondary); background: var(--line-soft); }
 .notice-tag.policy { color: #027a48; background: #ecfdf3; }
 .notice-tag.activity { color: #b54708; background: #fffaeb; }
-.notice-tag.notice { color: var(--text-secondary); background: #f2f4f7; }
+.notice-tag.notice { color: var(--text-secondary); background: var(--line-soft); }
 .notice-tag.top { color: #b42318; background: #fef3f2; }
 
 .notice-item strong {
@@ -888,7 +885,7 @@ textarea:focus-visible {
 }
 
 .chart-legend i.light {
-  background: #9dc3ff;
+  background: var(--line);
 }
 
 .line-chart,
@@ -929,7 +926,7 @@ textarea:focus-visible {
 }
 
 .chart-empty svg {
-  color: #c1cbd9;
+  color: var(--line);
 }
 
 /* 快捷入口 / 合规条 */
@@ -1052,7 +1049,7 @@ textarea:focus-visible {
 }
 
 .data-table tbody tr:hover td {
-  background: #fafcff;
+  background: var(--line-soft);
 }
 
 .data-table.large {
@@ -1074,7 +1071,7 @@ textarea:focus-visible {
   width: 100%;
   height: 32px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, #f2f5f8 25%, #e8edf3 37%, #f2f5f8 63%);
+  background: linear-gradient(90deg, var(--line-soft) 25%, var(--line-soft) 37%, var(--line-soft) 63%);
   background-size: 400% 100%;
   animation: dashboard-skeleton 1.25s ease infinite;
 }
@@ -1113,7 +1110,7 @@ textarea:focus-visible {
 .status-pill.success { color: #067647; background: var(--green-soft); }
 .status-pill.warning { color: #b54708; background: #fffaeb; }
 .status-pill.pending { color: #b54708; background: #fffaeb; }
-.status-pill.info { color: #175cd3; background: #eff6ff; }
+.status-pill.info { color: var(--text-secondary); background: var(--line-soft); }
 .status-pill.danger { color: #b42318; background: var(--red-soft); }
 
 .record-status-cell {
@@ -1174,7 +1171,7 @@ textarea {
   color: var(--text);
   font-size: var(--fs-base);
   background: #ffffff;
-  border: 1px solid #d6dee9;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   outline: none;
   box-shadow: var(--shadow-xs);
@@ -1191,7 +1188,7 @@ textarea {
 .toolbar input:hover,
 .toolbar select:hover,
 textarea:hover {
-  border-color: #b6c3d6;
+  border-color: var(--faint);
 }
 
 .login-card input:focus,
@@ -1221,7 +1218,7 @@ textarea::placeholder {
 }
 
 .form-message.success { color: #027a48; background: var(--green-soft); border-color: #abefc6; }
-.form-message.info { color: #175cd3; background: #eff6ff; border-color: #bfdbfe; }
+.form-message.info { color: var(--text-secondary); background: var(--line-soft); border-color: var(--line); }
 
 .form-notice {
   margin: -4px 0 14px;
@@ -1296,8 +1293,8 @@ textarea::placeholder {
   color: var(--blue);
   font-size: var(--fs-2xl);
   font-weight: 700;
-  background: #f8faff;
-  border: 1px solid #dbe6fb;
+  background: var(--line-soft);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 
@@ -1307,8 +1304,8 @@ textarea::placeholder {
   display: grid;
   place-items: center;
   color: var(--faint);
-  background: #fafbfd;
-  border: 1px dashed #d6dee9;
+  background: var(--line-soft);
+  border: 1px dashed var(--line);
   border-radius: var(--radius);
 }
 
@@ -1526,7 +1523,7 @@ textarea::placeholder {
   transition: background .14s ease;
 }
 
-.login-card .primary-btn:hover:not(:disabled) { background: #262a33; }
+.login-card .primary-btn:hover:not(:disabled) { background: var(--text); }
 .login-card .primary-btn:disabled { background: #bdb8af; cursor: not-allowed; }
 
 /* 下划线切换，去掉胶囊背景 */
@@ -1716,7 +1713,7 @@ textarea::placeholder {
 .password-row {
   display: flex;
   overflow: hidden;
-  border: 1px solid #d6dee9;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #ffffff;
 }
@@ -1799,7 +1796,7 @@ textarea::placeholder {
   width: 100%;
   overflow-x: auto;
   scrollbar-width: thin;
-  scrollbar-color: #c9d5e5 transparent;
+  scrollbar-color: var(--line) transparent;
   border: 1px solid var(--line-soft);
   border-radius: var(--radius);
 }
@@ -2118,12 +2115,12 @@ textarea::placeholder {
 }
 
 .pc-package-item:hover {
-  border-color: #b7cdf5;
+  border-color: var(--line);
 }
 
 .pc-package-item.active {
   border-color: var(--blue);
-  background: #f8faff;
+  background: var(--line-soft);
   box-shadow: var(--ring);
 }
 
@@ -2180,12 +2177,12 @@ textarea::placeholder {
 }
 
 .pay-method:hover {
-  border-color: #b7cdf5;
+  border-color: var(--line);
 }
 
 .pay-method.active {
   border-color: var(--blue);
-  background: #f8faff;
+  background: var(--line-soft);
   box-shadow: var(--ring);
 }
 
@@ -2206,7 +2203,7 @@ textarea::placeholder {
   background: var(--faint);
 }
 
-.pay-dot.alipay { background: #1677ff; }
+.pay-dot.alipay { background: var(--blue); }
 .pay-dot.wechat { background: #13c15a; }
 .pay-dot.bank { background: var(--muted); }
 
@@ -2304,7 +2301,7 @@ textarea::placeholder {
 }
 
 .cert-status-card {
-  border-left: 4px solid #cbd5e1;
+  border-left: 4px solid var(--line);
 }
 
 .cert-status-card.approved { border-left-color: #12b76a; }
@@ -2382,8 +2379,8 @@ textarea::placeholder {
 }
 
 .cert-list-item:hover {
-  border-color: #b7cdf5;
-  background: #fbfcff;
+  border-color: var(--line);
+  background: var(--line-soft);
 }
 
 .cert-list-item strong,
@@ -2408,13 +2405,13 @@ textarea::placeholder {
   padding: 3px 10px;
   border-radius: 999px;
   color: var(--muted);
-  background: #f2f4f7;
+  background: var(--line-soft);
   font-size: var(--fs-xs);
   font-weight: 500;
 }
 
 .status-badge.approved { color: #067647; background: var(--green-soft); }
-.status-badge.draft { color: #175cd3; background: #eff6ff; }
+.status-badge.draft { color: var(--text-secondary); background: var(--line-soft); }
 .status-badge.pending,
 .status-badge.reviewing { color: #b54708; background: #fffaeb; }
 .status-badge.rejected { color: #b42318; background: var(--red-soft); }
@@ -2474,7 +2471,7 @@ textarea::placeholder {
   width: 100%;
   height: 40px;
   padding: 0 12px;
-  border: 1px solid #d6dee9;
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #ffffff;
 }
@@ -2637,7 +2634,7 @@ textarea::placeholder {
 .sub-summary > div:hover,
 .agent-summary .summary-card:hover {
   transform: none;
-  border-color: #d3dce8;
+  border-color: var(--line);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2723,7 +2720,7 @@ textarea::placeholder {
   margin: 0;
   padding: 16px;
   overflow: auto;
-  color: #334155;
+  color: var(--text);
   background: var(--line-soft);
   font-size: var(--fs-xs);
   line-height: 1.7;
@@ -2860,26 +2857,26 @@ textarea::placeholder {
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line-soft);
   border-radius: var(--radius-lg);
   background: #fff;
-  color: #475569;
+  color: var(--text);
   font-size: var(--fs-xs);
   line-height: 1.6;
   cursor: pointer;
   transition: all .15s;
 }
-.notify-chip:hover { border-color: #c3d0e4; }
+.notify-chip:hover { border-color: var(--line); }
 .notify-chip input { margin: 0; cursor: pointer; }
 .notify-chip.on {
-  border-color: #2168f3;
-  background: #eef4ff;
-  color: #1b4fc0;
+  border-color: var(--cinnabar);
+  background: var(--line-soft);
+  color: var(--cinnabar);
 }
-.notify-chip.off { background: var(--line-soft); color: #94a3b8; }
+.notify-chip.off { background: var(--line-soft); color: var(--muted); }
 .notify-pref-link {
   font-size: var(--fs-xs);
-  color: #2168f3;
+  color: var(--cinnabar);
   text-decoration: underline;
 }
 .notify-pref-state { font-size: var(--fs-xs); color: var(--muted); margin-left: auto; }

@@ -143,7 +143,7 @@ function onPick(event) {
   transition: border-color .14s ease, box-shadow .14s ease;
 }
 
-.cert-fields input:hover:not(:disabled) { border-color: #c9cdd4; }
+.cert-fields input:hover:not(:disabled) { border-color: var(--line); }
 
 .cert-fields input:focus {
   outline: none;
@@ -182,7 +182,7 @@ function onPick(event) {
   max-width: 360px;
   min-height: 132px;
   padding: 16px;
-  border: 1px dashed #c9cdd4;
+  border: 1px dashed var(--line);
   border-radius: var(--radius-lg);
   background: #fbfbfa;
   cursor: pointer;

@@ -186,15 +186,15 @@ async function renderTrendChart() {
       type: 'category',
       boundaryGap: false,
       data: trendSeries.value.labels,
-      axisLine: { lineStyle: { color: '#dce4ee' } },
+      axisLine: { lineStyle: { color: 'var(--line)' } },
       axisTick: { show: false },
-      axisLabel: { color: '#7a8799', interval: 4, fontSize: 11 }
+      axisLabel: { color: 'var(--muted)', interval: 4, fontSize: 11 }
     },
     yAxis: {
       type: 'value',
       minInterval: 1,
-      axisLabel: { color: '#7a8799', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#edf1f6' } }
+      axisLabel: { color: 'var(--muted)', fontSize: 11 },
+      splitLine: { lineStyle: { color: 'var(--line-soft)' } }
     },
     series: [{
       name: '查询量',
@@ -202,11 +202,11 @@ async function renderTrendChart() {
       data: trendSeries.value.values,
       smooth: 0.28,
       symbol: 'none',
-      lineStyle: { color: '#2563eb', width: 2.5 },
+      lineStyle: { color: 'var(--cinnabar)', width: 2.5 },
       areaStyle: {
         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(37,99,235,0.20)' },
-          { offset: 1, color: 'rgba(37,99,235,0.02)' }
+          { offset: 0, color: 'rgba(22, 24, 29,0.20)' },
+          { offset: 1, color: 'rgba(22, 24, 29,0.02)' }
         ])
       }
     }]
