@@ -11,7 +11,6 @@
     <div class="feedback-layout">
       <form class="feedback-form" @submit.prevent="handleSubmit">
         <div class="feedback-section-head">
-          <span class="feedback-step">01</span>
           <div>
             <h3>提交反馈</h3>
             <p>为便于准确处理，请尽量说明出现问题的页面和操作。</p>
@@ -75,14 +74,10 @@
 
       <aside class="feedback-history">
         <div class="feedback-section-head">
-          <span class="feedback-step">02</span>
           <div>
             <h3>我的反馈</h3>
             <p>最近提交的反馈及当前处理状态。</p>
           </div>
-          <button type="button" aria-label="刷新反馈记录" :disabled="historyLoading" @click="loadHistory">
-            <RefreshCw :class="{ spinning: historyLoading }" :size="16" />
-          </button>
         </div>
 
         <div v-if="historyLoading && !feedbackHistory.length" class="feedback-empty">
@@ -128,10 +123,10 @@ import {
   MessageSquareText,
   MonitorCog,
   MoreHorizontal,
-  RefreshCw,
   Send
 } from '@lucide/vue'
 import { getMyFeedbackList, submitFeedback } from '../api/support'
+import { useRefresh } from '../composables/pullRefresh'
 import { getUser } from '../utils/auth'
 
 const feedbackTypes = [
@@ -223,6 +218,8 @@ async function handleSubmit() {
 }
 
 onMounted(loadHistory)
+// 与公告页一致：移动端下拉刷新，替掉原来那个刷新按钮
+useRefresh(loadHistory)
 </script>
 
 <style scoped>
@@ -263,13 +260,6 @@ onMounted(loadHistory)
   border-bottom: 1px solid var(--line);
 }
 
-.feedback-step {
-  color: var(--cinnabar);
-  font-size: var(--fs-xs);
-  font-weight: 900;
-  line-height: 24px;
-}
-
 .feedback-section-head > div {
   min-width: 0;
   flex: 1;
@@ -287,23 +277,6 @@ onMounted(loadHistory)
   line-height: 1.55;
 }
 
-.feedback-section-head > button {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--card);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.feedback-section-head > button:disabled {
-  opacity: .55;
-  cursor: default;
-}
-
 fieldset {
   margin: 22px 0;
   padding: 0;
@@ -316,7 +289,7 @@ legend,
   margin-bottom: 9px;
   color: var(--text-secondary);
   font-size: var(--fs-sm);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .feedback-field b {
@@ -325,7 +298,7 @@ legend,
 
 .feedback-types {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 8px;
 }
 
@@ -341,15 +314,21 @@ legend,
   background: var(--card);
   color: var(--text-secondary);
   font-size: var(--fs-sm);
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
-.feedback-types button:hover,
+.feedback-types button:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+/* 选中态要比 hover 更实：hover 只描边，选中填底并加粗 */
 .feedback-types button.active {
   border-color: var(--text);
   background: var(--line-soft);
   color: var(--cinnabar);
+  font-weight: 600;
 }
 
 .feedback-field {
