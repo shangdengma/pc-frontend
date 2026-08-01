@@ -758,12 +758,19 @@ useRefresh(loadList)
 @media (max-width: 720px) {
   .sub-quota-view, .form-grid { grid-template-columns: 1fr; }
 
-  /* 窄屏按钮均分整行，避免最后一行只剩一个按钮孤零零挂着 */
-  .row-actions { gap: var(--sp-1); flex-wrap: wrap; }
+  /* 窄屏下这一格由全局 .data-table 变成 flex 行（左侧是 data-label 补出的
+     「操作」二字）。按钮若保留 flex:1 会被拉伸，换行后最后一个独占整行，
+     所以改为不拉伸、整体靠右换行——与查询记录的操作列同一套处理。 */
+  .sub-table tbody td.row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--sp-2);
+  }
+  .sub-table tbody td.row-actions::before { margin-right: auto; }
   .row-actions button {
-    flex: 1 1 auto;
-    min-width: 62px;
-    padding: 0 var(--sp-1);
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0 var(--sp-2);
   }
 }
 

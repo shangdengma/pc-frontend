@@ -21,12 +21,11 @@
     </nav>
 
     <div class="announcements-panel">
+      <!-- 页头已经写明「平台公告 / 查看系统公告、政策动态…」，
+           这里原本还有一组「公告列表 + 平台发布的公告对所有企业账号长期可见」，
+           是同一句话说两遍，只留条数 -->
       <div class="announcements-panel-head">
-        <div>
-          <h3>公告列表</h3>
-          <p>平台发布的公告对所有企业账号长期可见</p>
-        </div>
-        <span>{{ filteredAnnouncements.length }} 条</span>
+        <span>{{ filteredAnnouncements.length }} 条公告</span>
       </div>
 
       <div v-if="loading" class="announcement-loading" aria-label="正在加载公告">
@@ -182,7 +181,8 @@ useRefresh(loadAnnouncements)
 
 <style scoped>
 .public-announcements-page {
-  width: min(1180px, 100%);
+  /* 与消息通知取同一宽度：两页都是用来扫的列表，行长要压下来 */
+  width: min(960px, 100%);
   margin: 0 auto;
 }
 
@@ -262,26 +262,19 @@ useRefresh(loadAnnouncements)
   box-shadow: var(--shadow-panel);
 }
 
+/* 只剩一个条数了，不需要原来那么厚的内边距 */
 .announcements-panel-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 20px 24px;
+  justify-content: flex-end;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--line-soft);
 }
 
-.announcements-panel-head h3 {
-  margin: 0 0 5px;
-  color: #17243a;
-  font-size: var(--fs-lg);
-}
-
-.announcements-panel-head p,
 .announcements-panel-head > span {
   margin: 0;
-  color: #7b8798;
-  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .announcement-row {

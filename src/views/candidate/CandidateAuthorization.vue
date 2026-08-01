@@ -104,8 +104,15 @@
     </div>
 
     <footer class="candidate-page-footer">
-      <ShieldCheck :size="16" />
-      信息加密传输 · 授权过程全程留痕
+      <span class="candidate-footer-line">
+        <ShieldCheck :size="16" />
+        信息加密传输 · 授权过程全程留痕
+      </span>
+      <!-- 备案号需可点击跳工信部，这是备案要求 -->
+      <span class="candidate-footer-line">
+        河南钟馗科技有限公司 ·
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">豫ICP备2025138155号</a>
+      </span>
     </footer>
 
     <div v-if="documentDialog" class="candidate-document-overlay" @click.self="documentDialog = ''">

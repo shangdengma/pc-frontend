@@ -126,7 +126,9 @@ useRefresh(loadMessages)
 
 <style scoped>
 .messages-page {
-  width: min(1180px, 100%);
+  /* 原为 1180px：标题贴最左、时间贴最右，中间空出 908px，
+     摘要一行排八十多个汉字。列表是用来扫的，行长要压下来。 */
+  width: min(960px, 100%);
   margin: 0 auto;
 }
 
@@ -296,12 +298,13 @@ useRefresh(loadMessages)
 .message-line-1 {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .message-line-1 h3 {
   margin: 0;
+  /* 标题按内容宽度收住，时间紧随其后，不再被推到行尾 */
+  flex: 0 1 auto;
   font-size: var(--fs-base);
   font-weight: 500;
   color: var(--text-secondary);
@@ -317,6 +320,7 @@ useRefresh(loadMessages)
 
 .message-line-1 time {
   flex: 0 0 auto;
+  margin-left: auto;
   font-size: var(--fs-xs);
   color: var(--faint);
   font-variant-numeric: tabular-nums;
