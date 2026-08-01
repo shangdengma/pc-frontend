@@ -432,9 +432,14 @@ function collectBody() {
 function validateForSubmit() {
   if (!form.enterpriseName) return '请填写企业名称'
   if (!form.unifiedSocialCreditCode) return '请填写统一社会信用代码'
+  // 法定代表人是必填项，表单上也标了红星；
+  // 联系人与联系电话保持选填——原先它们标着「选填」却在这里拦提交，
+  // 用户按提示留空就交不上去。
   if (!form.legalRepresentativeName) return '请填写法定代表人或负责人姓名'
-  if (!form.contactPerson) return '请填写联系人姓名'
-  if (!/^1[3-9]\d{9}$/.test(form.contactPhone || '')) return '请填写正确的联系电话'
+  // 选填但填了就要格式正确，避免留下一个错号码
+  if (form.contactPhone && !/^1[3-9]\d{9}$/.test(form.contactPhone)) {
+    return '联系电话格式不正确'
+  }
   if (!fileList.business_license.length) return '请上传营业执照照片'
   return ''
 }

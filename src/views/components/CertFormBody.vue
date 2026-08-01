@@ -14,8 +14,8 @@
       </label>
 
       <label>
-        <span class="fl">法定代表人/负责人</span>
-        <input v-model.trim="form.legalRepresentativeName" :disabled="formReadonly" placeholder="选填">
+        <span class="fl">法定代表人/负责人<i v-if="!formReadonly" class="req">*</i></span>
+        <input v-model.trim="form.legalRepresentativeName" :disabled="formReadonly" placeholder="请填写营业执照上的法定代表人">
       </label>
 
       <label>

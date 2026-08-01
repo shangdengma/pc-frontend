@@ -56,7 +56,10 @@
       </label>
       <label class="notify-chip" :class="{ on: notifyChannels.includes('email'), off: !profile.email }"
              :title="profile.email ? `发送至 ${profile.email}` : '尚未配置邮箱，点击前往个人信息设置'">
-        <input type="checkbox" :checked="notifyChannels.includes('email')" @change="toggleNotify('email')">
+        <!-- 未配邮箱时必须真正 disabled：只靠 toggleNotify 里拦截的话，
+             原生 checkbox 会先勾上、再被 Vue 渲染回来，闪一下，看着像能选中 -->
+        <input type="checkbox" :disabled="!profile.email"
+               :checked="notifyChannels.includes('email')" @change="toggleNotify('email')">
         邮箱
       </label>
       <router-link v-if="!profile.email" class="notify-pref-link" to="/account-profile">配置邮箱</router-link>
