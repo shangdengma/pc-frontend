@@ -70,9 +70,18 @@
                 <td data-label="流水类型"><span :class="['type-badge', typeMeta(row).tone]">{{ typeMeta(row).label }}</span></td>
                 <td data-label="变动金额" :class="['numeric', 'amount-cell', amountTone(row)]">{{ amountText(row) }}</td>
                 <td data-label="变动前余额" class="numeric">{{ balanceText(row.beforeMoney) }}</td>
-                <td data-label="变动后余额" class="numeric">{{ balanceText(row.afterMoney) }}</td>
-                <td data-label="变动原因" class="reason-cell" :title="row.reason || '-'">{{ row.reason || '-' }}</td>
-                <td data-label="业务流水号" class="trade-cell" :title="row.outTradeNo || '-'">{{ row.outTradeNo || '-' }}</td>
+                <td data-label="变动后余额" class="numeric balance-cell">
+                  <span class="mobile-field-label">余额</span>
+                  <span>{{ balanceText(row.afterMoney) }}</span>
+                </td>
+                <td data-label="变动原因" class="reason-cell" :title="row.reason || '-'">
+                  <span class="mobile-field-label">变动原因</span>
+                  <span class="reason-value">{{ row.reason || '-' }}</span>
+                </td>
+                <td data-label="业务流水号" class="trade-cell" :title="row.outTradeNo || '-'">
+                  <span class="mobile-field-label">流水号</span>
+                  <code class="trade-value">{{ row.outTradeNo || '-' }}</code>
+                </td>
               </tr>
             </template>
           </tbody>
@@ -275,6 +284,8 @@ useRefresh(refreshPage)
 .time-cell { white-space: nowrap; }
 .reason-cell, .trade-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trade-cell { color: #5f6d82; font-family: Consolas, 'Courier New', monospace; font-size: var(--fs-xs) !important; }
+.mobile-field-label { display: none; }
+.trade-value { color: inherit; font: inherit; }
 .loading-row td { height: 210px; text-align: center; }
 .loading-row span { width: 28px; height: 28px; display: inline-block; border: 3px solid #dce6f6; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
 .empty-row { height: 230px; text-align: center; color: #8390a3 !important; }
@@ -304,12 +315,19 @@ useRefresh(refreshPage)
   .ledger-filters input, .ledger-filters select, .ledger-filters button { width: 100%; }
 }
 
-/* 移动端：表格改为堆叠行。
-   横向滚动在手机上等于把「金额」这一最关键的信息推到屏幕外，
-   所以这里不是缩小表格，而是把每条流水重排成一张两列的小卡片。 */
+/* 移动端：每条流水只保留一套卡片布局，避免与全局 data-table 的
+   data-label 伪元素叠加后出现重复标签、右对齐和长文本挤压。 */
 @media (max-width: 768px) {
+  .ledger-workspace {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .table-wrap { overflow: visible; }
+
   .ledger-table {
-    /* 这三条必须一起去掉：min-width 和 fixed 布局会让列宽在 display:block 后依然生效 */
+    width: 100%;
     min-width: 0;
     table-layout: auto;
     display: block;
@@ -326,59 +344,107 @@ useRefresh(refreshPage)
       "time   after"
       "reason reason"
       "trade  trade";
-    gap: 4px 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--line-soft);
+    gap: 7px 14px;
+    margin-bottom: 10px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
   }
-  .ledger-table tbody tr:last-child { border-bottom: 0; }
+  .ledger-table tbody tr:last-child { margin-bottom: 0; }
 
   .ledger-table tbody td {
     display: block;
-    padding: 0;
-    border: 0;
     min-width: 0;
+    padding: 0 !important;
+    border: 0;
+    text-align: left;
   }
 
-  .ledger-table td[data-label="流水类型"] { grid-area: type; }
+  /* 全局移动端表格会通过 ::before 自动输出 data-label，本页使用显式标签。 */
+  .ledger-table tbody td::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .ledger-table td[data-label="流水类型"] {
+    grid-area: type;
+    align-self: center;
+    text-align: left !important;
+  }
   .ledger-table td[data-label="变动金额"] {
     grid-area: amount;
-    font-size: var(--fs-lg);
-    font-weight: 700;
-    text-align: right;
+    align-self: center;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.25;
+    text-align: right !important;
   }
   .ledger-table td[data-label="发生时间"] {
     grid-area: time;
     color: var(--muted);
     font-size: var(--fs-xs);
+    line-height: 1.5;
+    text-align: left !important;
   }
   .ledger-table td[data-label="变动后余额"] {
     grid-area: after;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
     color: var(--muted);
     font-size: var(--fs-xs);
-    text-align: right;
+    line-height: 1.5;
+    text-align: right !important;
   }
-  .ledger-table td[data-label="变动后余额"]::before { content: "余额 "; }
 
-  /* 变动前余额可由「金额 + 变动后余额」推出，小屏上是纯噪音 */
   .ledger-table td[data-label="变动前余额"] { display: none; }
 
   .ledger-table td[data-label="变动原因"] {
     grid-area: reason;
-    margin-top: 6px;
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 3px;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--line-soft);
     color: var(--text-secondary);
     font-size: var(--fs-xs);
+    line-height: 1.65;
+    text-align: left !important;
     white-space: normal;
   }
   .ledger-table td[data-label="业务流水号"] {
     grid-area: trade;
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
     color: #8a94a6;
     font-size: var(--fs-xs);
-    word-break: break-all;
+    line-height: 1.55;
+    text-align: left !important;
     white-space: normal;
   }
-  .ledger-table td[data-label="业务流水号"]::before { content: "流水号 "; }
+  .ledger-table .mobile-field-label {
+    display: inline;
+    color: var(--muted);
+    font-family: inherit;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .ledger-table .reason-value,
+  .ledger-table .trade-value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .ledger-table .trade-value {
+    color: #758197;
+    font-family: Consolas, 'Courier New', monospace;
+  }
 
-  /* 空态与加载态是 colspan 单元格，不参与上面的分区 */
   .ledger-table .loading-row, .ledger-table .empty-row { display: block; }
   .ledger-table .loading-row td, .ledger-table .empty-row { display: block; text-align: center; }
 }

@@ -50,7 +50,7 @@
       <div class="profile-row">
         <span class="row-label">邮箱</span>
         <strong>{{ profile.email || '尚未设置邮箱' }}</strong>
-        <button class="row-action" type="button" @click="openEditor('email')">修改</button>
+        <button class="row-action" type="button" @click="openEmailEditor">修改</button>
       </div>
     </section>
 
@@ -74,18 +74,47 @@
       </div>
     </section>
 
-    <p v-if="message" :class="['profile-message', messageType]">{{ message }}</p>
+    <Teleport to="body">
+      <Transition name="profile-toast">
+        <p
+          v-if="message"
+          :class="['profile-message', messageType]"
+          role="status"
+          aria-live="polite"
+        >
+          {{ message }}
+        </p>
+      </Transition>
+    </Teleport>
 
-    <AppModal :open="editorVisible" title="编辑基础信息" eyebrow="账户资料" size="md" @close="closeEditor">
-      <div class="editor-grid">
+    <AppModal
+      :open="emailEditorVisible"
+      title="修改绑定邮箱"
+      eyebrow="账户安全"
+      description="验证新邮箱归属后即可完成修改"
+      size="md"
+      @close="closeEmailEditor"
+    >
+      <div class="password-editor">
         <label>
-          <span>邮箱</span>
-          <input ref="emailInput" v-model.trim="form.email" type="email" maxlength="50" placeholder="请输入工作邮箱">
+          <span>新邮箱</span>
+          <input ref="emailInput" v-model.trim="emailForm.email" type="email" maxlength="50" autocomplete="email" placeholder="请输入新邮箱地址">
         </label>
+        <label>
+          <span>邮箱验证码</span>
+          <div class="verification-code-row">
+            <input v-model.trim="emailForm.code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="请输入 6 位验证码">
+            <button type="button" :disabled="emailCodeSending || emailCountdown > 0" @click="sendEmailCode">
+              {{ emailCountdown > 0 ? `${emailCountdown}s` : (emailCodeSending ? '发送中' : '获取验证码') }}
+            </button>
+          </div>
+          <small>验证码将发送至上方新邮箱，10 分钟内有效</small>
+        </label>
+        <p class="password-rule">修改完成后，报告完成邮件等邮箱通知将发送至新邮箱。</p>
       </div>
       <template #footer>
-          <button class="ghost-btn" type="button" :disabled="saving" @click="closeEditor">取消</button>
-          <button class="primary-btn compact" type="button" :disabled="saving" @click="saveProfile">{{ saving ? '保存中' : '保存' }}</button>
+          <button class="ghost-btn" type="button" :disabled="emailSaving" @click="closeEmailEditor">取消</button>
+          <button class="primary-btn compact" type="button" :disabled="emailSaving" @click="saveEmail">{{ emailSaving ? '提交中' : '确认修改' }}</button>
       </template>
     </AppModal>
 
@@ -139,16 +168,18 @@ import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'v
 import { useRouter } from 'vue-router'
 import AppModal from '../components/AppModal.vue'
 import { getMyEnterpriseCertList } from '../api/enterpriseCert'
-import { getUserProfile, sendPasswordCode, updateUserPassword, updateUserProfile } from '../api/user'
+import { getUserProfile, sendEmailChangeCode, sendPasswordCode, updateUserEmail, updateUserPassword } from '../api/user'
 import { removeToken, setUser } from '../utils/auth'
 
 const emit = defineEmits(['profile-updated'])
 const router = useRouter()
 const profile = ref({})
 const cert = ref(null)
-const editorVisible = ref(false)
+const emailEditorVisible = ref(false)
 const passwordEditorVisible = ref(false)
-const saving = ref(false)
+const emailSaving = ref(false)
+const emailCodeSending = ref(false)
+const emailCountdown = ref(0)
 const passwordChanging = ref(false)
 const smsSending = ref(false)
 const smsCountdown = ref(0)
@@ -157,9 +188,10 @@ const message = ref('')
 const messageType = ref('success')
 const emailInput = ref(null)
 const currentPasswordInput = ref(null)
-const form = reactive({ nickName: '', name: '', sex: '2', email: '' })
+const emailForm = reactive({ email: '', code: '' })
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmPassword: '', smsCode: '' })
 let smsTimer = null
+let emailTimer = null
 
 const isSubAccount = computed(() => profile.value?.parentUserId != null || profile.value?.accountType === 'sub')
 const accountTypeLabel = computed(() => {
@@ -202,23 +234,16 @@ function resourceUrl(path) {
   return `${base}${normalized}`.replace(/([^:]\/)\/+/g, '$1')
 }
 
-function fillForm() {
-  form.nickName = profile.value?.nickName || ''
-  form.name = profile.value?.name || ''
-  form.sex = String(profile.value?.sex ?? '2')
-  form.email = profile.value?.email || ''
-}
-
-async function openEditor(focusField) {
-  fillForm()
-  editorVisible.value = true
+async function openEmailEditor() {
+  emailForm.email = ''
+  emailForm.code = ''
+  emailEditorVisible.value = true
   await nextTick()
-  const targets = { email: emailInput }
-  targets[focusField]?.value?.focus()
+  emailInput.value?.focus()
 }
 
-function closeEditor() {
-  if (!saving.value) editorVisible.value = false
+function closeEmailEditor() {
+  if (!emailSaving.value) emailEditorVisible.value = false
 }
 
 async function openPasswordEditor() {
@@ -236,31 +261,55 @@ function closePasswordEditor() {
   if (!passwordChanging.value) passwordEditorVisible.value = false
 }
 
-function validateForm() {
-  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return '邮箱格式不正确'
+function validateEmailForm(requireCode = true) {
+  if (!emailForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForm.email)) return '请输入正确的邮箱地址'
+  if (emailForm.email.length > 50) return '邮箱地址不能超过 50 个字符'
+  if (String(emailForm.email).toLowerCase() === String(profile.value?.email || '').toLowerCase()) return '新邮箱不能与当前邮箱相同'
+  if (requireCode && !/^\d{6}$/.test(emailForm.code)) return '请输入 6 位邮箱验证码'
   return ''
 }
 
-async function saveProfile() {
-  const error = validateForm()
+function startEmailCountdown() {
+  window.clearInterval(emailTimer)
+  emailCountdown.value = 60
+  emailTimer = window.setInterval(() => {
+    emailCountdown.value -= 1
+    if (emailCountdown.value <= 0) window.clearInterval(emailTimer)
+  }, 1000)
+}
+
+async function sendEmailCode() {
+  if (emailCodeSending.value || emailCountdown.value > 0) return
+  const error = validateEmailForm(false)
   if (error) return showMessage(error, 'error')
-  saving.value = true
+  emailCodeSending.value = true
   try {
-    await updateUserProfile({
-      nickName: form.nickName,
-      name: form.name,
-      sex: form.sex,
-      email: form.email,
-      phonenumber: profile.value?.phonenumber || ''
-    })
+    await sendEmailChangeCode(emailForm.email)
+    startEmailCountdown()
+    showMessage('验证码已发送至新邮箱，请注意查收')
+  } catch (error) {
+    showMessage(error?.msg || error?.message || '验证码发送失败，请稍后重试', 'error')
+  } finally {
+    emailCodeSending.value = false
+  }
+}
+
+async function saveEmail() {
+  const error = validateEmailForm(true)
+  if (error) return showMessage(error, 'error')
+  emailSaving.value = true
+  try {
+    await updateUserEmail(emailForm.email, emailForm.code)
     await loadProfile()
-    editorVisible.value = false
-    showMessage('基础信息已更新')
+    emailEditorVisible.value = false
+    window.clearInterval(emailTimer)
+    emailCountdown.value = 0
+    showMessage('邮箱修改成功')
     emit('profile-updated')
   } catch (error) {
-    showMessage(error?.msg || error?.message || '保存失败，请稍后重试', 'error')
+    showMessage(error?.msg || error?.message || '邮箱修改失败，请稍后重试', 'error')
   } finally {
-    saving.value = false
+    emailSaving.value = false
   }
 }
 
@@ -357,7 +406,10 @@ onMounted(async () => {
   }
 })
 
-onBeforeUnmount(() => window.clearInterval(smsTimer))
+onBeforeUnmount(() => {
+  window.clearInterval(smsTimer)
+  window.clearInterval(emailTimer)
+})
 </script>
 
 <style scoped>
@@ -394,8 +446,10 @@ onBeforeUnmount(() => window.clearInterval(smsTimer))
 .profile-summary .cert-pill.approved { background: #e8f8ef; color: #087443; }
 .profile-summary .cert-pill.pending, .profile-summary .cert-pill.reviewing { background: #fff4df; color: #a15c00; }
 .profile-summary .cert-pill.rejected { background: #fff0f0; color: #b42318; }
-.profile-message { position: fixed; top: 84px; left: 50%; z-index: 70; margin: 0; padding: 11px 18px; transform: translateX(-50%); border: 1px solid #abefc6; border-radius: var(--radius); background: #ecfdf3; color: #027a48; box-shadow: 0 10px 25px rgba(16, 24, 40, .12); }
+.profile-message { position: fixed; top: 24px; left: 50%; z-index: 3100; width: max-content; max-width: min(520px, calc(100vw - 32px)); margin: 0; padding: 11px 18px; transform: translateX(-50%); border: 1px solid #abefc6; border-radius: var(--radius); background: #ecfdf3; color: #027a48; box-shadow: 0 12px 30px rgba(16, 24, 40, .18); font-weight: 600; line-height: 1.5; text-align: center; pointer-events: none; }
 .profile-message.error { border-color: #fecdca; background: #fef3f2; color: #b42318; }
+.profile-toast-enter-active, .profile-toast-leave-active { transition: opacity .18s ease, transform .18s ease; }
+.profile-toast-enter-from, .profile-toast-leave-to { opacity: 0; transform: translate(-50%, -8px); }
 .editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .editor-grid label { display: grid; gap: 8px; color: var(--text-secondary); font-weight: 600; }
 .editor-grid input, .editor-grid select { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: var(--radius); background: #fff; color: #17243a; font: inherit; outline: none; }

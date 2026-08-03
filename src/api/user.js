@@ -15,6 +15,22 @@ export function updateUserProfile(data) {
   })
 }
 
+export function sendEmailChangeCode(email) {
+  return request({
+    url: '/system/user/profile/email/code',
+    method: 'post',
+    data: { email }
+  })
+}
+
+export function updateUserEmail(email, code) {
+  return request({
+    url: '/system/user/profile/email',
+    method: 'put',
+    data: { email, code }
+  })
+}
+
 export function uploadUserAvatar(file) {
   const formData = new FormData()
   formData.append('avatarfile', file)

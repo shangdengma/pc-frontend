@@ -68,6 +68,7 @@
               <button
                 v-if="String(item.displayStatus) === 'waiting_auth'"
                 class="text-btn"
+                data-testid="copy-candidate-link"
                 :disabled="linkLoadingId === item.id"
                 @click="copyCandidateLink(item)"
               >
@@ -103,20 +104,42 @@
       <button class="ghost-btn" :disabled="filters.pageNum >= totalPages" @click="changePage(1)">下一页</button>
     </div>
 
-    <!-- clipboard 在非 HTTPS 下不可用，这时把链接摊出来让用户自己选中复制 -->
-    <div v-if="fallbackLink" class="fallback-link-panel">
-      <div class="fallback-link-head">
-        <strong>候选人授权链接</strong>
-        <button type="button" class="text-btn" @click="fallbackLink = ''">关闭</button>
-      </div>
-      <input class="fallback-link-input" :value="fallbackLink" readonly @focus="$event.target.select()">
-      <p class="fallback-link-hint">
-        请把链接发给候选人本人。候选人需用本单预留手机号
-        {{ fallbackPhone }} 接收验证码后才能进入填写。
-      </p>
+    <div v-if="fallbackLink" class="fallback-link-mask" @click.self="closeFallbackLink">
+      <section class="fallback-link-dialog" role="dialog" aria-modal="true" aria-labelledby="fallback-link-title">
+        <div class="fallback-link-head">
+          <div>
+            <strong id="fallback-link-title">复制候选人授权链接</strong>
+            <p>浏览器未允许自动复制，请使用下方按钮重试，或手动选择链接。</p>
+          </div>
+          <button type="button" class="icon-btn" title="关闭" aria-label="关闭" @click="closeFallbackLink">
+            <X :size="18" />
+          </button>
+        </div>
+        <input ref="fallbackLinkInput" class="fallback-link-input" :value="fallbackLink" readonly @focus="$event.target.select()">
+        <p class="fallback-link-hint">
+          请把链接发给候选人本人。候选人需使用本单预留手机号
+          {{ fallbackPhone }} 接收验证码后进入填写。
+        </p>
+        <div class="fallback-link-actions">
+          <button type="button" class="ghost-btn" @click="closeFallbackLink">取消</button>
+          <button type="button" class="primary-btn" @click="copyFallbackLink">
+            <Copy :size="16" />
+            再次复制
+          </button>
+        </div>
+      </section>
     </div>
 
-    <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
+    <div
+      v-if="message"
+      class="records-toast"
+      :class="messageType"
+      role="status"
+      aria-live="polite"
+      data-testid="records-toast"
+    >
+      {{ message }}
+    </div>
   </section>
 </template>
 
@@ -124,6 +147,7 @@
 import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Copy, X } from '@lucide/vue'
 import { listData, getCandidateLink, resendCandidateSms } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserProfile } from '../api/user'
@@ -159,6 +183,7 @@ const smsLoadingId = ref(null)
 // 复制失败（非 HTTPS 下 clipboard 不可用）时把链接摊在页面上，让用户能手动选中
 const fallbackLink = ref('')
 const fallbackPhone = ref('')
+const fallbackLinkInput = ref(null)
 const message = ref('')
 const messageType = ref('info')
 const profile = ref({})
@@ -277,25 +302,84 @@ async function copyCandidateLink(item) {
     const link = res?.candidateLink
     if (!link) throw new Error('未获取到链接')
     fallbackPhone.value = res.candidatePhone || ''
-    try {
-      await navigator.clipboard.writeText(link)
+    const copied = await copyText(link)
+    if (copied) {
       show(`已复制 ${item.name} 的授权链接，可直接发给候选人`, 'success')
-    } catch (e) {
-      // clipboard 需要 HTTPS，失败就把链接显示出来兜底
+    } else {
       fallbackLink.value = link
-      show('自动复制不可用，请手动复制下方链接', 'info')
+      show('浏览器未允许自动复制，请在弹窗中重试', 'info')
     }
   } catch (e) {
-    show(e?.msg || e?.message || '获取授权链接失败', 'error')
+    const errorMessage = e?.msg || e?.message || '获取授权链接失败'
+    show(errorMessage.includes('授权链接已过期')
+      ? '该授权链接已过期，请重新发起查询'
+      : errorMessage, 'error')
   } finally {
     linkLoadingId.value = null
   }
 }
 
+async function copyText(text) {
+  const value = String(text || '').trim()
+  if (!value) return false
+
+  if (window.isSecureContext && navigator.clipboard?.writeText) {
+    let timeoutId
+    try {
+      await Promise.race([
+        navigator.clipboard.writeText(value),
+        new Promise((resolve, reject) => {
+          timeoutId = window.setTimeout(() => reject(new Error('clipboard timeout')), 1800)
+        })
+      ])
+      return true
+    } catch (e) {
+      // 继续使用兼容复制方案。
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = value
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+  textarea.setSelectionRange(0, textarea.value.length)
+  try {
+    return document.execCommand('copy')
+  } catch (e) {
+    return false
+  } finally {
+    document.body.removeChild(textarea)
+  }
+}
+
+async function copyFallbackLink() {
+  if (await copyText(fallbackLink.value)) {
+    closeFallbackLink()
+    show('授权链接已复制', 'success')
+    return
+  }
+  fallbackLinkInput.value?.focus()
+  fallbackLinkInput.value?.select()
+  show('仍无法自动复制，链接已为你选中，请按 Ctrl+C', 'info')
+}
+
+function closeFallbackLink() {
+  fallbackLink.value = ''
+  fallbackPhone.value = ''
+}
+
+let messageTimer
 function show(text, type = 'info') {
   message.value = text
   messageType.value = type
-  setTimeout(() => { message.value = '' }, 2500)
+  if (messageTimer) window.clearTimeout(messageTimer)
+  messageTimer = window.setTimeout(() => { message.value = '' }, 3000)
 }
 
 function maskIdCard(value) {

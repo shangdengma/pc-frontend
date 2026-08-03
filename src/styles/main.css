@@ -3922,30 +3922,68 @@ textarea::placeholder {
 
 /* 记录页：短信被拦时手动转发授权链接的兜底面板。
    只在 clipboard 不可用（非 HTTPS）时出现，让用户能选中复制。 */
-.fallback-link-panel {
-  margin-top: var(--sp-4);
-  padding: var(--sp-4);
+.fallback-link-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(20, 29, 45, .42);
+}
+
+.fallback-link-dialog {
+  width: min(520px, 100%);
+  padding: 22px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--line-soft);
+  background: var(--card);
+  box-shadow: 0 20px 50px rgba(23, 32, 51, .2);
 }
 
 .fallback-link-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-3);
-  margin-bottom: var(--sp-3);
+  margin-bottom: var(--sp-4);
 }
 
 .fallback-link-head strong {
-  font-size: var(--fs-sm);
+  display: block;
   color: var(--text);
+  font-size: var(--fs-lg);
+}
+
+.fallback-link-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+}
+
+.fallback-link-head .icon-btn {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.fallback-link-head .icon-btn:hover {
+  color: var(--text);
+  background: var(--line-soft);
 }
 
 .fallback-link-input {
   width: 100%;
-  height: 38px;
+  height: 40px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -3956,8 +3994,55 @@ textarea::placeholder {
 }
 
 .fallback-link-hint {
-  margin: var(--sp-2) 0 0;
+  margin: var(--sp-3) 0 0;
   color: var(--muted);
   font-size: var(--fs-xs);
   line-height: 1.6;
+}
+
+.fallback-link-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-5);
+}
+
+.fallback-link-actions .primary-btn {
+  gap: 7px;
+}
+
+.records-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 1100;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 11px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  color: #175cd3;
+  background: #eff6ff;
+  box-shadow: 0 12px 30px rgba(23, 32, 51, .16);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.5;
+  transform: translateX(-50%);
+}
+
+.records-toast.success {
+  border-color: #abefc6;
+  color: #027a48;
+  background: var(--green-soft);
+}
+
+.records-toast.error {
+  border-color: #fee4e2;
+  color: #b42318;
+  background: var(--red-soft);
+}
+
+@media (max-width: 640px) {
+  .fallback-link-dialog { padding: 18px; }
+  .fallback-link-actions > * { flex: 1; justify-content: center; }
+  .records-toast { top: 14px; }
 }

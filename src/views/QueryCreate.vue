@@ -71,18 +71,6 @@
 
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
 
-    <div v-if="candidateLink" class="candidate-link-panel">
-      <span class="candidate-link-title">✓ 提交成功 · 候选人授权链接</span>
-      <a class="candidate-link-url" :href="candidateLink" target="_blank" rel="noopener">{{ candidateLink }}</a>
-      <div class="candidate-link-actions">
-        <button type="button" class="ghost-btn" @click="copyCandidateLink">复制链接</button>
-        <a class="ghost-btn" :href="candidateLink" target="_blank" rel="noopener">预览中间页</a>
-      </div>
-      <p class="candidate-link-hint">
-        短信模板审核通过前，请手动把链接发给候选人。候选人需用本单手机号 {{ form.mobile ? maskPhone(form.mobile) : '' }} 接收验证码进入，链接 48 小时内有效。
-      </p>
-    </div>
-
     <div class="submit-area">
       <button class="primary-btn page-action"
               :disabled="loading || !formValid || insufficientBalance"
@@ -144,7 +132,6 @@ const router = useRouter()
 const loading = ref(false)
 const message = ref('')
 const messageType = ref('info')
-const candidateLink = ref('')
 const queryTypeConfigs = ref([])
 const priceMap = ref({})
 const profile = ref({})
@@ -273,16 +260,6 @@ function show(text, type = 'info') {
   messageType.value = type
 }
 
-async function copyCandidateLink() {
-  if (!candidateLink.value) return
-  try {
-    await navigator.clipboard.writeText(candidateLink.value)
-    show('中间页链接已复制', 'success')
-  } catch (e) {
-    show('复制失败，请手动选择链接复制', 'error')
-  }
-}
-
 function validate() {
   if (!form.name) return '请填写候选人姓名'
   if (!form.mobile) return '请填写候选人手机号'
@@ -330,20 +307,13 @@ async function submitQuery() {
     } else {
       const res = await getAllData(queryData)
       if (res?.data?.formDataId != null) {
-        candidateLink.value = res.data.candidateLink || ''
-        // 短信模板未上线时后端只返回链接、不真正发短信，提示语要跟着变，别谎报已发送
-        show(candidateLink.value
-          ? '查询已创建。短信模板审核通过前，请把下方链接发给候选人完成授权。'
-          : '已创建查询并发送候选人授权短信，请提醒候选人完成信息填写与授权签署。', 'success')
+        show('已创建查询并发送候选人授权短信，请提醒候选人完成信息填写与授权签署。', 'success')
       } else {
         show('查询已提交，结果生成后可在查询记录查看。', 'success')
       }
     }
     emit('balance-updated')
-    // 有候选人链接时（测试期）保留在本页展示链接，其余情况跳转记录页
-    if (!candidateLink.value) {
-      setTimeout(() => router.push('/records'), 800)
-    }
+    setTimeout(() => router.push('/records'), 800)
   } catch (err) {
     const msg = err?.msg || err?.message || '提交失败，请稍后重试'
     show(msg, 'error')
@@ -397,52 +367,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.candidate-link-panel {
-  margin: 12px 0 4px;
-  padding: 14px 16px;
-  border: 1px dashed #b7c4d6;
-  border-radius: var(--radius-lg);
-  background: #f5f8fc;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.candidate-link-title {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: #33415c;
-}
-.candidate-link-url {
-  word-break: break-all;
-  color: var(--cinnabar);
-  font-size: var(--fs-sm);
-}
-.candidate-link-actions {
-  display: flex;
-  gap: 10px;
-}
-.candidate-link-actions .ghost-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  border: 1px solid #c3ccd9;
-  border-radius: var(--radius);
-  background: #fff;
-  color: #33415c;
-  font-size: var(--fs-sm);
-  cursor: pointer;
-  text-decoration: none;
-}
-.candidate-link-actions .ghost-btn:hover {
-  border-color: var(--text);
-  color: var(--cinnabar);
-}
-.candidate-link-hint {
-  font-size: var(--fs-xs);
-  color: #8794a8;
-  margin: 0;
-}
-
 .query-card-head {
   display: flex;
   align-items: flex-start;

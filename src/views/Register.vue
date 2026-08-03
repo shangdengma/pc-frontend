@@ -33,7 +33,13 @@
 
       <label>
         <span>企业名称</span>
-        <input v-model.trim="form.enterpriseName" placeholder="请输入企业名称" maxlength="200" required>
+        <input
+          v-model.trim="form.enterpriseName"
+          placeholder="请输入营业执照上的完整企业名称"
+          maxlength="100"
+          autocomplete="organization"
+          required
+        >
       </label>
 
       <label>
@@ -127,6 +133,44 @@ function validatePhone() {
   return ''
 }
 
+function validateEnterpriseName() {
+  const name = form.enterpriseName.trim()
+  if (!name) return '请输入企业名称'
+  if ([...name].length < 3 || [...name].length > 100) return '企业名称长度应为3至100个字符'
+  if (/\s/u.test(name) || !/^[\p{Script=Han}A-Za-z0-9（）()·&＆—－.．-]+$/u.test(name)) {
+    return '企业名称包含不支持的字符，请填写营业执照上的完整名称'
+  }
+  if ((name.match(/\p{Script=Han}/gu) || []).length < 2) return '请输入正确完整的企业名称'
+
+  const placeholders = new Set([
+    '企业名称', '公司名称', '请输入企业名称', '暂无', '无', '不知道',
+    'test', '测试', '测试公司', '测试企业', '示例公司', '示例企业'
+  ])
+  if (placeholders.has(name.toLowerCase())
+    || /^(?:[某xX*]+|[0-9]+)(?:企业|公司|有限公司|有限责任公司|商行|中心|工作室|店)?$/.test(name)) {
+    return '请填写营业执照上的真实完整企业名称'
+  }
+  const organizationSuffixes = [
+    '有限责任公司', '股份有限公司', '股份公司', '有限公司', '集团公司', '总公司',
+    '合伙企业（特殊普通合伙）', '合伙企业(特殊普通合伙)',
+    '合伙企业（普通合伙）', '合伙企业(普通合伙)',
+    '合伙企业（有限合伙）', '合伙企业(有限合伙)',
+    '（特殊普通合伙）', '(特殊普通合伙)', '（普通合伙）', '(普通合伙)',
+    '（有限合伙）', '(有限合伙)', '个人独资企业', '（个人独资）', '(个人独资)',
+    '农民专业合作社联合社', '专业合作社联合社', '农民专业合作社', '专业合作社', '合作社', '联合社',
+    '分公司', '分厂', '分店', '分行', '支行', '营业部', '代表处',
+    '（个体工商户）', '(个体工商户)',
+    '工作室', '事务所', '研究院', '经营部', '服务部', '门市部', '商行',
+    '家庭农场', '养殖场', '种植场', '农场', '商场', '超市', '餐厅', '餐馆',
+    '饭店', '宾馆', '旅馆', '诊所', '药房', '药店', '网吧', '中心', '总厂',
+    '厂', '店', '馆', '部', '行'
+  ]
+  if (!organizationSuffixes.some(suffix => name.endsWith(suffix) && name.length > suffix.length)) {
+    return '企业名称不完整，请填写营业执照上的完整企业名称'
+  }
+  return ''
+}
+
 function validateForm() {
   const accountError = validateAccount()
   if (accountError) return accountError
@@ -134,8 +178,8 @@ function validateForm() {
   if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(form.password)) {
     return '密码需8位以上，且同时包含数字和字母'
   }
-  if (!form.enterpriseName) return '请输入企业名称'
-  if (form.enterpriseName.length > 200) return '企业名称长度不能超过200个字符'
+  const enterpriseNameError = validateEnterpriseName()
+  if (enterpriseNameError) return enterpriseNameError
   const phoneError = validatePhone()
   if (phoneError) return phoneError
   return ''
@@ -163,6 +207,11 @@ function sendCode() {
   error.value = ''
   message.value = ''
   if (countdown.value > 0 || sendingCode.value) return
+  const enterpriseNameError = validateEnterpriseName()
+  if (enterpriseNameError) {
+    error.value = enterpriseNameError
+    return
+  }
   const phoneError = validatePhone()
   if (phoneError) {
     error.value = phoneError
