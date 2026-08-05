@@ -29,7 +29,7 @@
          再往下逐项看明细。内容全部由已渲染的模块与真实数据推导，不额外编结论。
          aiSummary 为后续接入智能解读预留：后端返回文本即优先展示，
          没有则退回下面这套按数据聚合的版本。 -->
-    <div class="module-container" id="overview" v-if="overviewScopeList.length">
+    <div class="module-container" id="overview" v-if="overviewChecklist.length">
       <div class="module-title">报告总述</div>
       <div class="report-card">
         <div class="card-body overview-body">
@@ -37,31 +37,49 @@
             <span class="overview-ai-dot"></span>
             正在生成智能解读…
           </div>
-
           <div v-else-if="aiSummaryText" class="overview-ai-text">{{ aiSummaryText }}</div>
 
           <template v-else>
-            <div class="overview-block">
-              <div class="overview-block-title">本次核验范围</div>
-              <div class="overview-scope">
-                <span v-for="item in overviewScopeList" :key="item" class="overview-scope-item">{{ item }}</span>
-              </div>
-            </div>
-
+            <!-- 关键发现：只写查到了什么，不下"有无风险"的结论 -->
             <div class="overview-block">
               <div class="overview-block-title">
-                需要关注
+                关键发现
                 <em v-if="overviewFindings.length" class="overview-count">{{ overviewFindings.length }} 项</em>
               </div>
-              <ul v-if="overviewFindings.length" class="overview-findings">
-                <li v-for="item in overviewFindings" :key="item.label">
-                  <span class="overview-finding-label">{{ item.label }}</span>
-                  <span class="overview-finding-desc">{{ item.desc }}</span>
+              <ol v-if="overviewFindings.length" class="overview-findings">
+                <li v-for="(item, idx) in overviewFindings" :key="item.label">
+                  <span class="overview-finding-no">{{ idx + 1 }}</span>
+                  <span class="overview-finding-main">
+                    <span class="overview-finding-label">{{ item.label }}</span>
+                    <span class="overview-finding-desc">{{ item.desc }}</span>
+                  </span>
                 </li>
-              </ul>
-              <!-- 不写「无风险」这类结论：核验范围之外的情况本报告并不覆盖，
-                   只陈述"在已核验范围内没有查到命中记录" -->
-              <p v-else class="overview-empty">在以上核验范围内，未查询到命中记录。具体以各模块明细为准。</p>
+              </ol>
+              <p v-else class="overview-empty">在本次核验范围内，未查询到命中记录。具体以各模块明细为准。</p>
+            </div>
+
+            <!-- 核验清单：写明每一项查的是什么数据源、当前状态 -->
+            <div class="overview-block">
+              <div class="overview-block-title">核验清单</div>
+              <table class="overview-table">
+                <thead>
+                  <tr><th>信息类型</th><th>核验内容</th><th>状态</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in overviewChecklist" :key="row.name">
+                    <td class="ov-cat">{{ row.category }}</td>
+                    <td>
+                      <div class="ov-name">{{ row.name }}</div>
+                      <div class="ov-source">{{ row.source }}</div>
+                    </td>
+                    <td>
+                      <span class="ov-status" :class="row.hit ? 'is-hit' : 'is-clear'">
+                        {{ row.hit ? '有记录' : '已完成' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </template>
         </div>
@@ -2229,46 +2247,56 @@ export default {
   },
   computed: {
     /* ---------- 报告总述 ----------
-       核验范围直接复用各模块的 hasXxxData，保证「总述说查了什么」与
-       「下面实际渲染了哪些模块」永远一致，不会出现总述提到某项、
-       正文却没有该模块的情况。 */
-    overviewScopeList() {
-      return [
-        [this.hasIdentityData, '身份信息'],
-        [this.hasEducationData, '学历证书'],
-        [this.hasHistoryWorkData, '工作履历'],
-        [this.hasCareerRiskData, '职业风险'],
-        [this.hasJudicialData, '司法涉诉'],
-        [this.hasShixinData, '失信被执行'],
-        [this.hasPoliceData, '公安重点人员'],
-        [this.hasFraudData, '涉赌涉诈'],
-        [this.hasCompanyData, '工商关联'],
-        [this.hasLoanData, '借贷风险'],
-        [this.hasAssetsData, '名下资产'],
-        [this.hasInternetBehaviorData, '互联网行为']
-      ].filter(item => item[0]).map(item => item[1]);
+       核验清单直接由各模块的 hasXxxData 推导，保证「总述说查了什么」与
+       「下面实际渲染了哪些模块」永远一致；每行同时标注数据来源，
+       让读者知道结论是从哪个库查出来的，而不是只给一个"已完成"。
+       hit 表示该项查到了命中记录，与关键发现互相印证。 */
+    overviewChecklist() {
+      const shixinHit = (this.shixinList || []).length + (this.xianGaoList || []).length > 0;
+      const judicialHit = (this.bankruptCases || []).length
+        + (this.baoquanCases || []).length
+        + (this.xingzhengCases || []).length > 0;
+
+      const rows = [
+        [this.hasIdentityData, '身份核验', '身份信息实名核验', '公安人口信息库二要素/三要素比对', false],
+        [this.hasEducationData, '教育背景', '学历证书核验', '中国高等教育学生信息网（学信网）', false],
+        [this.hasHistoryWorkData, '过往经历', '工作履历核实', '候选人填报信息与证明人访谈', false],
+        [this.hasCareerRiskData, '职业风险', '劳动纠纷与用工风险审查', '全国法院公开劳动争议裁判文书', false],
+        [this.hasJudicialData, '司法涉诉', '民事诉讼与执行记录', '中国裁判文书网、全国法院执行信息公开网', judicialHit],
+        [this.hasShixinData, '司法涉诉', '失信被执行与限制高消费', '全国法院失信被执行人名单库', shixinHit],
+        [this.hasPoliceData, '公共安全', '公安重点人员核验', '公安重点人员核查库', false],
+        [this.hasFraudData, '公共安全', '涉赌涉诈风险核验', '涉赌涉诈风险名单库', false],
+        [this.hasCompanyData, '商业关联', '对外投资与任职核查', '国家企业信用信息公示系统', false],
+        [this.hasLoanData, '金融风险', '借贷申请与逾期记录', '互联网金融平台借贷风险数据库', false],
+        [this.hasAssetsData, '名下资产', '车辆与通行记录核查', '机动车登记及 ETC 通行数据', false],
+        [this.hasInternetBehaviorData, '行为特征', '互联网行为标签', '运营商与互联网行为标签库', false]
+      ];
+
+      return rows.filter(r => r[0]).map(r => ({
+        category: r[1], name: r[2], source: r[3], hit: r[4]
+      }));
     },
 
-    /* 关注点只列「确实查到了命中记录」的项，条数取自各模块自己的列表，
+    /* 关键发现只列「确实查到了命中记录」的项，条数取自各模块自己的列表，
        与明细里显示的数量同源。查不到就不列，不做主观判断。 */
     overviewFindings() {
       const findings = [];
       const push = (label, desc) => findings.push({ label, desc });
 
       const shixin = (this.shixinList || []).length;
-      if (shixin > 0) push('失信被执行', `查询到 ${shixin} 条失信被执行记录`);
+      if (shixin > 0) push('失信被执行', `存在 ${shixin} 条失信被执行记录，详见下文`);
 
       const xianGao = (this.xianGaoList || []).length;
-      if (xianGao > 0) push('限制高消费', `查询到 ${xianGao} 条限制高消费记录`);
+      if (xianGao > 0) push('限制高消费', `存在 ${xianGao} 条限制高消费记录，详见下文`);
 
       const bankrupt = (this.bankruptCases || []).length;
-      if (bankrupt > 0) push('破产清算', `查询到 ${bankrupt} 条强制清算或破产记录`);
+      if (bankrupt > 0) push('破产清算', `存在 ${bankrupt} 条强制清算或破产记录，详见下文`);
 
       const baoquan = (this.baoquanCases || []).length;
-      if (baoquan > 0) push('财产保全', `查询到 ${baoquan} 条保全记录`);
+      if (baoquan > 0) push('财产保全', `存在 ${baoquan} 条财产保全记录，详见下文`);
 
       const xingzheng = (this.xingzhengCases || []).length;
-      if (xingzheng > 0) push('行政处罚', `查询到 ${xingzheng} 条行政处罚记录`);
+      if (xingzheng > 0) push('行政处罚', `存在 ${xingzheng} 条行政处罚记录，详见下文`);
 
       return findings;
     },
@@ -7882,18 +7910,16 @@ summary::-webkit-details-marker {
     }
 }
 /* ---------- 报告总述 ----------
-   沿用报告既有视觉：#3b82f6 主色、#ebeef5 描边、8px 圆角，
-   .card-body 默认是横向 flex，这里要竖排，单独覆盖。 */
-/* 用 .card-body.overview-body 提高特异性：全局的
-   .card-body { flex-direction: row } 定义在本段之后，
-   同特异性下会赢过来，导致两个区块横排。 */
-.card-body.overview-body { flex-direction: column; padding: 20px 24px; gap: 18px; }
+   沿用报告既有视觉：#3b82f6 主色、#ebeef5 描边、8px 圆角。
+   .card-body 全局是 flex-direction: row 且定义在本段之后，
+   同特异性下会赢过来，所以这里必须用 .card-body.overview-body 提权。 */
+.card-body.overview-body { flex-direction: column; padding: 20px 24px; gap: 22px; }
 
 .overview-block-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-size: var(--fs-sm);
   font-weight: 600;
   color: #1f2933;
@@ -7909,43 +7935,77 @@ summary::-webkit-details-marker {
   font-weight: 600;
 }
 
-.overview-scope { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.overview-scope-item {
-  padding: 4px 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #f8fafc;
-  color: #475569;
-  font-size: var(--fs-xs);
-  line-height: 1.6;
-}
-
-.overview-findings { margin: 0; padding: 0; list-style: none; }
+/* 关键发现：编号列表 */
+.overview-findings { margin: 0; padding: 0; list-style: none; counter-reset: none; }
 
 .overview-findings li {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px dashed #e5e7eb;
+  padding: 8px 0;
 }
 
-.overview-findings li:last-child { border-bottom: 0; }
-
-/* 关注点用琥珀色而不是红色：这里陈述的是「查到了记录」，
-   是否构成风险要由用人方结合岗位判断，报告不替客户下结论 */
-.overview-finding-label {
+.overview-finding-no {
   flex: 0 0 auto;
-  min-width: 92px;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: #fef3c7;
   color: #92400e;
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
 }
 
+.overview-finding-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+
+/* 用琥珀色而不是红色：这里陈述的是「查到了记录」，
+   是否构成风险要由用人方结合岗位判断，报告不替客户下结论 */
+.overview-finding-label { color: #92400e; font-size: var(--fs-sm); font-weight: 600; }
 .overview-finding-desc { color: #475569; font-size: var(--fs-sm); line-height: 1.7; }
 
 .overview-empty { margin: 0; color: #64748b; font-size: var(--fs-sm); line-height: 1.7; }
+
+/* 核验清单表格 */
+.overview-table { width: 100%; border-collapse: collapse; }
+
+.overview-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-align: left;
+}
+
+.overview-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-size: var(--fs-sm);
+  vertical-align: top;
+}
+
+.overview-table tbody tr:last-child td { border-bottom: 0; }
+
+.ov-cat { width: 84px; color: #64748b; white-space: nowrap; }
+.ov-name { color: #1f2933; line-height: 1.6; }
+/* 写明数据源，读者才知道结论从哪儿来，而不是只看到一个「已完成」 */
+.ov-source { margin-top: 2px; color: #94a3b8; font-size: var(--fs-xs); line-height: 1.6; }
+
+.ov-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.ov-status.is-clear { background: #f0fdf4; color: #15803d; }
+.ov-status.is-hit { background: #fffbeb; color: #b45309; }
 
 .overview-ai-text { color: #334155; font-size: var(--fs-sm); line-height: 1.9; white-space: pre-wrap; }
 
@@ -7971,9 +8031,9 @@ summary::-webkit-details-marker {
 }
 
 @media (max-width: 768px) {
-  .overview-body { padding: 16px; }
-  .overview-findings li { flex-direction: column; gap: 2px; }
-  .overview-finding-label { min-width: 0; }
+  .card-body.overview-body { padding: 16px; }
+  .overview-table th:first-child, .overview-table td:first-child { display: none; }
+  .ov-cat { width: auto; }
 }
 
 .report-card { background: #ffffff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04); width: 100%; max-width: 900px; border: 1px solid #ebeef5; overflow: hidden; }
