@@ -11,6 +11,8 @@
       </div>
     </div>
 
+    <p v-if="error" class="candidate-form-error" role="alert">{{ error }}</p>
+
     <section class="candidate-form-section">
       <div class="candidate-section-title">
         <UserRound :size="20" />
@@ -155,12 +157,12 @@
       </div>
     </Teleport>
 
-    <section v-if="hasModule(MODULE_KEYS.EMPLOYMENT)" class="candidate-form-section">
+    <section v-if="employmentCount > 0" class="candidate-form-section">
       <div class="candidate-section-title">
         <BriefcaseBusiness :size="21" />
         <div>
-          <h2>工作经历</h2>
-          <p>{{ moduleDefinitions.employment.description }}</p>
+          <h2>{{ employmentCount === 2 ? '两段工作经历核验' : '一段工作经历核验' }}</h2>
+          <p>{{ employmentDefinition.description }}</p>
         </div>
       </div>
 
@@ -171,15 +173,7 @@
       >
         <div class="candidate-repeat-head">
           <strong>工作经历 {{ index + 1 }}</strong>
-          <button
-            v-if="model.employments.length > 1"
-            type="button"
-            class="candidate-icon-text-button candidate-danger-button"
-            @click="model.employments.splice(index, 1)"
-          >
-            <Trash2 :size="16" />
-            删除
-          </button>
+          <span class="candidate-repeat-caption">本段需提供 HR 与直属上级两位证明人</span>
         </div>
         <div class="candidate-grid candidate-grid-two">
           <label class="candidate-field candidate-grid-full">
@@ -194,95 +188,85 @@
             <span>离职时间 *</span>
             <input v-model="item.endMonth" type="month" :disabled="item.isCurrent" />
           </label>
-          <label class="candidate-field candidate-grid-full">
+          <label class="candidate-field">
+            <span>供职方式 *</span>
+            <select v-model="item.employmentType">
+              <option value="" disabled>请选择供职方式</option>
+              <option v-for="type in employmentTypes" :key="type" :value="type">{{ type }}</option>
+            </select>
+          </label>
+          <label class="candidate-field">
+            <span>职位名称 *</span>
+            <input v-model.trim="item.positionName" placeholder="请输入离职前或当前职位" />
+          </label>
+          <label class="candidate-field">
             <span>薪酬范围 *</span>
             <select v-model="item.salaryRange">
               <option value="" disabled>请选择税前月薪范围</option>
               <option v-for="range in salaryRanges" :key="range" :value="range">{{ range }}</option>
             </select>
           </label>
-        </div>
-        <label class="candidate-inline-check">
-          <input v-model="item.isCurrent" type="checkbox" @change="item.isCurrent && (item.endMonth = '')" />
-          <span>目前仍在职</span>
-        </label>
-      </div>
-      <button type="button" class="candidate-add-button" @click="model.employments.push(createEmployment())">
-        <Plus :size="17" />
-        添加工作经历
-      </button>
-    </section>
-
-    <section v-if="hasModule(MODULE_KEYS.REFERENCE)" class="candidate-form-section">
-      <div class="candidate-section-title">
-        <ContactRound :size="21" />
-        <div>
-          <h2>工作经历访谈</h2>
-          <p>{{ moduleDefinitions.reference.description }}</p>
-        </div>
-      </div>
-
-      <div
-        v-for="(item, index) in model.references"
-        :key="item.id"
-        class="candidate-repeat-item"
-      >
-        <div class="candidate-repeat-head">
-          <strong>证明人 {{ index + 1 }}</strong>
-          <button
-            v-if="model.references.length > 1"
-            type="button"
-            class="candidate-icon-text-button candidate-danger-button"
-            @click="model.references.splice(index, 1)"
-          >
-            <Trash2 :size="16" />
-            删除
-          </button>
-        </div>
-        <div class="candidate-grid candidate-grid-two">
-          <label class="candidate-field candidate-grid-full">
-            <span>工作单位名称 *</span>
-            <input v-model.trim="item.companyName" placeholder="请输入该段经历对应的公司名称" />
-          </label>
           <label class="candidate-field">
-            <span>入职时间 *</span>
-            <input v-model="item.startMonth" type="month" />
-          </label>
-          <label class="candidate-field">
-            <span>离职时间 *</span>
-            <input v-model="item.endMonth" type="month" :disabled="item.isCurrent" />
-          </label>
-          <label class="candidate-field">
-            <span>证明人姓名 *</span>
-            <input v-model.trim="item.contactName" placeholder="请输入证明人姓名" />
-          </label>
-          <label class="candidate-field">
-            <span>证明人职位 *</span>
-            <input v-model.trim="item.contactRole" placeholder="如：直属领导、HR" />
-          </label>
-          <label class="candidate-field candidate-grid-full">
-            <span>证明人联系方式 *</span>
+            <span>{{ item.isCurrent ? '当前状态' : '离职原因' }} *</span>
             <input
-              v-model.trim="item.contactPhone"
-              type="tel"
-              inputmode="numeric"
-              maxlength="20"
-              placeholder="请输入手机号码或办公电话"
+              v-model.trim="item.leaveReason"
+              :disabled="item.isCurrent"
+              :placeholder="item.isCurrent ? '在职' : '请简要填写离职原因'"
             />
           </label>
         </div>
         <label class="candidate-inline-check">
-          <input v-model="item.isCurrent" type="checkbox" @change="item.isCurrent && (item.endMonth = '')" />
+          <input v-model="item.isCurrent" type="checkbox" @change="handleCurrentChange(item)" />
           <span>目前仍在职</span>
         </label>
-      </div>
-      <button type="button" class="candidate-add-button" @click="model.references.push(createReference())">
-        <Plus :size="17" />
-        添加证明人
-      </button>
-    </section>
 
-    <p v-if="error" class="candidate-form-error" role="alert">{{ error }}</p>
+        <div class="candidate-reference-grid">
+          <section class="candidate-reference-panel">
+            <div class="candidate-reference-heading">
+              <ContactRound :size="19" />
+              <div>
+                <strong>证明人一：HR</strong>
+                <span>用于核实任职单位、时间、职位、薪酬及离职情况</span>
+              </div>
+            </div>
+            <div class="candidate-grid candidate-grid-two">
+              <label class="candidate-field">
+                <span>HR 姓名 *</span>
+                <input v-model.trim="item.hrReference.contactName" placeholder="请输入HR姓名" />
+              </label>
+              <label class="candidate-field">
+                <span>HR 联系方式 *</span>
+                <input v-model.trim="item.hrReference.contactPhone" type="tel" maxlength="20" placeholder="手机号码或办公电话" />
+              </label>
+            </div>
+          </section>
+
+          <section class="candidate-reference-panel">
+            <div class="candidate-reference-heading">
+              <ContactRound :size="19" />
+              <div>
+                <strong>证明人二：直属上级</strong>
+                <span>用于核实工作职责、职业表现、团队合作和综合评价</span>
+              </div>
+            </div>
+            <div class="candidate-grid candidate-grid-two">
+              <label class="candidate-field">
+                <span>上级姓名 *</span>
+                <input v-model.trim="item.supervisorReference.contactName" placeholder="请输入直属上级姓名" />
+              </label>
+              <label class="candidate-field">
+                <span>上级职位 *</span>
+                <input v-model.trim="item.supervisorReference.contactRole" placeholder="请输入证明人职位" />
+              </label>
+              <label class="candidate-field candidate-grid-full">
+                <span>上级联系方式 *</span>
+                <input v-model.trim="item.supervisorReference.contactPhone" type="tel" maxlength="20" placeholder="手机号码或办公电话" />
+              </label>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
 
     <div class="candidate-footer-actions">
       <button type="button" class="candidate-secondary-button" @click="$emit('back')">返回上一步</button>
@@ -307,7 +291,7 @@ import {
   UserRound,
   X
 } from '@lucide/vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import educationGuideStep1 from '../../../assets/candidate/education-guide/step-1-login.png'
 import educationGuideStep2 from '../../../assets/candidate/education-guide/step-2-education-entry.png'
 import educationGuideStep3 from '../../../assets/candidate/education-guide/step-3-education-record.png'
@@ -316,8 +300,8 @@ import {
   MAX_EDUCATION_ITEMS,
   MODULE_KEYS,
   createEducation,
-  createEmployment,
-  createReference,
+  employmentSegmentCount,
+  employmentTypes,
   moduleDefinitions,
   salaryRanges
 } from '../candidateFormSchema'
@@ -329,6 +313,10 @@ const props = defineProps({
 })
 
 const educationGuideOpen = ref(false)
+const employmentCount = computed(() => employmentSegmentCount(props.modules))
+const employmentDefinition = computed(() => moduleDefinitions[
+  employmentCount.value === 2 ? MODULE_KEYS.EMPLOYMENT_TWO : MODULE_KEYS.EMPLOYMENT_ONE
+])
 const educationGuideSteps = [
   {
     image: educationGuideStep1,
@@ -362,6 +350,15 @@ function hasModule(key) {
 function toggleNoCredential(item, event) {
   item.noCredential = event.target.checked
   if (item.noCredential) item.credentialNo = ''
+}
+
+function handleCurrentChange(item) {
+  if (item.isCurrent) {
+    item.endMonth = ''
+    item.leaveReason = '在职'
+    return
+  }
+  if (item.leaveReason === '在职') item.leaveReason = ''
 }
 </script>
 

@@ -1725,11 +1725,10 @@
         </div>
       </div>
     </div>
-    <!-- 过往工作履历：后端传了或报告类型16时显示；类型16且未传时显示“查询中” -->
+    <!-- 过往工作履历：仅由套餐 work_history 模块控制，内容来自后台人工录入 -->
     <div class="module-container" id="history-work" v-if="hasHistoryWorkData">
       <div class="module-title">过往工作履历（社保缴纳单位记录）</div>
-      <div v-if="isHistoryWorkQuerying" class="history-work-empty history-work-querying">任职记录查询中，结果将在2天内返回，请及时前往本页面查看。</div>
-      <div v-else-if="historyWorkList && historyWorkList.length > 0" class="history-work-table-wrap">
+      <div v-if="historyWorkList && historyWorkList.length > 0" class="history-work-table-wrap">
         <table class="history-work-table">
           <thead>
             <tr>
@@ -1740,94 +1739,142 @@
           </thead>
           <tbody>
             <tr v-for="(row, idx) in historyWorkList" :key="'hw-' + idx">
-              <td>{{ row.orgname || '—' }}</td>
-              <td>{{ formatHistoryWorkTime(row.time) }}</td>
-              <td v-if="historyWorkWithMoney">{{ row.num || '—' }}</td>
+              <td>{{ row.organizationName || '—' }}</td>
+              <td>{{ formatHistoryWorkPeriod(row) }}</td>
+              <td v-if="historyWorkWithMoney">{{ row.contributionBase || '—' }}</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-else class="history-work-empty">{{ historyWorkWithMoney ? '无社保关联公司记录' : '未查询到社保缴纳单位记录' }}</div>
+      <div v-else class="history-work-empty">核验人员未录入工作履历记录</div>
     </div>
 
-    <!-- 工作履历核实：人工核验结果，按公司分段 -->
+    <!-- 每段工作经历将 HR 核验与直属上级表现访谈合并展示 -->
     <div
-      v-for="(seg, si) in employmentVerifyList"
+      v-for="(section, si) in employmentVerificationSections"
       :key="'ev-' + si"
       class="module-container employment-verify-module"
       :id="si === 0 ? 'employment-verify' : ('employment-verify-' + si)"
     >
-      <div class="module-title">工作履历核实{{ seg.employerName ? '（' + seg.employerName + '）' : '' }}</div>
-      <div class="manual-table-wrap">
-        <table class="manual-report-table">
-          <thead>
-            <tr>
-              <th style="width: 22%;">调查项目</th>
-              <th style="width: 30%;">候选人提供</th>
-              <th style="width: 10%;">真实性</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(item, ii) in (seg.items || [])" :key="'evi-' + si + '-' + ii">
-              <td class="manual-cell-label">{{ item.label }}</td>
-              <td>{{ item.candidateValue || '' }}</td>
-              <td class="manual-cell-truth">
-                <span :class="truthIconClass(item.truth)">{{ truthIconText(item.truth) }}</span>
-              </td>
-              <td>{{ item.note || '' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 工作表现访谈：人工访谈结果，按证明人分段 -->
-    <div
-      v-for="(seg, si) in interviewList"
-      :key="'iv-' + si"
-      class="module-container interview-module"
-      :id="si === 0 ? 'work-interview' : ('work-interview-' + si)"
-    >
-      <div class="module-title">{{ seg.companyName ? seg.companyName + '-' : '' }}工作表现访谈</div>
-
-      <div class="manual-sub-header">访谈对象基本信息</div>
-      <div class="manual-table-wrap">
-        <table class="manual-report-table">
-          <tbody>
-            <tr>
-              <td class="manual-cell-label" style="width: 18%;">证明人</td>
-              <td style="width: 32%;">{{ seg.refName || '' }}</td>
-              <td class="manual-cell-label" style="width: 18%;">证明人来源</td>
-              <td>{{ seg.refSource || '' }}</td>
-            </tr>
-            <tr>
-              <td class="manual-cell-label">证明人联系方式</td>
-              <td>{{ seg.refPhone || '' }}</td>
-              <td class="manual-cell-label">证明人职位</td>
-              <td>{{ seg.refPosition || '' }}</td>
-            </tr>
-            <tr>
-              <td class="manual-cell-label">共事关系</td>
-              <td>{{ seg.relation || '' }}</td>
-              <td class="manual-cell-label">共事时长</td>
-              <td>{{ seg.duration || '' }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="module-title">
+        第 {{ si + 1 }} 段工作经历核验{{ section.companyName ? '（' + section.companyName + '）' : '' }}
       </div>
 
-      <div class="manual-sub-header">工作表现鉴定</div>
-      <div class="manual-table-wrap">
-        <table class="manual-report-table">
-          <tbody>
-            <tr v-for="row in assessmentRows(seg)" :key="'as-' + si + '-' + row.key">
-              <td class="manual-cell-label" style="width: 18%;">{{ row.label }}</td>
-              <td class="manual-cell-multiline">{{ row.value }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <section class="employment-evidence-block">
+        <div class="employment-evidence-heading">
+          <span class="employment-evidence-number">01</span>
+          <div>
+            <strong>HR 证明人核验</strong>
+            <span>任职单位、供职时间、职位、薪酬及离职情况</span>
+          </div>
+        </div>
+
+        <template v-if="section.hasHrResult">
+          <div class="manual-sub-header">证明人基本信息</div>
+          <div class="manual-table-wrap">
+            <table class="manual-report-table">
+              <tbody>
+                <tr>
+                  <td class="manual-cell-label" style="width: 18%;">证明人</td>
+                  <td style="width: 32%;">{{ section.employment.hrReference?.refName || '' }}</td>
+                  <td class="manual-cell-label" style="width: 18%;">证明人来源</td>
+                  <td>{{ section.employment.hrReference?.refSource || '' }}</td>
+                </tr>
+                <tr>
+                  <td class="manual-cell-label">证明人联系方式</td>
+                  <td>{{ section.employment.hrReference?.refPhone || '' }}</td>
+                  <td class="manual-cell-label">证明人职位</td>
+                  <td>{{ section.employment.hrReference?.refPosition || 'HR' }}</td>
+                </tr>
+                <tr>
+                  <td class="manual-cell-label">共事关系</td>
+                  <td>{{ section.employment.hrReference?.relation || '' }}</td>
+                  <td class="manual-cell-label">共事时长</td>
+                  <td>{{ section.employment.hrReference?.duration || '' }}</td>
+                </tr>
+                <tr v-if="section.employment.hrReference?.note">
+                  <td class="manual-cell-label">额外说明</td>
+                  <td colspan="3">{{ section.employment.hrReference.note }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="manual-sub-header">任职信息核验结果</div>
+          <div class="manual-table-wrap">
+            <table class="manual-report-table">
+              <thead>
+                <tr>
+                  <th style="width: 22%;">调查项目</th>
+                  <th style="width: 30%;">候选人提供</th>
+                  <th style="width: 10%;">真实性</th>
+                  <th>说明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, ii) in (section.employment.items || [])" :key="'evi-' + si + '-' + ii">
+                  <td class="manual-cell-label">{{ item.label }}</td>
+                  <td>{{ item.candidateValue || '' }}</td>
+                  <td class="manual-cell-truth">
+                    <span :class="truthIconClass(item.truth)">{{ truthIconText(item.truth) }}</span>
+                  </td>
+                  <td>{{ item.note || '' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+        <div v-else class="history-work-empty employment-evidence-empty">HR 证明人核验结果暂未录入</div>
+      </section>
+
+      <section class="employment-evidence-block">
+        <div class="employment-evidence-heading">
+          <span class="employment-evidence-number">02</span>
+          <div>
+            <strong>直属上级证明人（工作表现访谈）</strong>
+            <span>工作职责、职业表现、团队合作及综合评价</span>
+          </div>
+        </div>
+
+        <template v-if="section.hasSupervisorResult">
+          <div class="manual-sub-header">证明人基本信息</div>
+          <div class="manual-table-wrap">
+            <table class="manual-report-table">
+              <tbody>
+                <tr>
+                  <td class="manual-cell-label" style="width: 18%;">证明人</td>
+                  <td style="width: 32%;">{{ section.interview.refName || '' }}</td>
+                  <td class="manual-cell-label" style="width: 18%;">证明人来源</td>
+                  <td>{{ section.interview.refSource || '' }}</td>
+                </tr>
+                <tr>
+                  <td class="manual-cell-label">证明人联系方式</td>
+                  <td>{{ section.interview.refPhone || '' }}</td>
+                  <td class="manual-cell-label">证明人职位</td>
+                  <td>{{ section.interview.refPosition || '' }}</td>
+                </tr>
+                <tr>
+                  <td class="manual-cell-label">共事关系</td>
+                  <td>{{ section.interview.relation || '' }}</td>
+                  <td class="manual-cell-label">共事时长</td>
+                  <td>{{ section.interview.duration || '' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="manual-sub-header">工作表现鉴定</div>
+          <div class="manual-table-wrap">
+            <table class="manual-report-table">
+              <tbody>
+                <tr v-for="row in assessmentRows(section.interview)" :key="'as-' + si + '-' + row.key">
+                  <td class="manual-cell-label" style="width: 18%;">{{ row.label }}</td>
+                  <td class="manual-cell-multiline">{{ row.value }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+        <div v-else class="history-work-empty employment-evidence-empty">直属上级表现访谈结果暂未录入</div>
+      </section>
     </div>
 
     <!--【新增】额外信息模块：无内容则隐藏 -->
@@ -1888,6 +1935,7 @@ export default {
       extraInfo: '',
       employmentVerifyList: [], // 工作履历核实（人工核验），空数组=不显示
       interviewList: [], // 工作表现访谈（人工核验），空数组=不显示
+      candidateModules: [], // 本单套餐配置的报告模块
       assessmentLabels: {
         leaveReason: '离职原因',
         jobDuty: '工作职责',
@@ -1901,8 +1949,8 @@ export default {
         improvement: '改进建议',
         overallScore: '整体评分'
       },
-      historyWorkValue: null, // 过往工作履历数据，null=未传
-      historyWorkWithMoney: false, // 字段名含 withmoney 时为 true，显示缴纳基数列
+      historyWorkValue: [], // 过往工作履历，由后台人工录入
+      historyWorkWithMoney: false, // 任一记录填写缴纳基数时显示该列
       data_for_fan_du_fan_zha: [],
       dataAll: [],
       currentId: null,
@@ -1969,7 +2017,6 @@ export default {
         zaiwang_state: "zaiwang_stateb",
 		zc_verification:"sanyaosuheyancode",
         searchType: "reporttype", // 报告类型，用于报告大标题
-        historyWorkAsyncSearchType: "if_workdata_exist", // dictLabel=报告类型id，dictValue=1/0 是否异步出任职记录
         eduModuleBySearchType: "if_edu_exist", // dictLabel=报告类型id，dictValue=1 显示学历模块，0 不显示
       },
       // 导出相关状态
@@ -2047,15 +2094,14 @@ export default {
       try {
         const res = await getData(this.currentId);
         this.extraInfo = res.data.extra || '';
-        // 过往工作履历：支持 history_work_value / history_work_value_withmoney，含 withmoney 时显示缴纳基数
-        const inner = res.data?.data && typeof res.data.data === 'object' && !Array.isArray(res.data.data) ? res.data.data : null;
-        const hwWith = res.data?.history_work_value_withmoney ?? inner?.history_work_value_withmoney;
-        const hwNorm = res.data?.history_work_value ?? inner?.history_work_value;
-        const hw = hwWith ?? hwNorm;
-        if (hw !== undefined) {
-          this.historyWorkValue = Array.isArray(hw) ? hw : [hw];
-          this.historyWorkWithMoney = (hwWith !== undefined);
-        }
+        this.candidateModules = String(res.data?.candidateModules || '')
+          .split(',')
+          .map(item => item.trim())
+          .filter(Boolean);
+        this.historyWorkValue = Array.isArray(res.data?.workHistoryValue)
+          ? res.data.workHistoryValue : [];
+        this.historyWorkWithMoney = this.historyWorkValue.some(item =>
+          item && String(item.contributionBase || '').trim() !== '');
         // 人工核验结果：工作履历核实、工作表现访谈（后端无结果时不返回该字段）
         this.employmentVerifyList = Array.isArray(res.data?.employmentVerifyValue)
           ? res.data.employmentVerifyValue : [];
@@ -2106,19 +2152,7 @@ export default {
         if (!Array.isArray(rawData) && rawData && typeof rawData === "object") {
           rawData = rawData.list || rawData.data || rawData.dataAll || rawData.rows || rawData;
         }
-        // 过往工作履历在数据列表最末尾：末位含 history_work_value 或 history_work_value_withmoney 则提取并移除
         let arr = Array.isArray(rawData) ? rawData.map((item) => ({ ...item })) : [];
-        if (arr.length > 0) {
-          const last = arr[arr.length - 1];
-          const hwWith = last?.history_work_value_withmoney;
-          const hwNorm = last?.history_work_value;
-          const hw = hwWith ?? hwNorm;
-          if (hw !== undefined) {
-            this.historyWorkValue = Array.isArray(hw) ? hw : [hw];
-            this.historyWorkWithMoney = (hwWith !== undefined);
-            arr = arr.slice(0, -1);
-          }
-        }
         this.dataAll = arr;
         
         // 性能优化：数据更新后清除缓存和字段映射
@@ -2440,33 +2474,67 @@ export default {
     hasExtraInfo() {
       return !!(this.extraInfo && String(this.extraInfo).trim());
     },
-    // 过往工作履历：后端传了则显示；或字典 if_workdata_exist 对当前 searchType 的 dictValue 为异步；未加载到该字典时仍按 searchType===16
+    // 工作履历显隐只服从本单套餐配置，不再依赖字典或报告类型。
     hasHistoryWorkData() {
-      if (this.historyWorkValue !== null) return true;
-      return this.historyWorkUsesAsyncPlaceholder;
+      return this.candidateModules.includes('work_history');
     },
-    // if_workdata_exist：dictLabel=报告类型 id（与 searchType 一致），dictValue=1/0 是否先占位等异步任职记录
-    historyWorkUsesAsyncPlaceholder() {
-      const st = this.searchType;
-      const dictKey = "if_workdata_exist";
-      const list = this.dictData && this.dictData[dictKey];
-      if (Array.isArray(list) && list.length > 0) {
-        const strSt = String(st == null ? "" : st).trim();
-        const item = list.find((d) => {
-          if (!d) return false;
-          const lbl = (d.dictLabel ?? d.label ?? "").toString().trim();
-          return lbl === strSt;
-        });
-        if (!item) return false;
-        const n = String(item.dictValue ?? item.value ?? "").trim().toLowerCase();
-        if (n === "1" || n === "true" || n === "是" || n === "yes") return true;
-        if (n === "0" || n === "false" || n === "否" || n === "no") return false;
-        return false;
-      }
-      return st === 16 || st === "16";
+    hasEmploymentVerification() {
+      return this.candidateModules.includes('employment_one')
+        || this.candidateModules.includes('employment_two');
     },
-    isHistoryWorkQuerying() {
-      return this.historyWorkUsesAsyncPlaceholder && this.historyWorkValue === null;
+    // 后台仍分别保存 HR 核验和上级访谈，报告按工作经历序号将二者归并展示。
+    employmentVerificationSections() {
+      const configuredCount = this.candidateModules.includes('employment_two')
+        ? 2
+        : (this.candidateModules.includes('employment_one') ? 1 : 0);
+      const employmentList = Array.isArray(this.employmentVerifyList)
+        ? this.employmentVerifyList : [];
+      const interviewList = Array.isArray(this.interviewList)
+        ? this.interviewList : [];
+      const sectionCount = Math.max(
+        configuredCount,
+        employmentList.length,
+        interviewList.length
+      );
+
+      return Array.from({ length: sectionCount }, (_, index) => {
+        const employment = employmentList[index] || {};
+        const interview = interviewList[index] || {};
+        const hrReference = employment.hrReference || {};
+        const items = Array.isArray(employment.items) ? employment.items : [];
+        const assessments = interview.assessments || {};
+        const hasHrResult = Boolean(
+          hrReference.refName
+          || hrReference.refPhone
+          || hrReference.refSource
+          || hrReference.refPosition
+          || hrReference.relation
+          || hrReference.duration
+          || hrReference.note
+          || items.some(item => item && (
+            String(item.candidateValue || '').trim()
+            || String(item.truth || '').trim()
+            || String(item.note || '').trim()
+          ))
+        );
+        const hasSupervisorResult = Boolean(
+          interview.refName
+          || interview.refPhone
+          || interview.refSource
+          || interview.refPosition
+          || interview.relation
+          || interview.duration
+          || Object.values(assessments).some(value => String(value || '').trim())
+        );
+
+        return {
+          employment,
+          interview,
+          companyName: employment.employerName || interview.companyName || '',
+          hasHrResult,
+          hasSupervisorResult
+        };
+      });
     },
     historyWorkList() {
       return Array.isArray(this.historyWorkValue) ? this.historyWorkValue : [];
@@ -4631,14 +4699,12 @@ normalbadtext(){
         .map(key => ({ key, label: this.assessmentLabels[key], value: assessments[key] || '' }))
         .filter(row => String(row.value).trim() !== '');
     },
-    // 缴纳时间格式化：202001 -> 2020年01月
-    formatHistoryWorkTime(time) {
-      if (!time) return '—';
-      const s = String(time).trim();
-      if (s.length >= 6) {
-        return `${s.slice(0, 4)}年${s.slice(4, 6)}月`;
-      }
-      return s || '—';
+    formatHistoryWorkPeriod(row) {
+      if (!row) return '—';
+      const start = String(row.startMonth || '').trim();
+      const end = row.currentlyActive ? '至今' : String(row.endMonth || '').trim();
+      if (!start && !end) return '—';
+      return `${start || '—'} 至 ${end || '—'}`;
     },
     getBlacklistHitStatus(value) {
       if (value === null || value === undefined || value === '' || value === '—') {
@@ -4999,12 +5065,60 @@ normalbadtext(){
   border-left-color: #1d4ed8;
   background: linear-gradient(to right, rgba(29, 78, 216, 0.04) 0%, #fff 8%);
 }
-.interview-module {
-  border-left-color: #7c3aed;
-  background: linear-gradient(to right, rgba(124, 58, 237, 0.04) 0%, #fff 8%);
+.employment-verify-module .module-title {
+  border-bottom-color: #1d4ed8;
+  color: #1e40af;
 }
 
 /* 人工核验模块表格（工作履历核实 / 工作表现访谈） */
+.employment-evidence-block {
+  margin-top: 18px;
+}
+.employment-evidence-block + .employment-evidence-block {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #dbe4ef;
+}
+.employment-evidence-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.employment-evidence-number {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  border: 1px solid #b8c7da;
+  border-radius: 3px;
+  background: #eef3fb;
+  color: #1d4ed8;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.employment-evidence-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.employment-evidence-heading strong {
+  color: #1f2d4d;
+  font-size: var(--fs-base);
+}
+.employment-evidence-heading > div > span {
+  color: #64748b;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+}
+.employment-evidence-empty {
+  margin-top: 8px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
 .manual-table-wrap {
   width: 100%;
   overflow-x: auto;

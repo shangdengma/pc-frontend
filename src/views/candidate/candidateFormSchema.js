@@ -1,7 +1,8 @@
 export const MODULE_KEYS = {
   EDUCATION: 'education',
-  EMPLOYMENT: 'employment',
-  REFERENCE: 'reference'
+  EMPLOYMENT_ONE: 'employment_one',
+  EMPLOYMENT_TWO: 'employment_two',
+  WORK_HISTORY: 'work_history'
 }
 
 export const MAX_EDUCATION_ITEMS = 3
@@ -13,17 +14,23 @@ export const moduleDefinitions = {
     description: `请填写需要核验的学历证书编号，最多添加 ${MAX_EDUCATION_ITEMS} 条；证书不在身边可勾选「暂时无法提供」。`,
     shortName: '学历核验'
   },
-  [MODULE_KEYS.EMPLOYMENT]: {
-    key: MODULE_KEYS.EMPLOYMENT,
-    title: '工作经历',
-    description: '请按实际情况填写任职单位、工作时间和薪酬范围。',
-    shortName: '工作经历核验'
+  [MODULE_KEYS.EMPLOYMENT_ONE]: {
+    key: MODULE_KEYS.EMPLOYMENT_ONE,
+    title: '一段工作经历核验',
+    description: '请填写最近一段工作经历，以及该段经历的 HR 和直属上级证明人。',
+    shortName: '一段工作经历核验'
   },
-  [MODULE_KEYS.REFERENCE]: {
-    key: MODULE_KEYS.REFERENCE,
-    title: '工作经历访谈',
-    description: '请填写能够证明该段工作经历的联系人信息。',
-    shortName: '证明人访谈'
+  [MODULE_KEYS.EMPLOYMENT_TWO]: {
+    key: MODULE_KEYS.EMPLOYMENT_TWO,
+    title: '两段工作经历核验',
+    description: '请分别填写最近两段工作经历，每段均需提供 HR 和直属上级证明人。',
+    shortName: '两段工作经历核验'
+  },
+  [MODULE_KEYS.WORK_HISTORY]: {
+    key: MODULE_KEYS.WORK_HISTORY,
+    title: '工作履历',
+    description: '该模块由核验人员处理，无需您额外填写。',
+    shortName: '工作履历'
   }
 }
 
@@ -36,6 +43,8 @@ export const salaryRanges = [
   '50,000元以上',
   '不便提供'
 ]
+
+export const employmentTypes = ['正式员工', '劳务派遣', '业务外包', '实习', '兼职', '其他']
 
 function createLocalId() {
   if (globalThis.crypto?.randomUUID) {
@@ -61,21 +70,22 @@ export function createEmployment() {
     startMonth: '',
     endMonth: '',
     isCurrent: false,
-    salaryRange: ''
+    employmentType: '',
+    positionName: '',
+    salaryRange: '',
+    leaveReason: '',
+    hrReference: createReference('HR'),
+    supervisorReference: createReference('')
   }
 }
 
-export function createReference() {
-  return {
-    id: createLocalId(),
-    companyName: '',
-    startMonth: '',
-    endMonth: '',
-    isCurrent: false,
-    contactName: '',
-    contactRole: '',
-    contactPhone: ''
-  }
+function createReference(role) {
+  return { contactName: '', contactRole: role, contactPhone: '' }
+}
+
+export function employmentSegmentCount(modules) {
+  if (modules.includes(MODULE_KEYS.EMPLOYMENT_TWO)) return 2
+  return modules.includes(MODULE_KEYS.EMPLOYMENT_ONE) ? 1 : 0
 }
 
 export function normalizeModules(value) {
@@ -87,5 +97,5 @@ export function normalizeModules(value) {
   const valid = requested.filter(key => moduleDefinitions[key])
   return valid.length
     ? [...new Set(valid)]
-    : [MODULE_KEYS.EDUCATION, MODULE_KEYS.EMPLOYMENT, MODULE_KEYS.REFERENCE]
+    : [MODULE_KEYS.EDUCATION, MODULE_KEYS.EMPLOYMENT_ONE, MODULE_KEYS.WORK_HISTORY]
 }

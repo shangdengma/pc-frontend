@@ -33,22 +33,15 @@
       </article>
     </section>
 
-    <section v-if="hasModule(MODULE_KEYS.EMPLOYMENT)" class="candidate-review-section">
-      <h2>工作经历</h2>
+    <section v-if="employmentCount > 0" class="candidate-review-section">
+      <h2>{{ employmentCount === 2 ? '两段工作经历核验' : '一段工作经历核验' }}</h2>
       <article v-for="(item, index) in model.employments" :key="item.id" class="candidate-review-entry">
         <span>工作经历 {{ index + 1 }}</span>
         <strong>{{ item.companyName }}</strong>
-        <p>{{ displayPeriod(item) }} · {{ item.salaryRange }}</p>
-      </article>
-    </section>
-
-    <section v-if="hasModule(MODULE_KEYS.REFERENCE)" class="candidate-review-section">
-      <h2>工作经历访谈</h2>
-      <article v-for="(item, index) in model.references" :key="item.id" class="candidate-review-entry">
-        <span>证明人 {{ index + 1 }}</span>
-        <strong>{{ item.contactName }} · {{ item.contactRole }}</strong>
-        <p>{{ item.companyName }} · {{ displayPeriod(item) }}</p>
-        <p>{{ item.contactPhone }}</p>
+        <p>{{ displayPeriod(item) }} · {{ item.employmentType }} · {{ item.positionName }}</p>
+        <p>{{ item.salaryRange }} · {{ item.leaveReason }}</p>
+        <p>HR：{{ item.hrReference.contactName }} · {{ maskPhone(item.hrReference.contactPhone) }}</p>
+        <p>直属上级：{{ item.supervisorReference.contactName }} · {{ item.supervisorReference.contactRole }} · {{ maskPhone(item.supervisorReference.contactPhone) }}</p>
       </article>
     </section>
 
@@ -74,7 +67,8 @@
 
 <script setup>
 import { ArrowRight, CheckCircle2, FileCheck2, ShieldCheck } from '@lucide/vue'
-import { MODULE_KEYS } from '../candidateFormSchema'
+import { computed } from 'vue'
+import { MODULE_KEYS, employmentSegmentCount } from '../candidateFormSchema'
 
 const props = defineProps({
   model: { type: Object, required: true },
@@ -84,6 +78,8 @@ const props = defineProps({
 })
 
 defineEmits(['back', 'sign'])
+
+const employmentCount = computed(() => employmentSegmentCount(props.modules))
 
 function hasModule(key) {
   return props.modules.includes(key)

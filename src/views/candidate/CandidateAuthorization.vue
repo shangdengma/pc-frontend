@@ -145,7 +145,7 @@ import {
   MODULE_KEYS,
   createEducation,
   createEmployment,
-  createReference,
+  employmentSegmentCount,
   moduleDefinitions,
   normalizeModules
 } from './candidateFormSchema'
@@ -160,7 +160,10 @@ import './candidate-authorization.css'
 
 const route = useRoute()
 const router = useRouter()
-const contactUrl = computed(() => router.resolve({ name: 'contactUs' }).href)
+const contactUrl = computed(() => router.resolve({
+  name: 'contactUs',
+  query: { source: 'candidate' }
+}).href)
 const progressSteps = ['阅读授权', '填写信息', '确认签署']
 const currentStep = ref(0)
 const countdown = ref(0)
@@ -234,9 +237,10 @@ const formModel = reactive({
     email: ''
   },
   educations: [createEducation()],
-  employments: [createEmployment()],
-  references: [createReference()]
+  employments: []
 })
+
+syncEmploymentSegments()
 
 const stepForStatus = {
   WAIT_SMS: 0,
@@ -268,6 +272,7 @@ function applyTaskView(data) {
   task.modules = Array.isArray(data.modules) && data.modules.length
     ? data.modules.filter(key => moduleDefinitions[key])
     : []
+  syncEmploymentSegments()
 }
 
 function goToStep(step) {
@@ -354,6 +359,7 @@ async function verifyPhone() {
     formModel.candidate.phone = verification.phone
     if (Array.isArray(data.modules)) {
       task.modules = data.modules.filter(key => moduleDefinitions[key])
+      syncEmploymentSegments()
     }
     const resumeStep = stepForStatus[data.status]
     goToStep(resumeStep === undefined ? 1 : resumeStep)
@@ -408,26 +414,34 @@ function validateForm() {
     if (new Set(credentialNumbers).size !== credentialNumbers.length) return '学历证书编号不能重复'
   }
 
-  if (task.modules.includes(MODULE_KEYS.EMPLOYMENT)) {
-    const invalid = formModel.employments.some(item =>
-      !item.companyName ||
-      !item.startMonth ||
-      (!item.isCurrent && !item.endMonth) ||
-      !item.salaryRange
-    )
-    if (invalid) return '请完整填写每段工作经历的必填信息'
-  }
-
-  if (task.modules.includes(MODULE_KEYS.REFERENCE)) {
-    const invalid = formModel.references.some(item =>
-      !item.companyName ||
-      !item.startMonth ||
-      (!item.isCurrent && !item.endMonth) ||
-      !item.contactName ||
-      !item.contactRole ||
-      !item.contactPhone
-    )
-    if (invalid) return '请完整填写每位证明人的必填信息'
+  const requiredEmploymentCount = employmentSegmentCount(task.modules)
+  if (requiredEmploymentCount > 0) {
+    if (formModel.employments.length !== requiredEmploymentCount) {
+      return `本套餐要求填写${requiredEmploymentCount}段工作经历`
+    }
+    for (let index = 0; index < formModel.employments.length; index += 1) {
+      const item = formModel.employments[index]
+      const prefix = `第${index + 1}段工作经历`
+      if (!item.companyName) return `${prefix}：请填写工作单位名称`
+      if (!item.startMonth) return `${prefix}：请选择入职时间`
+      if (!item.isCurrent && !item.endMonth) return `${prefix}：请选择离职时间`
+      if (!item.employmentType) return `${prefix}：请选择供职方式`
+      if (!item.positionName) return `${prefix}：请填写职位名称`
+      if (!item.salaryRange) return `${prefix}：请选择薪酬范围`
+      if (item.isCurrent && !item.leaveReason) item.leaveReason = '在职'
+      if (!item.leaveReason) return `${prefix}：请填写离职原因`
+      if (!item.hrReference?.contactName) return `${prefix}：请填写HR姓名`
+      if (!item.hrReference?.contactPhone) return `${prefix}：请填写HR联系方式`
+      if (!item.supervisorReference?.contactName) return `${prefix}：请填写直属上级姓名`
+      if (!item.supervisorReference?.contactRole) return `${prefix}：请填写直属上级职位`
+      if (!item.supervisorReference?.contactPhone) return `${prefix}：请填写直属上级联系方式`
+      if (!/^[0-9()\-\s]{7,20}$/.test(item.hrReference.contactPhone)) {
+        return `${prefix}：HR联系方式格式不正确`
+      }
+      if (!/^[0-9()\-\s]{7,20}$/.test(item.supervisorReference.contactPhone)) {
+        return `${prefix}：直属上级联系方式格式不正确`
+      }
+    }
   }
   return ''
 }
@@ -473,27 +487,35 @@ function buildFormPayload() {
     educations: task.modules.includes(MODULE_KEYS.EDUCATION)
       ? formModel.educations.map(item => ({ credentialNo: item.credentialNo, noCredential: !!item.noCredential }))
       : [],
-    employments: task.modules.includes(MODULE_KEYS.EMPLOYMENT)
+    employments: employmentSegmentCount(task.modules) > 0
       ? formModel.employments.map(item => ({
           companyName: item.companyName,
           startMonth: item.startMonth,
           endMonth: item.endMonth,
           isCurrent: !!item.isCurrent,
-          salaryRange: item.salaryRange
-        }))
-      : [],
-    references: task.modules.includes(MODULE_KEYS.REFERENCE)
-      ? formModel.references.map(item => ({
-          companyName: item.companyName,
-          startMonth: item.startMonth,
-          endMonth: item.endMonth,
-          isCurrent: !!item.isCurrent,
-          contactName: item.contactName,
-          contactRole: item.contactRole,
-          contactPhone: item.contactPhone
+          employmentType: item.employmentType,
+          positionName: item.positionName,
+          salaryRange: item.salaryRange,
+          leaveReason: item.leaveReason,
+          hrReference: {
+            contactName: item.hrReference.contactName,
+            contactRole: 'HR',
+            contactPhone: item.hrReference.contactPhone
+          },
+          supervisorReference: {
+            contactName: item.supervisorReference.contactName,
+            contactRole: item.supervisorReference.contactRole,
+            contactPhone: item.supervisorReference.contactPhone
+          }
         }))
       : []
   }
+}
+
+function syncEmploymentSegments() {
+  const count = employmentSegmentCount(task.modules)
+  while (formModel.employments.length < count) formModel.employments.push(createEmployment())
+  if (formModel.employments.length > count) formModel.employments.splice(count)
 }
 
 function errorMessage(e, fallback) {

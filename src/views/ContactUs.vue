@@ -1,14 +1,21 @@
 <template>
   <div class="contact-page" :class="{ 'contact-page--embedded': embedded }">
     <header v-if="!embedded" class="contact-header">
-      <router-link class="contact-brand" to="/login" aria-label="返回钟馗背调登录页">
+      <router-link v-if="!candidateEntry" class="contact-brand" to="/login" aria-label="返回钟馗背调登录页">
         <span class="contact-brand-seal" aria-hidden="true">钟馗</span>
         <span>
           <strong>钟馗背调</strong>
           <small>企业版工作台</small>
         </span>
       </router-link>
-      <router-link class="contact-back" to="/login">
+      <div v-else class="contact-brand">
+        <span class="contact-brand-seal" aria-hidden="true">钟馗</span>
+        <span>
+          <strong>钟馗背调</strong>
+          <small>候选人服务</small>
+        </span>
+      </div>
+      <router-link v-if="!candidateEntry" class="contact-back" to="/login">
         <ArrowLeft :size="16" aria-hidden="true" />
         返回登录
       </router-link>
@@ -118,6 +125,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   ArrowLeft,
   Check,
@@ -140,6 +148,8 @@ defineProps({
   }
 })
 
+const route = useRoute()
+const candidateEntry = computed(() => route.query.source === 'candidate')
 const loading = ref(true)
 const loadError = ref('')
 const copiedKey = ref('')
