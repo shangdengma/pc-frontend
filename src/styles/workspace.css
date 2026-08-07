@@ -35,6 +35,72 @@ textarea:focus-visible {
   padding: 28px 32px 64px;
 }
 
+/* Authenticated workspace skeleton. Pages choose only a content width; the
+   title rhythm, content start and responsive behavior stay identical. */
+.workspace-page {
+  width: min(1160px, 100%);
+  margin: 0 auto;
+}
+
+.workspace-page--wide { width: min(1280px, 100%); }
+.workspace-page--standard { width: min(1120px, 100%); }
+.workspace-page--narrow { width: min(960px, 100%); }
+
+.workspace-page > .page-head {
+  min-height: 92px;
+  margin-bottom: 24px;
+  padding: 4px 0 22px;
+  border-bottom-color: #dce4ee;
+}
+
+.workspace-page > .page-head h1,
+.workspace-page > .page-head h2 {
+  color: #17243a;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.22;
+}
+
+.workspace-page .workspace-surface {
+  overflow: hidden;
+  border: 1px solid #dce4ee;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
+}
+
+.workspace-page .workspace-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 64px;
+  padding: 17px 22px;
+  border-bottom: 1px solid #e7edf4;
+  background: #fbfcfe;
+}
+
+.workspace-page .workspace-section-head h3 {
+  margin: 0;
+  color: #1a2940;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* Padded work panels keep their existing form spacing while the shared header
+   reaches the panel edge. This avoids the boxed-inside-a-box look. */
+.workspace-page .work-card > .workspace-section-head {
+  margin: -20px -24px 20px;
+}
+
+.workspace-page .feedback-form > .workspace-section-head {
+  margin: -24px -24px 22px;
+}
+
+.workspace-page .feedback-history > .workspace-section-head {
+  margin: -20px -20px 18px;
+}
+
 .work-card,
 .panel,
 .invoice-panel,
@@ -116,19 +182,20 @@ textarea:focus-visible {
 .records-card {
   max-width: none;
   margin: 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  padding: 20px 22px 22px;
+  background: #fff;
+  border: 1px solid #dce4ee;
+  border-radius: var(--radius);
+  box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
 }
 
 .records-card .toolbar {
   margin-bottom: 14px;
-  padding: 0 0 14px;
-  background: transparent;
-  border: 0;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e3e9f1;
   border-bottom: 1px solid var(--line);
-  border-radius: 0;
+  border-radius: var(--radius);
 }
 
 .records-card .toolbar input,
@@ -388,12 +455,29 @@ textarea:focus-visible {
   .app-modal__body { padding: 18px; }
   .app-modal__body--flush { padding: 0; }
   .app-modal__footer { padding: 12px 18px; }
+  .workspace-page > .page-head {
+    min-height: 0;
+    margin-bottom: 18px;
+    padding: 0 0 16px;
+  }
+  .workspace-page > .page-head h1,
+  .workspace-page > .page-head h2 { font-size: 24px; }
+  .workspace-page .workspace-section-head { padding: 15px 16px; }
   .invoice-stats,
   .sub-summary,
   .agent-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 768px) {
+  .workspace-page .work-card > .workspace-section-head {
+    margin: -18px -20px 18px;
+  }
+
+  .workspace-page .feedback-form > .workspace-section-head,
+  .workspace-page .feedback-history > .workspace-section-head {
+    margin: -18px -18px 18px;
+  }
+
   /* 分页：统计信息单独一行，操作按钮一行，避免五个元素挤在一行里折字 */
   .pager {
     display: grid;
@@ -459,7 +543,7 @@ textarea:focus-visible {
 }
 
 /* 页头「导出」与「发起查询」并排 */
-.records-card .records-head-actions {
+.records-page .records-head-actions {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -483,6 +567,7 @@ textarea:focus-visible {
   }
 
   /* 导出是低频操作，窄屏让位给主按钮 */
-  .records-card .records-head-actions { gap: 8px; }
-  .records-card .records-head-actions .ghost-btn { padding: 0 12px; }
+  .records-card { padding: 14px; }
+  .records-page .records-head-actions { gap: 8px; }
+  .records-page .records-head-actions .ghost-btn { padding: 0 12px; }
 }

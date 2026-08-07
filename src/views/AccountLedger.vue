@@ -1,13 +1,12 @@
 <template>
-  <div class="account-ledger-page">
+  <div class="account-ledger-page workspace-page workspace-page--wide">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">账户资金</p>
         <h2>资金流水</h2>
       </div>
     </header>
 
-    <section class="ledger-workspace">
+    <section class="ledger-workspace workspace-surface">
       <div class="filter-bar">
         <label>
           <span>流水类型</span>
@@ -42,6 +41,15 @@
 
       <div class="table-wrap">
         <table class="data-table ledger-table">
+          <colgroup>
+            <col class="ledger-col-time" />
+            <col class="ledger-col-type" />
+            <col class="ledger-col-amount" />
+            <col class="ledger-col-balance" />
+            <col class="ledger-col-balance" />
+            <col class="ledger-col-reason" />
+            <col class="ledger-col-trade" />
+          </colgroup>
           <thead>
             <tr>
               <th>发生时间</th>
@@ -91,11 +99,12 @@
       <footer class="pagination-bar">
         <div>
           <span>共 {{ pagination.total }} 条记录</span>
-          <select v-model.number="pagination.pageSize" :disabled="loading" @change="changePageSize">
+          <select v-if="!isMobile" v-model.number="pagination.pageSize" :disabled="loading" @change="changePageSize">
             <option :value="10">10 条/页</option>
             <option :value="20">20 条/页</option>
             <option :value="50">50 条/页</option>
           </select>
+          <span v-else class="mobile-page-size">每页 5 条</span>
         </div>
         <div class="page-controls">
           <button type="button" :disabled="pagination.pageNum <= 1 || loading" @click="changePage(-1)">上一页</button>
@@ -109,7 +118,7 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { CircleAlert, ReceiptText, Search } from '@lucide/vue'
 import { listMyAccountLedger } from '../api/accountLedger'
 import { yuanFromFen } from '../utils/format'
@@ -119,6 +128,9 @@ const loading = ref(false)
 const errorMessage = ref('')
 const filters = reactive({ changeStyle: '', outTradeNo: '' })
 const pagination = reactive({ pageNum: 1, pageSize: 20, total: 0 })
+const isMobile = ref(false)
+const desktopPageSize = ref(20)
+let mobileMediaQuery = null
 
 const typeOptions = [
   { value: '1', label: '在线充值' },
@@ -216,8 +228,26 @@ function changePage(step) {
 }
 
 function changePageSize() {
+  desktopPageSize.value = pagination.pageSize
   pagination.pageNum = 1
   loadLedger()
+}
+
+function applyViewportPageSize(matches, shouldLoad = true) {
+  if (matches === isMobile.value && pagination.pageSize === (matches ? 5 : desktopPageSize.value)) {
+    if (shouldLoad) loadLedger()
+    return
+  }
+
+  if (matches && !isMobile.value) desktopPageSize.value = pagination.pageSize
+  isMobile.value = matches
+  pagination.pageSize = matches ? 5 : desktopPageSize.value
+  pagination.pageNum = 1
+  if (shouldLoad) loadLedger()
+}
+
+function handleViewportChange(event) {
+  applyViewportPageSize(event.matches)
 }
 
 function refreshPage() {
@@ -225,13 +255,21 @@ function refreshPage() {
   return loadLedger()
 }
 
-onMounted(refreshPage)
+onMounted(() => {
+  mobileMediaQuery = window.matchMedia('(max-width: 768px)')
+  applyViewportPageSize(mobileMediaQuery.matches)
+  mobileMediaQuery.addEventListener('change', handleViewportChange)
+})
+
+onBeforeUnmount(() => {
+  mobileMediaQuery?.removeEventListener('change', handleViewportChange)
+})
 // 移动端下拉刷新复用同一个加载函数
 useRefresh(refreshPage)
 </script>
 
 <style scoped>
-.account-ledger-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: #172033; }
+.account-ledger-page { width: min(1280px, 100%); margin: 0 auto; color: #172033; }
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid var(--line); }
 .page-header h2 { margin: 10px 0 0; font-size: var(--fs-2xl); line-height: 1.3; letter-spacing: 0; }
 .page-header p { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-base); }
@@ -262,13 +300,15 @@ useRefresh(refreshPage)
    这里只留本页特有的列宽与最小宽度。原先这套私有样式让资金流水的
    表头是灰底 700 字重、行高 54px、边框用 #dfe6ee/#e9edf3 两个硬编码色，
    和查询记录（透明表头、600、51px、token 色）明显不是一套。 */
-.ledger-table { min-width: 1000px; table-layout: fixed; }
+.ledger-table { width: 100%; min-width: 1000px; table-layout: fixed; }
 /* 各列宽度之和原为 1230px，而工作区容器只有 1136px，桌面端一直在横向溢出。
    收紧固定列，把「变动原因」留成弹性列吃掉剩余宽度。 */
-.ledger-table th:nth-child(1) { width: 150px; }
-.ledger-table th:nth-child(2) { width: 116px; }
-.ledger-table th:nth-child(3), .ledger-table th:nth-child(4), .ledger-table th:nth-child(5) { width: 128px; }
-.ledger-table th:nth-child(7) { width: 190px; }
+.ledger-col-time { width: 13%; }
+.ledger-col-type { width: 10%; }
+.ledger-col-amount { width: 11%; }
+.ledger-col-balance { width: 12%; }
+.ledger-col-reason { width: 21%; }
+.ledger-col-trade { width: 21%; }
 .numeric { text-align: right !important; font-variant-numeric: tabular-nums; }
 .amount-cell { font-weight: 800; }
 .amount-cell.income { color: #16875d; }
@@ -299,6 +339,7 @@ useRefresh(refreshPage)
 .page-controls button { min-width: 66px; padding: 0 12px; cursor: pointer; }
 .page-controls button:disabled { color: #a8b2c1; background: #f7f9fb; cursor: not-allowed; }
 .page-controls strong { min-width: 62px; color: var(--text-secondary); text-align: center; font-size: var(--fs-xs); }
+.mobile-page-size { color: var(--muted); white-space: nowrap; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -313,6 +354,8 @@ useRefresh(refreshPage)
 @media (max-width: 768px) {
   .ledger-filters, .ledger-summary { grid-template-columns: minmax(0, 1fr) !important; }
   .ledger-filters input, .ledger-filters select, .ledger-filters button { width: 100%; }
+  .pagination-bar { align-items: stretch; flex-direction: column; gap: 10px; padding: 12px 14px; }
+  .pagination-bar > div { width: 100%; justify-content: space-between; }
 }
 
 /* 移动端：每条流水只保留一套卡片布局，避免与全局 data-table 的

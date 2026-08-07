@@ -62,7 +62,7 @@ const routes = [
       { path: 'dashboard', name: 'dashboard', component: Dashboard, meta: { title: '工作台' } },
       { path: 'account-profile', name: 'accountProfile', component: AccountProfile, meta: { title: '基础信息' } },
       { path: 'query/create', name: 'queryCreate', component: QueryCreate, meta: { title: '发起背调' } },
-      { path: 'records', name: 'records', component: Records, meta: { title: '查询记录' } },
+      { path: 'records', name: 'records', component: Records, meta: { title: '背调记录' } },
       { path: 'report/:id', name: 'reportDetail', component: ReportFull, meta: { title: '报告详情' } },
       { path: 'recharge', name: 'recharge', component: Recharge, meta: { title: '账户充值' } },
       { path: 'recharge/ledger', name: 'accountLedger', component: AccountLedger, meta: { title: '资金流水' } },

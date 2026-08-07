@@ -1,26 +1,28 @@
 ﻿<template>
-  <section class="messages-page">
+  <section class="messages-page workspace-page workspace-page--narrow">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">日常业务</p>
         <h2>消息通知</h2>
       </div>
     </header>
 
-    <div class="message-tabs">
-      <button :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</button>
-      <button :class="{ active: filter === 'unread' }" @click="filter = 'unread'">未读</button>
-      <button :class="{ active: filter === 'read' }" @click="filter = 'read'">已读</button>
+    <div class="message-toolbar">
+      <nav class="message-tabs" aria-label="消息筛选">
+        <button :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</button>
+        <button :class="{ active: filter === 'unread' }" @click="filter = 'unread'">未读</button>
+        <button :class="{ active: filter === 'read' }" @click="filter = 'read'">已读</button>
+      </nav>
+      <span class="message-count">{{ unreadCount ? `${unreadCount} 条未读` : '全部已读' }}</span>
     </div>
 
     <div class="messages-panel">
       <div v-if="loading" class="state-box">正在加载消息...</div>
       <div v-else-if="filteredMessages.length === 0" class="state-box">暂无消息通知</div>
-      <!-- 两行结构：标题+时间 / 摘要+操作。
-           去掉了原来的「站内信」标签（用户就在站内信页里，是废话）
-           和「已读/未读」标签（左侧圆点已经表达） -->
       <article v-for="item in filteredMessages" :key="item.id" class="message-card" :class="{ unread: !isRead(item) }" @click="openDetail(item)">
-        <span class="message-status-dot" :title="isRead(item) ? '已读' : '未读'"></span>
+        <span class="message-icon" :class="{ unread: !isRead(item) }" aria-hidden="true">
+          <Mail v-if="!isRead(item)" :size="18" />
+          <MailOpen v-else :size="18" />
+        </span>
         <div class="message-main">
           <div class="message-line-1">
             <h3>{{ item.title || '消息通知' }}</h3>
@@ -62,15 +64,16 @@
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, ref } from 'vue'
+import { Mail, MailOpen } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
 import { getUserNotices, markNoticeRead } from '../api/notice'
 import { getUser } from '../utils/auth'
-import { formatDateTime } from '../utils/format'
 
 const loading = ref(false)
 const messages = ref([])
 const detail = ref(null)
 const filter = ref('all')
+const unreadCount = computed(() => messages.value.filter(item => !isRead(item)).length)
 
 const filteredMessages = computed(() => messages.value.filter(item => {
   if (filter.value === 'unread') return !isRead(item)
@@ -83,12 +86,9 @@ function isRead(item) {
 }
 
 function formatTime(value) {
-  return value ? formatDateTime(value) : '-'
-}
-
-function channelLabels(value) {
-  const raw = String(value || '站内信')
-  return raw.split(',').map(item => item.trim()).filter(Boolean)
+  if (!value) return '-'
+  const text = String(value)
+  return text.length >= 16 ? text.slice(0, 16) : text
 }
 
 function imageList(item) {
@@ -102,6 +102,7 @@ async function loadMessages() {
     const user = getUser()
     const res = await getUserNotices(user.userId, { pageNum: 1, pageSize: 100 })
     messages.value = res.rows || []
+    window.dispatchEvent(new CustomEvent('zk:notice-count-refresh'))
   } finally {
     loading.value = false
   }
@@ -117,6 +118,7 @@ async function markRead(item) {
   if (detail.value && detail.value.id === item.id) {
     detail.value.status = 1
   }
+  window.dispatchEvent(new CustomEvent('zk:notice-count-refresh'))
 }
 
 onMounted(loadMessages)
@@ -126,116 +128,117 @@ useRefresh(loadMessages)
 
 <style scoped>
 .messages-page {
-  /* 原为 1180px：标题贴最左、时间贴最右，中间空出 908px，
-     摘要一行排八十多个汉字。列表是用来扫的，行长要压下来。 */
   width: min(960px, 100%);
   margin: 0 auto;
 }
 
-.eyebrow {
-  margin: 0 0 8px;
-  color: var(--blue);
-  font-size: var(--fs-sm);
-  font-weight: 700;
+.messages-page .page-head {
+  margin-bottom: 24px;
 }
 
-.ghost-light-btn {
-  min-width: 92px;
-  height: 38px;
-  border: 1px solid #d8e1ee;
-  border-radius: var(--radius);
-  color: var(--text-secondary);
-  background: #ffffff;
-  font-weight: 700;
+.messages-page .page-head h2 {
+  font-size: 28px;
+  line-height: 1.22;
 }
 
-/* 下划线式切换，去掉胶囊底色块 */
+.message-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 0 18px;
+  border: 1px solid #dce4ee;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #fbfcfe;
+}
+
 .message-tabs {
   display: flex;
-  gap: var(--sp-6);
-  /* 同上：Tab 与下方消息面板之间需要留出呼吸，否则两条横线叠在一起 */
-  margin: var(--sp-4) 0 var(--sp-5);
-  padding: 0;
-  width: 100%;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: transparent;
+  align-self: stretch;
+  gap: 26px;
 }
 
 .message-tabs button {
   position: relative;
-  min-width: 0;
-  height: 34px;
+  height: 100%;
   padding: 0;
   border: 0;
-  border-radius: 0;
-  color: var(--muted);
+  color: #7a8799;
   background: transparent;
   font-size: var(--fs-sm);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .message-tabs button.active {
-  color: var(--text);
-  background: transparent;
-  font-weight: 600;
-  box-shadow: none;
+  color: #1a2940;
 }
+
 .message-tabs button.active::after {
   content: '';
   position: absolute;
-  left: 0; right: 0; bottom: -1px;
+  right: 0;
+  bottom: 0;
+  left: 0;
   height: 2px;
-  background: var(--text);
+  background: #315a91;
 }
 
-/* 一整块面 + 细线分行，而不是一条消息一张卡 */
+.message-count {
+  color: #7a8799;
+  font-size: var(--fs-xs);
+}
+
 .messages-panel {
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--card);
-  box-shadow: none;
+  border: 1px solid #dce4ee;
+  border-radius: 0 0 8px 8px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
 }
 
 .state-box {
-  min-height: 260px;
+  min-height: 300px;
   display: grid;
   place-items: center;
-  border: 0;
-  color: var(--muted);
-  background: #ffffff;
+  color: #7a8799;
+  background: #fff;
 }
 
 .message-card {
-  position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 13px 18px;
+  gap: 16px;
+  min-height: 92px;
+  padding: 18px 22px;
   border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: #ffffff;
-  box-shadow: none;
+  border-bottom: 1px solid #e7edf4;
+  background: #fff;
   cursor: pointer;
+  transition: background-color .14s ease;
 }
 
 .message-card:hover {
-  background: var(--line-soft);
+  background: #f8fafc;
 }
 
 .message-card:last-child { border-bottom: 0; }
 
-/* 标签退化为纯文字：一行里堆两三个彩色胶囊，整列看下来就是密密麻麻的色块 */
+.message-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #7f8b9d;
+  background: #f1f4f8;
+}
 
-.text-btn {
-  border: 0;
-  color: var(--blue);
-  background: transparent;
-  font-weight: 700;
+.message-icon.unread {
+  color: #315a91;
+  background: #eaf2fb;
 }
 
 .detail-content {
@@ -260,36 +263,6 @@ useRefresh(loadMessages)
   object-fit: cover;
 }
 
-@media (max-width: 760px) {
-  .ghost-light-btn { width: 100%; }
-  .message-title-row { align-items: flex-start; flex-direction: column; gap: 6px; }
-  .message-card { padding: 16px; }
-}
-
-/* 移动端：公告列表与正文改为上下排列 */
-@media (max-width: 768px) {
-  .messages-layout { grid-template-columns: minmax(0, 1fr) !important; }
-}
-
-/* ---- 消息行：两行结构，密度优先 ---- */
-.message-card {
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.message-status-dot {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  margin-top: 7px;
-  border-radius: 50%;
-  background: transparent;
-}
-
-.message-card.unread .message-status-dot {
-  background: var(--cinnabar);
-}
-
 .message-main {
   flex: 1;
   min-width: 0;
@@ -303,26 +276,25 @@ useRefresh(loadMessages)
 
 .message-line-1 h3 {
   margin: 0;
-  /* 标题按内容宽度收住，时间紧随其后，不再被推到行尾 */
   flex: 0 1 auto;
   font-size: var(--fs-base);
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 600;
+  color: #4c5b70;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .message-card.unread .message-line-1 h3 {
-  font-weight: 600;
-  color: var(--text);
+  color: #17243a;
+  font-weight: 700;
 }
 
 .message-line-1 time {
   flex: 0 0 auto;
   margin-left: auto;
   font-size: var(--fs-xs);
-  color: var(--faint);
+  color: #8b97a8;
   font-variant-numeric: tabular-nums;
 }
 
@@ -334,14 +306,13 @@ useRefresh(loadMessages)
   margin-top: 4px;
 }
 
-/* 摘要只占一行，超出省略——列表是用来扫的，细节点进去看 */
 .message-line-2 p {
   margin: 0;
   flex: 1;
   min-width: 0;
   font-size: var(--fs-sm);
   line-height: 1.6;
-  color: var(--muted);
+  color: #7a8799;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -352,28 +323,30 @@ useRefresh(loadMessages)
   padding: 0;
   border: 0;
   background: none;
-  color: var(--muted);
+  color: #5e6d82;
   font-size: var(--fs-xs);
   cursor: pointer;
   opacity: 0;
   transition: opacity .14s ease, color .14s ease;
 }
 
-/* 「标记已读」平时隐藏，悬停整行才出现，避免每行都挂个按钮 */
 .message-card:hover .msg-read-btn { opacity: 1; }
-.msg-read-btn:hover { color: var(--text); }
+.msg-read-btn:hover { color: #1a2940; }
 
 @media (max-width: 768px) {
-  /* 手机没有 hover，按钮只能常驻；但常驻后它是无边框纯文字、又落在正文正下方，
-     读起来像正文的最后一行，所以这里给它明确的按钮外观并靠右站开 */
+  .messages-page .page-head h2 { font-size: 24px; }
+  .message-toolbar { padding: 0 14px; }
+  .message-tabs { gap: 20px; }
+  .message-card { min-height: 0; padding: 16px; }
+  .message-icon { width: 34px; height: 34px; }
   .msg-read-btn {
     opacity: 1;
     align-self: flex-end;
     margin-top: 2px;
     padding: 5px 12px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
+    border: 1px solid #dce4ee;
+    border-radius: 6px;
+    color: #4c5b70;
     background: #fff;
   }
 

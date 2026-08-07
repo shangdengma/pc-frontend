@@ -1,26 +1,38 @@
 <template>
-  <section class="enterprise-cert-page">
+  <section class="enterprise-cert-page workspace-page workspace-page--standard">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">企业管理</p>
         <h2>企业认证</h2>
-        <p class="page-head-desc">{{ isSubAccount ? "认证信息继承自主账号。" : "提交企业资料，完成账户认证。" }}</p>
       </div>
     </header>
 
-    <div class="cert-layout">
+    <div v-if="!initialized" class="work-card cert-initial-loading" role="status" aria-live="polite">
+      <span class="cert-loading-spinner" aria-hidden="true"></span>
+      <span>正在加载企业认证信息...</span>
+    </div>
+
+    <div v-else class="cert-layout">
       <div class="work-card cert-status-card" :class="mainStatusClass">
-        <div class="status-header">
-          <span class="cert-status-icon" :class="mainStatusClass">
-            <component :is="mainStatusIcon" :size="21" :stroke-width="1.8" />
-          </span>
-          <div>
-            <h3>{{ mainCert ? statusText(mainCert.status) : '未认证' }}</h3>
-            <p>{{ mainCert ? mainCert.enterpriseName || '企业认证申请' : '当前账号还未提交企业认证申请' }}</p>
+        <div class="cert-status-overview">
+          <div class="status-header">
+            <span class="cert-status-icon" :class="mainStatusClass">
+              <component :is="mainStatusIcon" :size="21" :stroke-width="1.8" />
+            </span>
+            <div>
+              <span class="cert-status-label">当前认证状态</span>
+              <h3>{{ mainCert ? statusText(mainCert.status) : '未认证' }}</h3>
+              <p>{{ mainCert ? displayEnterpriseName(mainCert.enterpriseName) : '当前账号还未提交企业认证申请' }}</p>
+            </div>
           </div>
+          <ol class="cert-progress" aria-label="企业认证进度">
+            <li v-for="(step, index) in certSteps" :key="step" :class="{ active: progressStage === index + 1, done: progressStage > index + 1 }">
+              <span>{{ progressStage > index + 1 ? '✓' : index + 1 }}</span>
+              <strong>{{ step }}</strong>
+            </li>
+          </ol>
         </div>
         <dl v-if="mainCert && mainCert.status === 'approved'" class="cert-facts">
-          <div><dt>企业名称</dt><dd>{{ mainCert.enterpriseName || '-' }}</dd></div>
+          <div><dt>企业名称</dt><dd>{{ displayEnterpriseName(mainCert.enterpriseName) }}</dd></div>
           <div><dt>认证时间</dt><dd>{{ formatTime(mainCert.reviewedAt) || '-' }}</dd></div>
           <div><dt>认证方式</dt><dd>营业执照<button class="link-btn" type="button" @click="openView(mainCert)">查看</button></dd></div>
         </dl>
@@ -48,7 +60,6 @@
         <div class="work-card-head compact-head">
           <div>
             <h3>{{ mainCert && mainCert.status === 'rejected' ? '重新提交认证' : '填写企业认证信息' }}</h3>
-            <p class="cert-form-desc">认证通过后，企业名称将同步为账号的企业名，用于授权声明与短信通知。</p>
           </div>
         </div>
 
@@ -85,7 +96,7 @@
               <Building2 :size="18" :stroke-width="1.8" />
             </span>
             <span class="cert-item-main">
-              <strong>{{ item.enterpriseName || '-' }}</strong>
+              <strong>{{ displayEnterpriseName(item.enterpriseName) }}</strong>
               <em>{{ item.createTime || item.updateTime || '' }}</em>
             </span>
             <b :class="`status-badge ${statusClass(item.status)}`">{{ statusText(item.status) }}</b>
@@ -145,6 +156,7 @@ const STATUS_MAP = {
 }
 
 const loading = ref(false)
+const initialized = ref(false)
 const detailLoading = ref(false)
 const saving = ref(false)
 const uploading = ref(false)
@@ -197,6 +209,13 @@ function formatTime(value) {
   if (!value) return ''
   return String(value).replace('T', ' ').slice(0, 19)
 }
+
+function displayEnterpriseName(value) {
+  const name = String(value || '').trim()
+  if (!name || /^\?+$/.test(name)) return '企业名称未填写'
+  return name
+}
+
 const formReadonly = computed(() => readonly.value || isSubAccount.value)
 const panelTitle = computed(() => {
   if (isSubAccount.value) return '主账号企业认证信息'
@@ -215,6 +234,13 @@ const mainCert = computed(() => {
     || null
 })
 const mainStatusClass = computed(() => mainCert.value ? statusClass(mainCert.value.status) : 'empty')
+const certSteps = ['填写资料', '平台审核', '完成认证']
+const progressStage = computed(() => {
+  const status = mainCert.value?.status
+  if (status === 'approved') return 3
+  if (status === 'pending' || status === 'reviewing') return 2
+  return 1
+})
 const mainStatusIcon = computed(() => ({
   approved: BadgeCheck,
   rejected: CircleX,
@@ -522,46 +548,197 @@ async function loadProfile() {
 onUnmounted(releaseBlobs)
 
 onMounted(async () => {
-  await loadProfile()
-  await loadList()
+  try {
+    await loadProfile()
+    await loadList()
+  } finally {
+    initialized.value = true
+  }
 })
 // 移动端下拉刷新复用同一个加载函数
 useRefresh(loadList)
 </script>
 
 <style scoped>
-/* 整体布局：状态卡片与认证记录更均衡的两栏 */
-/* 内容驱动：没有历史记录时单列（未认证是最常见状态），
-   有记录才两栏。原先固定两栏会让空的「认证记录」白占一半版面。 */
+.enterprise-cert-page {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.enterprise-cert-page .page-head h2 {
+  font-size: 28px;
+  line-height: 1.22;
+}
+
+/* 状态、主任务、历史记录按纵向工作流排列，避免互相争抢宽度。 */
 .cert-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: start;
-  max-width: 760px;
-}
-
-/* 有内联表单时单列：表单是页面主体，不能被挤进侧栏 */
-.cert-layout:has(.cert-form-card) {
+  display: grid;
   grid-template-columns: minmax(0, 1fr);
-  max-width: 1040px;   /* 表单是页面主体，720px 在宽屏上右侧空掉一半 */
-}
-
-.cert-layout:has(.cert-history-card) {
-  grid-template-columns: minmax(360px, .82fr) minmax(0, 1.18fr);
+  gap: 18px;
+  align-items: start;
   max-width: none;
 }
 
-@media (max-width: 900px) {
-  .cert-layout,
-  .cert-layout:has(.cert-history-card) {
-    grid-template-columns: minmax(0, 1fr);
-    max-width: none;
-  }
+.cert-initial-loading {
+  min-height: 176px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+}
+
+.cert-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: cert-loading-spin 0.8s linear infinite;
+}
+
+@keyframes cert-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cert-layout:has(.cert-history-card),
+.cert-layout:has(.cert-form-card) {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
 }
 
 .cert-status-card,
+.cert-form-card,
 .cert-history-card {
   display: flex;
   flex-direction: column;
+  border-color: #dce4ee;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
+}
+
+.cert-status-card {
+  padding: 24px 26px;
+  background: linear-gradient(120deg, #ffffff 0%, #f7fafe 100%);
+}
+
+.cert-status-overview {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(420px, 1.1fr);
+  align-items: center;
+  gap: 40px;
+}
+
+.cert-status-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #7a8799;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.cert-status-card .status-header h3 {
+  margin: 0;
+  color: #17243a;
+  font-size: 22px;
+}
+
+.cert-status-card .status-header p {
+  margin: 5px 0 0;
+  color: #66758a;
+}
+
+.cert-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cert-progress li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  color: #98a2b3;
+  font-size: var(--fs-xs);
+}
+
+.cert-progress li::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 0;
+  width: 50%;
+  height: 1px;
+  background: #d7e0ea;
+}
+
+.cert-progress li::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  right: 0;
+  width: 50%;
+  height: 1px;
+  background: #d7e0ea;
+}
+
+.cert-progress li:first-child::before,
+.cert-progress li:last-child::after {
+  display: none;
+}
+
+.cert-progress li > span {
+  position: relative;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d7e0ea;
+  border-radius: 50%;
+  background: #fff;
+  font-weight: 700;
+}
+
+.cert-progress li.active,
+.cert-progress li.done {
+  color: #244f85;
+}
+
+.cert-progress li.active > span,
+.cert-progress li.done > span {
+  border-color: #315a91;
+  background: #315a91;
+  color: #fff;
+}
+
+.cert-progress li.done::after,
+.cert-progress li.done + li::before {
+  background: #315a91;
+}
+
+.cert-form-card,
+.cert-history-card {
+  padding: 24px 26px;
+}
+
+.cert-form-card .work-card-head,
+.cert-history-card .work-card-head {
+  margin: -24px -26px 24px;
+  padding: 18px 26px;
+  border-bottom: 1px solid #e7edf4;
+  background: #fbfcfe;
+}
+
+.cert-history-card .cert-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 /* 认证状态图标徽章，替换原小圆点 */
@@ -608,6 +785,12 @@ useRefresh(loadList)
   align-items: center;
   gap: 14px;
   transition: border-color 0.16s ease, background 0.16s ease;
+  min-height: 72px;
+  padding: 14px 16px;
+  border: 1px solid #e1e7ef;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
 }
 
 .cert-list-item:hover {
@@ -665,9 +848,7 @@ useRefresh(loadList)
 }
 
 @media (max-width: 1280px) {
-  .cert-layout {
-    grid-template-columns: 1fr;
-  }
+  .cert-status-overview { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 }
 
 /* ---- 已认证时的认证明细 ---- */
@@ -710,13 +891,6 @@ useRefresh(loadList)
 }
 
 /* ---- 内联表单卡 ---- */
-.cert-form-desc {
-  margin: 4px 0 0;
-  font-size: var(--fs-xs);
-  color: var(--muted);
-  line-height: 1.6;
-}
-
 .cert-form-actions {
   display: flex;
   align-items: center;        /* 不写死会取 normal(=stretch)，两个按钮基线对不齐 */
@@ -751,6 +925,14 @@ useRefresh(loadList)
 }
 
 @media (max-width: 768px) {
+  .enterprise-cert-page .page-head h2 { font-size: 24px; }
+  .cert-status-card,
+  .cert-form-card,
+  .cert-history-card { padding: 18px; }
+  .cert-form-card .work-card-head,
+  .cert-history-card .work-card-head { margin: -18px -18px 18px; padding: 16px 18px; }
+  .cert-history-card .cert-list { grid-template-columns: minmax(0, 1fr); }
+  .cert-progress li strong { font-size: 11px; }
   .cert-facts > div { flex-direction: column; gap: 2px; }
   .cert-facts dt { flex: none; }
   .cert-form-actions { flex-direction: column-reverse; }

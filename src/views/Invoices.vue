@@ -1,10 +1,8 @@
 <template>
-  <section class="invoice-page">
+  <section class="invoice-page workspace-page workspace-page--wide">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">账户资金</p>
         <h2>我的发票</h2>
-        <p class="page-head-desc">{{ isSubAccount ? '子账号可查看自己的开票记录，如需开票请联系主账号。' : '查看开票申请记录、处理进度和企业开票信息。' }}</p>
       </div>
       <div class="page-head-actions">
         <button class="primary-btn" :disabled="isSubAccount" :title="isSubAccount ? '子账号无权申请发票，请联系主账号开票' : ''" @click="openApplyDialog">
@@ -52,8 +50,8 @@
       </div>
     </div>
 
-    <div class="invoice-panel">
-      <div class="invoice-panel-head">
+    <div class="invoice-panel workspace-surface">
+      <div class="invoice-panel-head workspace-section-head">
         <div>
           <h3>开票记录</h3>
         </div>
@@ -352,7 +350,7 @@ useRefresh(fetchInvoices)
 
 <style scoped>
 .invoice-page {
-  width: min(1360px, 100%);
+  width: min(1280px, 100%);
   margin: 0 auto;
 }
 
@@ -444,6 +442,7 @@ useRefresh(fetchInvoices)
 .stat-card.rejected .stat-icon { color: #d92d20; background: #fef3f2; }
 
 .invoice-panel {
+  margin-top: 18px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -464,12 +463,6 @@ useRefresh(fetchInvoices)
 .invoice-panel-head h3 {
   margin: 0;
   font-size: var(--fs-lg);
-}
-
-.invoice-panel-head p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: var(--fs-sm);
 }
 
 .invoice-table-wrap {

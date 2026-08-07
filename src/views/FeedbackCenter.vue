@@ -1,19 +1,16 @@
 <template>
-  <section class="feedback-page">
+  <section class="feedback-page workspace-page workspace-page--standard">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">服务支持</p>
         <h2>意见反馈</h2>
-        <p class="page-head-desc">请描述您遇到的问题或建议，提交后可在下方查看处理进度。</p>
       </div>
     </header>
 
     <div class="feedback-layout">
-      <form class="feedback-form" @submit.prevent="handleSubmit">
-        <div class="feedback-section-head">
+      <form class="feedback-form workspace-surface" @submit.prevent="handleSubmit">
+        <div class="feedback-section-head workspace-section-head">
           <div>
             <h3>提交反馈</h3>
-            <p>为便于准确处理，请尽量说明出现问题的页面和操作。</p>
           </div>
         </div>
 
@@ -72,11 +69,10 @@
         </p>
       </form>
 
-      <aside class="feedback-history">
-        <div class="feedback-section-head">
+      <aside class="feedback-history workspace-surface">
+        <div class="feedback-section-head workspace-section-head">
           <div>
             <h3>我的反馈</h3>
-            <p>最近提交的反馈及当前处理状态。</p>
           </div>
         </div>
 
@@ -268,13 +264,6 @@ useRefresh(loadHistory)
 .feedback-section-head h3 {
   margin: 0;
   font-size: var(--fs-lg);
-}
-
-.feedback-section-head p {
-  margin: 5px 0 0;
-  color: var(--muted);
-  font-size: var(--fs-xs);
-  line-height: 1.55;
 }
 
 fieldset {

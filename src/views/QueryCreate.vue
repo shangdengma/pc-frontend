@@ -1,11 +1,19 @@
 ﻿<template>
-  <div class="query-layout">
-  <section class="work-card">
+  <div class="query-create-page workspace-page workspace-page--standard">
+    <header class="page-head">
+      <div class="page-head-main">
+        <h2>{{ canOnlineTest ? '在线测试' : '发起背调' }}</h2>
+      </div>
+    </header>
+
+    <div class="query-layout">
+  <section class="work-card query-form-panel workspace-surface">
     <!-- 余额已常驻顶栏。原先摆在卡片头右上角，和下面的输入字段挤在同一块区域里，
          看着像表单的一部分而不是账户信息；余额不足时提交按钮下方本来就有明确提示。 -->
-    <div class="work-card-head query-card-head">
+    <div class="query-card-head">
       <div>
-        <h2>{{ canOnlineTest ? '在线测试' : '发起背调' }}</h2>
+        <h3>候选人与套餐</h3>
+        <p>请确认联系方式准确，候选人将通过该手机号完成授权。</p>
       </div>
     </div>
 
@@ -32,7 +40,7 @@
         <em v-if="touched.idCard && form.idCard && !idCardValid" class="field-error">身份证号格式不正确</em>
         <em v-else class="field-ok">缺项将转入后台人工处理</em>
       </label>
-      <label>
+      <label class="query-package-field">
         <span>查询套餐</span>
         <select v-model="form.callTypeId">
           <option value="" disabled>请选择查询套餐</option>
@@ -72,21 +80,21 @@
     <div v-if="message" class="form-message" :class="messageType">{{ message }}</div>
 
     <div class="submit-area">
-      <button class="primary-btn page-action"
-              :disabled="loading || !formValid || insufficientBalance"
-              @click="submitQuery">
-        {{ loading ? '提交中...' : '提交查询' }}
-      </button>
       <!-- 按钮为什么不可点，直接说明白，不用等用户点了才报错 -->
       <small v-if="!loading && blockReason" class="submit-hint" :class="{ warn: insufficientBalance }">
         {{ blockReason }}
       </small>
+      <button class="primary-btn page-action"
+              :disabled="loading || !formValid || insufficientBalance"
+              @click="submitQuery">
+        {{ loading ? '发起中...' : '发起背调' }}
+      </button>
     </div>
   </section>
 
   <aside class="query-aside">
     <div class="cost-card">
-      <h3>本次查询</h3>
+      <h3>本次背调</h3>
       <div class="cost-row">
         <span>候选人</span>
         <strong>{{ form.name || '—' }}</strong>
@@ -104,19 +112,20 @@
         <span>预计费用</span>
         <strong>{{ selectedPrice !== '' ? `¥${selectedPrice}` : '—' }}</strong>
       </div>
-      <p class="cost-hint">提交后将扣除本次查询费用；任务失败或终止时按规则自动退款。</p>
+      <p class="cost-hint">提交后将扣除本次背调费用；任务失败或终止时按规则自动退款。</p>
     </div>
 
     <div class="flow-card">
-      <h4>查询流程</h4>
+      <h4>背调流程</h4>
       <ol>
         <li>提交候选人信息并选择套餐</li>
         <li v-if="!canOnlineTest">候选人完成电子签授权</li>
         <li>系统执行核验，生成背调报告</li>
-        <li>在「查询记录」中查看与下载报告</li>
+        <li>在「背调记录」中查看与下载报告</li>
       </ol>
     </div>
   </aside>
+    </div>
   </div>
 </template>
 
@@ -206,7 +215,7 @@ const blockReason = computed(() => {
       ? '剩余额度不足，请联系主账号增加额度'
       : '可用余额不足，请先充值'
   }
-  if (!form.name) return '请填写候选人姓名'
+  if (!form.name) return ''
   if (canOnlineTest.value) {
     if (form.mobile && !mobileValid.value) return '手机号格式不正确'
     if (form.idCard && !idCardValid.value) return '身份证号格式不正确'
@@ -290,7 +299,7 @@ async function submitQuery() {
   const err = validate()
   if (err) return show(err, 'error')
   loading.value = true
-  show('正在提交查询...', 'info')
+  show('正在发起背调...', 'info')
   const queryData = buildQueryData()
   try {
     try {
@@ -303,13 +312,13 @@ async function submitQuery() {
 
     if (canOnlineTest.value) {
       await launchOnlineTest(queryData)
-      show('测试任务已提交，结果生成后可在查询记录中查看。', 'success')
+      show('测试任务已提交，结果生成后可在背调记录中查看。', 'success')
     } else {
       const res = await getAllData(queryData)
       if (res?.data?.formDataId != null) {
         show('已创建查询并发送候选人授权短信，请提醒候选人完成信息填写与授权签署。', 'success')
       } else {
-        show('查询已提交，结果生成后可在查询记录查看。', 'success')
+        show('背调已发起，结果生成后可在背调记录中查看。', 'success')
       }
     }
     emit('balance-updated')
@@ -367,11 +376,32 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.query-form-panel {
+  padding: 28px 30px 30px;
+}
+
 .query-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e7edf4;
+}
+
+.query-card-head h3 {
+  margin: 0;
+  color: #17243a;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.query-card-head p {
+  margin: 6px 0 0;
+  color: #7a8799;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+
+.query-package-field {
+  grid-column: 1 / -1;
 }
 
 .auth-method-panel {
@@ -445,14 +475,19 @@ onMounted(async () => {
 .submit-area {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
-  flex-wrap: wrap;
+  min-height: 68px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #e7edf4;
 }
 .submit-area .primary-btn:disabled {
   opacity: .55;
   cursor: not-allowed;
 }
 .submit-hint {
+  margin-right: auto;
   font-size: var(--fs-xs);
   color: #8794a8;
 }
@@ -463,6 +498,8 @@ onMounted(async () => {
    要滚两屏才够得着输入框。改为拆开侧栏：表单 → 费用摘要 → 流程说明。 */
 @media (max-width: 900px) {
   .query-layout { grid-template-columns: minmax(0, 1fr); }
+
+  .query-form-panel { padding: 22px 18px 20px; }
 
   /* contents 让两张卡片直接参与外层网格，才能各自排序 */
   .query-aside { display: contents; }
@@ -477,6 +514,7 @@ onMounted(async () => {
     align-items: stretch;
     flex-direction: column;
     gap: 8px;
+    min-height: 0;
   }
 
   .submit-area .primary-btn {
@@ -484,6 +522,6 @@ onMounted(async () => {
     justify-content: center;
   }
 
-  .submit-hint { text-align: center; }
+  .submit-hint { margin-right: 0; text-align: center; }
 }
 </style>

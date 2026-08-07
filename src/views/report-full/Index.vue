@@ -25,64 +25,101 @@
       </div>
     </div>
 
-    <!-- 报告总述：放在所有核验模块之前，让读者先知道"查了什么、哪里要注意"，
-         再往下逐项看明细。内容全部由已渲染的模块与真实数据推导，不额外编结论。
-         aiSummary 为后续接入智能解读预留：后端返回文本即优先展示，
-         没有则退回下面这套按数据聚合的版本。 -->
-    <div class="module-container" id="overview" v-if="overviewChecklist.length">
+    <!-- 总述只聚合本报告已经返回或套餐明确配置的项目，不替代各模块原始明细。 -->
+    <div class="module-container report-overview-module" id="overview" v-if="overviewSummaryRows.length">
       <div class="module-title">报告总述</div>
-      <div class="report-card">
-        <div class="card-body overview-body">
-          <div v-if="aiSummaryLoading" class="overview-ai-loading">
-            <span class="overview-ai-dot"></span>
-            正在生成智能解读…
+      <div class="overview-body">
+        <div class="overview-headline">
+          <div>
+            <p class="overview-eyebrow">REPORT OVERVIEW</p>
+            <h2>本次核验概况</h2>
+            <p>先查看需关注事项，再结合下方各模块明细进行复核。</p>
           </div>
-          <div v-else-if="aiSummaryText" class="overview-ai-text">{{ aiSummaryText }}</div>
-
-          <template v-else>
-            <!-- 关键发现：只写查到了什么，不下"有无风险"的结论 -->
-            <div class="overview-block">
-              <div class="overview-block-title">
-                关键发现
-                <em v-if="overviewFindings.length" class="overview-count">{{ overviewFindings.length }} 项</em>
-              </div>
-              <ol v-if="overviewFindings.length" class="overview-findings">
-                <li v-for="(item, idx) in overviewFindings" :key="item.label">
-                  <span class="overview-finding-no">{{ idx + 1 }}</span>
-                  <span class="overview-finding-main">
-                    <span class="overview-finding-label">{{ item.label }}</span>
-                    <span class="overview-finding-desc">{{ item.desc }}</span>
-                  </span>
-                </li>
-              </ol>
-              <p v-else class="overview-empty">在本次核验范围内，未查询到命中记录。具体以各模块明细为准。</p>
+          <div class="overview-metrics" aria-label="报告核验概况">
+            <div class="overview-metric">
+              <strong>{{ overviewSummaryRows.length }}</strong>
+              <span>核验项目</span>
             </div>
-
-            <!-- 核验清单：写明每一项查的是什么数据源、当前状态 -->
-            <div class="overview-block">
-              <div class="overview-block-title">核验清单</div>
-              <table class="overview-table">
-                <thead>
-                  <tr><th>信息类型</th><th>核验内容</th><th>状态</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in overviewChecklist" :key="row.name">
-                    <td class="ov-cat">{{ row.category }}</td>
-                    <td>
-                      <div class="ov-name">{{ row.name }}</div>
-                      <div class="ov-source">{{ row.source }}</div>
-                    </td>
-                    <td>
-                      <span class="ov-status" :class="row.hit ? 'is-hit' : 'is-clear'">
-                        {{ row.hit ? '有记录' : '已完成' }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="overview-metric overview-metric--complete">
+              <strong>{{ overviewCompletedCount }}</strong>
+              <span>已完成</span>
             </div>
-          </template>
+            <div class="overview-metric" :class="{ 'overview-metric--attention': overviewRiskTips.length }">
+              <strong>{{ overviewRiskTips.length }}</strong>
+              <span>需关注</span>
+            </div>
+          </div>
         </div>
+
+        <section class="overview-section overview-risk-section">
+          <div class="overview-section-header">
+            <div>
+              <div class="overview-section-heading">风险提示</div>
+              <p>仅呈现已返回结果中的命中、异常或需人工复核事项。</p>
+            </div>
+            <span v-if="overviewRiskTips.length" class="overview-count">{{ overviewRiskTips.length }} 项</span>
+          </div>
+
+          <ol v-if="overviewRiskTips.length" class="overview-risk-list">
+            <li v-for="(item, index) in overviewRiskTips" :key="item.key" :class="`is-${item.level}`">
+              <span class="overview-risk-index">{{ index + 1 }}</span>
+              <div class="overview-risk-content">
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.description }}</p>
+              </div>
+            </li>
+          </ol>
+          <div v-else class="overview-empty-state">
+            <span class="overview-empty-mark">✓</span>
+            <div>
+              <strong>已返回项目暂未发现明确命中项</strong>
+              <p>该结果不代表对候选人作出无风险结论，仍应结合岗位要求和各模块明细审慎判断。</p>
+            </div>
+          </div>
+
+          <div v-if="overviewPendingRows.length" class="overview-pending-note">
+            <strong>信息待补充</strong>
+            <span>{{ overviewPendingRows.map(item => item.project).join('、') }}尚未完整返回，不计入风险结论。</span>
+          </div>
+        </section>
+
+        <section class="overview-section overview-project-section">
+          <div class="overview-section-header">
+            <div>
+              <div class="overview-section-heading">项目摘要</div>
+              <p>汇总本次调查范围、处理进度和关键结果。</p>
+            </div>
+          </div>
+
+          <div class="overview-table-wrap">
+            <table class="overview-table">
+              <thead>
+                <tr>
+                  <th>调查类型</th>
+                  <th>调查项目</th>
+                  <th>是否完成</th>
+                  <th>调查结果</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in overviewSummaryRows" :key="item.key">
+                  <td data-label="调查类型">{{ item.category }}</td>
+                  <td data-label="调查项目">{{ item.project }}</td>
+                  <td data-label="是否完成">
+                    <span class="overview-status" :class="`is-${item.statusTone}`">
+                      <span class="overview-status-dot"></span>{{ item.status }}
+                    </span>
+                  </td>
+                  <td data-label="调查结果">
+                    <span class="overview-result" :class="`is-${item.resultTone}`">{{ item.result }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <p class="overview-disclaimer">总述依据本报告已返回数据自动归纳，仅用于提示复核重点，不应作为录用、淘汰或其他决定的唯一依据。</p>
       </div>
     </div>
 
@@ -1993,11 +2030,6 @@ import {
 export default {
   data() {
     return {
-      // 智能解读预留：后端返回文本后，总述模块优先展示它，
-      // 否则退回按已有数据聚合的「核验范围 + 关注点」。
-      // 接入时只需在拉取报告的地方给这两个字段赋值，模板与样式不用再动。
-      aiSummaryText: '',
-      aiSummaryLoading: false,
       extraInfo: '',
       employmentVerifyList: [], // 工作履历核实（人工核验），空数组=不显示
       interviewList: [], // 工作表现访谈（人工核验），空数组=不显示
@@ -2183,7 +2215,6 @@ export default {
           this.idCard = res.data.idCard || '';
           this.phoneNumber = res.data.phoneNumber || '';
         }
-
         // 检查响应数据是否存在
         if (!res || !res.data || !res.data.data) {
           console.error('API响应数据为空，res:', res);
@@ -2247,58 +2278,325 @@ export default {
   },
   computed: {
     /* ---------- 报告总述 ----------
-       核验清单直接由各模块的 hasXxxData 推导，保证「总述说查了什么」与
-       「下面实际渲染了哪些模块」永远一致；每行同时标注数据来源，
-       让读者知道结论是从哪个库查出来的，而不是只给一个"已完成"。
-       hit 表示该项查到了命中记录，与关键发现互相印证。 */
-    overviewChecklist() {
-      const shixinHit = (this.shixinList || []).length + (this.xianGaoList || []).length > 0;
-      const judicialHit = (this.bankruptCases || []).length
-        + (this.baoquanCases || []).length
-        + (this.xingzhengCases || []).length > 0;
+       每一行与正文模块使用同一组显隐条件和数据源。未返回、接口失败与真实命中
+       分开标记，避免把“缺数据”误读成“有风险”。 */
+    overviewSummaryRows() {
+      const rows = [];
+      const add = (key, category, project, status, result, resultTone = 'normal') => {
+        const statusTone = status === '已完成'
+          ? 'complete'
+          : (status === '部分完成' ? 'partial' : 'pending');
+        rows.push({ key, category, project, status, statusTone, result, resultTone });
+      };
 
-      const rows = [
-        [this.hasIdentityData, '身份核验', '身份信息实名核验', '公安人口信息库二要素/三要素比对', false],
-        [this.hasEducationData, '教育背景', '学历证书核验', '中国高等教育学生信息网（学信网）', false],
-        [this.hasHistoryWorkData, '过往经历', '工作履历核实', '候选人填报信息与证明人访谈', false],
-        [this.hasCareerRiskData, '职业风险', '劳动纠纷与用工风险审查', '全国法院公开劳动争议裁判文书', false],
-        [this.hasJudicialData, '司法涉诉', '民事诉讼与执行记录', '中国裁判文书网、全国法院执行信息公开网', judicialHit],
-        [this.hasShixinData, '司法涉诉', '失信被执行与限制高消费', '全国法院失信被执行人名单库', shixinHit],
-        [this.hasPoliceData, '公共安全', '公安重点人员核验', '公安重点人员核查库', false],
-        [this.hasFraudData, '公共安全', '涉赌涉诈风险核验', '涉赌涉诈风险名单库', false],
-        [this.hasCompanyData, '商业关联', '对外投资与任职核查', '国家企业信用信息公示系统', false],
-        [this.hasLoanData, '金融风险', '借贷申请与逾期记录', '互联网金融平台借贷风险数据库', false],
-        [this.hasAssetsData, '名下资产', '车辆与通行记录核查', '机动车登记及 ETC 通行数据', false],
-        [this.hasInternetBehaviorData, '行为特征', '互联网行为标签', '运营商与互联网行为标签库', false]
-      ];
+      if (this.hasIdentityData) {
+        const authResult = String(this.finalAuthResult || '').trim();
+        const hasConcern = /失败|不一致|异常|未通过/.test(authResult);
+        add(
+          'identity',
+          '基础核验',
+          '身份信息核验',
+          '已完成',
+          authResult || '身份基础信息已返回',
+          hasConcern ? 'critical' : 'normal'
+        );
+      }
 
-      return rows.filter(r => r[0]).map(r => ({
-        category: r[1], name: r[2], source: r[3], hit: r[4]
-      }));
+      if (this.hasEducationData) {
+        const educationRows = this.educationData || [];
+        const matched = educationRows.filter(item => item.queryStatus === 'MATCHED').length;
+        const notFound = educationRows.filter(item => item.queryStatus === 'NOT_FOUND').length;
+        const noInput = educationRows.filter(item => item.queryStatus === 'NO_INPUT').length;
+        const failed = educationRows.filter(item => item.queryStatus === 'ERROR').length;
+        const unfinished = noInput + failed;
+        const status = !educationRows.length
+          ? '待补充'
+          : (unfinished ? (unfinished === educationRows.length ? '待补充' : '部分完成') : '已完成');
+        const parts = [];
+        if (matched) parts.push(`${matched} 条核验一致`);
+        if (notFound) parts.push(`${notFound} 条未查询到记录`);
+        if (noInput) parts.push(`${noInput} 条未提供编号`);
+        if (failed) parts.push(`${failed} 条核验失败`);
+        add(
+          'education',
+          '学历核验',
+          '学历证书核验',
+          status,
+          parts.join('，') || '尚无学历核验结果',
+          notFound ? 'warning' : (unfinished ? 'pending' : 'normal')
+        );
+      }
+
+      if (this.employmentVerificationSections.length) {
+        const sections = this.employmentVerificationSections || [];
+        const completeSections = sections.filter(item => item.hasHrResult && item.hasSupervisorResult).length;
+        const mismatchCount = sections.reduce((sum, section) => (
+          sum + (section.employment?.items || []).filter(item => item?.truth === 'MISMATCH').length
+        ), 0);
+        const unableCount = sections.reduce((sum, section) => (
+          sum + (section.employment?.items || []).filter(item => item?.truth === 'NA').length
+        ), 0);
+        const status = completeSections === sections.length && sections.length
+          ? '已完成'
+          : (completeSections ? '部分完成' : '待补充');
+        const resultParts = [`共 ${sections.length} 段工作经历`];
+        if (mismatchCount) resultParts.push(`${mismatchCount} 项不一致`);
+        if (unableCount) resultParts.push(`${unableCount} 项无法核实`);
+        if (completeSections < sections.length) resultParts.push(`${sections.length - completeSections} 段待补充`);
+        if (!mismatchCount && !unableCount && completeSections === sections.length && sections.length) {
+          resultParts.push('已完成 HR 与上级核验');
+        }
+        add(
+          'employment',
+          '履历核验',
+          '工作经历核验',
+          status,
+          resultParts.join('，'),
+          mismatchCount || unableCount ? 'warning' : (status === '已完成' ? 'normal' : 'pending')
+        );
+      }
+
+      if (this.hasHistoryWorkData) {
+        const count = (this.historyWorkList || []).length;
+        add(
+          'history-work',
+          '履历核验',
+          '过往工作履历',
+          count ? '已完成' : '待补充',
+          count ? `共 ${count} 条任职记录` : '核验人员尚未录入工作履历',
+          count ? 'normal' : 'pending'
+        );
+      }
+
+      if (this.hasCareerRiskData) {
+        const careerDefinitions = [
+          { key: 'ty_dishonesty', label: '失信被执行' },
+          { key: 'ty_high_consumption', label: '限制高消费' },
+          { key: 'ty_notice_letter', label: '仲裁、调解或涉诉通知' },
+          { key: 'ty_employment_contract_5y', label: '聘用合同争议' },
+          { key: 'ty_resignation_dispute_5y', label: '辞职争议' },
+          { key: 'ty_personnel_dispute', label: '人事争议' },
+          ...this.laborRiskItems,
+          ...this.socialRiskItems
+        ];
+        const uniqueDefinitions = Array.from(new Map(
+          careerDefinitions.map(item => [item.key, item])
+        ).values());
+        const hits = uniqueDefinitions.filter(item => (
+          this.getCareerRiskStatus(this.getCareerRiskValue(item.key)) === '命中'
+        ));
+        add(
+          'career-risk',
+          '职业履职',
+          '职业履职风险',
+          '已完成',
+          hits.length ? `${hits.length} 项需关注：${hits.map(item => item.label).join('、')}` : '未查询到明确命中项',
+          hits.length ? 'warning' : 'normal'
+        );
+      }
+
+      if (this.hasJudicialData) {
+        const caseGroups = [
+          ['民事案件', (this.minshiCases || []).length],
+          ['刑事案件', (this.xingshiCases || []).length],
+          ['执行案件', (this.zhixingCases || []).length],
+          ['破产清算', (this.bankruptCases || []).length],
+          ['财产保全', (this.baoquanCases || []).length],
+          ['行政案件', (this.xingzhengCases || []).length]
+        ];
+        const total = caseGroups.reduce((sum, item) => sum + item[1], 0);
+        const details = caseGroups.filter(item => item[1] > 0).map(item => `${item[0]} ${item[1]} 条`);
+        add(
+          'judicial',
+          '司法核验',
+          '司法案件核验',
+          '已完成',
+          total ? `共 ${total} 条记录（${details.join('、')}）` : '未查询到司法案件记录',
+          total ? 'warning' : 'normal'
+        );
+      }
+
+      if (this.hasJudicialData) {
+        const shixin = (this.shixinList || []).length;
+        const xianGao = (this.xianGaoList || []).length;
+        add(
+          'dishonesty',
+          '信用核验',
+          '失信与限制高消费',
+          '已完成',
+          shixin || xianGao ? `失信 ${shixin} 条，限制高消费 ${xianGao} 条` : '未查询到失信或限制高消费记录',
+          shixin || xianGao ? 'critical' : 'normal'
+        );
+      }
+
+      if (this.hasPoliceData) {
+        const policeTypes = [
+          ['A', '前科'], ['B', '经济类前科'], ['C', '妨害社会管理秩序'],
+          ['D', '在逃'], ['E', '涉案'], ['G', '涉交通刑案'], ['F', '重点人员']
+        ];
+        const hits = policeTypes
+          .filter(item => this.getBadPersonTextA(this.policeBadLevel, item[0]) === '命中')
+          .map(item => item[1]);
+        if (this.getLitigationPartyStatus() === '命中') hits.push('诉讼当事人');
+        add(
+          'police',
+          '风险核验',
+          '不良人员核验',
+          '已完成',
+          hits.length ? `命中 ${hits.length} 个类别：${hits.join('、')}` : '未查询到命中记录',
+          hits.length ? 'critical' : 'normal'
+        );
+      }
+
+      if (this.hasFraudData) {
+        const fraudTypes = [
+          ['moneyLaundering', '跑分洗钱'],
+          ['deceiver', '欺诈'],
+          ['gamblerPlayer', '赌博玩家'],
+          ['gamblerBanker', '赌博庄家']
+        ];
+        const concerns = fraudTypes.map(item => ({
+          label: item[1],
+          status: this.getfanzhafuduA(this.comprehensiveScoress(item[0]))
+        })).filter(item => item.status !== '无风险');
+        add(
+          'fraud',
+          '风险核验',
+          '涉赌涉诈风险核验',
+          '已完成',
+          concerns.length
+            ? concerns.map(item => `${item.label}${item.status}`).join('、')
+            : '未见明显异常',
+          concerns.length ? 'warning' : 'normal'
+        );
+      }
+
+      if (this.hasCompanyData) {
+        const companyList = this.companyRelationData?.data?.data?.data?.datalist || [];
+        add(
+          'company',
+          '企业核验',
+          '人企关联',
+          '已完成',
+          companyList.length ? `共 ${companyList.length} 家关联企业` : '未查询到相关企业关联信息',
+          'normal'
+        );
+      }
+
+      if (this.hasLoanData) {
+        const overdue = Number.parseInt(this.comprehensiveScoress('tanzhen_currently_overdue'), 10) || 0;
+        const overdueFlags = ['zc_seriousOverdue', 'zc_generalOverdue', 'zc_slightlOverdue', 'zc_suspectFraud']
+          .filter(field => Number.parseInt(this.comprehensiveScoress(field), 10) === 1).length;
+        const resultParts = [];
+        const attentionParts = [];
+        if (this.hasLoanApplicationData) {
+          const idCount = this.getTotalLoanCountLastYear();
+          const phoneCount = this.getTotalLoanCountLastYearbypho();
+          resultParts.push(`近1年贷款申请：身份证维度 ${idCount} 次，手机号维度 ${phoneCount} 次`);
+        }
+        if (overdue) attentionParts.push(`当前逾期 ${overdue} 笔`);
+        if (this.blacklistOrgCount) attentionParts.push(`黑名单命中 ${this.blacklistOrgCount} 类机构`);
+        if (overdueFlags) attentionParts.push(`${overdueFlags} 项逾期或欺诈标签命中`);
+        resultParts.push(...attentionParts);
+        add(
+          'loan',
+          '信贷核验',
+          '信贷逾期与借贷分布',
+          '已完成',
+          resultParts.join('，') || '未查询到明确逾期或黑名单命中',
+          attentionParts.length ? 'warning' : 'normal'
+        );
+      }
+
+      if (this.hasVehicleCount || this.hasEtcFieldFromBackend) {
+        const vehicleCount = this.getCarNum();
+        add(
+          'assets',
+          '资产核验',
+          '机动车与 ETC 信息',
+          '已完成',
+          `名下车辆 ${vehicleCount || 0} 辆，ETC 关联记录 ${(this.vehicleList || []).length} 条`,
+          'normal'
+        );
+      }
+
+      if (this.hasInternetBehaviorData) {
+        const behaviorFields = [
+          'sjbq_zlbz', 'sjbq_ychy', 'sjbq_xjzl', 'sjbq_ymd', 'sjbq_sfcy',
+          'sjbq_ycxw', 'sjbq_sxxw', 'sjbq_zfyc', 'sjbq_qtyc', 'sjbq_swhjyc'
+        ];
+        const hitCount = behaviorFields.filter(field => (
+          this.getBehaviorText(this.comprehensiveScoress(field)) === '命中'
+        )).length;
+        add(
+          'internet-behavior',
+          '行为核验',
+          '互联网行为标签',
+          '已完成',
+          hitCount ? `${hitCount} 项行为标签命中` : '未查询到明确命中项',
+          hitCount ? 'warning' : 'normal'
+        );
+      }
+
+      if (this.hasSimpleConsumptionData) {
+        add(
+          'consumption',
+          '消费核验',
+          '消费金额区间',
+          '已完成',
+          '近十二个月消费金额区间已返回',
+          'normal'
+        );
+      }
+
+      if (this.hasExtraInfo) {
+        add(
+          'extra',
+          '补充信息',
+          '后台补充说明',
+          '已完成',
+          '已录入补充核验信息',
+          'normal'
+        );
+      }
+
+      return rows;
     },
 
-    /* 关键发现只列「确实查到了命中记录」的项，条数取自各模块自己的列表，
-       与明细里显示的数量同源。查不到就不列，不做主观判断。 */
-    overviewFindings() {
-      const findings = [];
-      const push = (label, desc) => findings.push({ label, desc });
+    overviewScopeList() {
+      return this.overviewSummaryRows.map(item => item.project);
+    },
 
-      const shixin = (this.shixinList || []).length;
-      if (shixin > 0) push('失信被执行', `存在 ${shixin} 条失信被执行记录，详见下文`);
+    overviewCompletedCount() {
+      return this.overviewSummaryRows.filter(item => item.status === '已完成').length;
+    },
 
-      const xianGao = (this.xianGaoList || []).length;
-      if (xianGao > 0) push('限制高消费', `存在 ${xianGao} 条限制高消费记录，详见下文`);
+    overviewPendingRows() {
+      return this.overviewSummaryRows.filter(item => item.status !== '已完成');
+    },
 
-      const bankrupt = (this.bankruptCases || []).length;
-      if (bankrupt > 0) push('破产清算', `存在 ${bankrupt} 条强制清算或破产记录，详见下文`);
+    overviewRiskTips() {
+      const recommendationMap = {
+        identity: '建议核对候选人提交资料与实名核验结果，确认差异原因后再作判断。',
+        education: '建议核对学历证书编号，必要时要求候选人补充有效证明材料。',
+        employment: '建议重点查看 HR 与直属上级核验明细，并就不一致项向候选人复核。',
+        'career-risk': '建议结合争议类型、案件时间、候选人角色及岗位要求进行人工复核。',
+        judicial: '建议查看案件阶段、案由、涉案身份、金额及当前执行状态，避免仅按记录数量判断。',
+        dishonesty: '建议重点核验履行状态、限制措施是否解除及相关法律文书。',
+        police: '建议优先核实命中身份和具体类别，排除同名、身份误匹配等情况。',
+        fraud: '建议结合风险等级、发生时间和岗位资金权限进行审慎复核。',
+        loan: '建议结合逾期程度、发生时间、岗位诚信要求及候选人说明综合判断。',
+        'internet-behavior': '建议查看具体命中标签和数据时效，不宜脱离业务场景单独使用。'
+      };
 
-      const baoquan = (this.baoquanCases || []).length;
-      if (baoquan > 0) push('财产保全', `存在 ${baoquan} 条财产保全记录，详见下文`);
-
-      const xingzheng = (this.xingzhengCases || []).length;
-      if (xingzheng > 0) push('行政处罚', `存在 ${xingzheng} 条行政处罚记录，详见下文`);
-
-      return findings;
+      return this.overviewSummaryRows
+        .filter(item => item.resultTone === 'warning' || item.resultTone === 'critical')
+        .map(item => ({
+          key: item.key,
+          level: item.resultTone,
+          title: `${item.project}存在需关注事项`,
+          description: `${item.result}。${recommendationMap[item.key] || '建议查看对应模块明细并进行人工复核。'}`
+        }));
     },
 
     // 报告标题：根据 searchType 匹配字典 report_type 得到显示值，未匹配时用兜底
@@ -7909,131 +8207,288 @@ summary::-webkit-details-marker {
         grid-template-columns: repeat(2, 1fr);
     }
 }
-/* ---------- 报告总述 ----------
-   沿用报告既有视觉：#3b82f6 主色、#ebeef5 描边、8px 圆角。
-   .card-body 全局是 flex-direction: row 且定义在本段之后，
-   同特异性下会赢过来，所以这里必须用 .card-body.overview-body 提权。 */
-.card-body.overview-body { flex-direction: column; padding: 20px 24px; gap: 22px; }
-
-.overview-block-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: #1f2933;
+/* ---------- 报告总述 ---------- */
+.module-container[id="overview"] {
+  border-left-color: #1d4ed8;
+  background: linear-gradient(to right, rgba(29, 78, 216, 0.035) 0%, #fff 8%);
 }
-
+.module-container[id="overview"] .module-title {
+  border-bottom-color: #1d4ed8;
+  color: #1e3a8a;
+}
+.overview-body {
+  overflow: hidden;
+  border: 1px solid #dce4ee;
+  border-radius: 6px;
+  background: #fff;
+}
+.overview-headline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 22px 24px;
+  background: #f5f8fc;
+  border-bottom: 1px solid #dce4ee;
+}
+.overview-eyebrow {
+  margin: 0 0 5px;
+  color: #2563eb;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.overview-headline h2 {
+  margin: 0;
+  color: #17233b;
+  font-size: var(--fs-xl);
+  font-weight: 700;
+}
+.overview-headline > div > p:last-child {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+}
+.overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 86px);
+  border: 1px solid #d7e0eb;
+  border-radius: 6px;
+  background: #fff;
+}
+.overview-metric {
+  min-height: 68px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e2e8f0;
+}
+.overview-metric:last-child { border-right: 0; }
+.overview-metric strong {
+  color: #1e3a8a;
+  font-size: var(--fs-xl);
+  line-height: 1.2;
+}
+.overview-metric span {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: var(--fs-xs);
+}
+.overview-metric--complete strong { color: #047857; }
+.overview-metric--attention strong { color: #b45309; }
+.overview-section { padding: 22px 24px; }
+.overview-section + .overview-section { border-top: 1px solid #e2e8f0; }
+.overview-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.overview-section-heading {
+  color: #1f2d4d;
+  font-size: var(--fs-base);
+  font-weight: 700;
+}
+.overview-section-header p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: var(--fs-xs);
+  line-height: 1.6;
+}
 .overview-count {
-  padding: 1px 7px;
-  border-radius: 9px;
-  background: #fef3c7;
-  color: #92400e;
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border: 1px solid #f3d6aa;
+  border-radius: 4px;
+  background: #fff8eb;
+  color: #9a5608;
   font-size: var(--fs-xs);
   font-style: normal;
-  font-weight: 600;
+  font-weight: 700;
 }
-
-/* 关键发现：编号列表 */
-.overview-findings { margin: 0; padding: 0; list-style: none; counter-reset: none; }
-
-.overview-findings li {
+.overview-risk-list { margin: 0; padding: 0; list-style: none; }
+.overview-risk-list li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+.overview-risk-list li:first-child { padding-top: 2px; }
+.overview-risk-list li:last-child { padding-bottom: 0; border-bottom: 0; }
+.overview-risk-index {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.overview-risk-list li.is-warning .overview-risk-index {
+  background: #fff7e6;
+  color: #b45309;
+}
+.overview-risk-content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #2b3445;
+  font-size: var(--fs-sm);
+}
+.overview-risk-content p {
+  margin: 0;
+  color: #4b5565;
+  font-size: var(--fs-sm);
+  line-height: 1.75;
+}
+.overview-empty-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #cce8dc;
+  border-radius: 5px;
+  background: #f3faf7;
+}
+.overview-empty-mark {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #0f8a62;
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.overview-empty-state strong { color: #195b47; font-size: var(--fs-sm); }
+.overview-empty-state p {
+  margin: 4px 0 0;
+  color: #4c6b61;
+  font-size: var(--fs-xs);
+  line-height: 1.65;
+}
+.overview-pending-note {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 8px 0;
-}
-
-.overview-finding-no {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  border-radius: 50%;
-  background: #fef3c7;
-  color: #92400e;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 18px;
-  text-align: center;
-}
-
-.overview-finding-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
-
-/* 用琥珀色而不是红色：这里陈述的是「查到了记录」，
-   是否构成风险要由用人方结合岗位判断，报告不替客户下结论 */
-.overview-finding-label { color: #92400e; font-size: var(--fs-sm); font-weight: 600; }
-.overview-finding-desc { color: #475569; font-size: var(--fs-sm); line-height: 1.7; }
-
-.overview-empty { margin: 0; color: #64748b; font-size: var(--fs-sm); line-height: 1.7; }
-
-/* 核验清单表格 */
-.overview-table { width: 100%; border-collapse: collapse; }
-
-.overview-table th {
-  padding: 8px 10px;
-  border-bottom: 1px solid #e5e7eb;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-left: 3px solid #94a3b8;
   background: #f8fafc;
-  color: #64748b;
+  color: #5f6b7a;
   font-size: var(--fs-xs);
-  font-weight: 600;
-  text-align: left;
+  line-height: 1.7;
 }
-
-.overview-table td {
-  padding: 10px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
+.overview-pending-note strong { flex: 0 0 auto; color: #334155; }
+.overview-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #d8e1ec;
+  border-radius: 5px;
+}
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #344054;
   font-size: var(--fs-sm);
-  vertical-align: top;
 }
-
+.overview-table th,
+.overview-table td {
+  padding: 11px 13px;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.overview-table th:last-child,
+.overview-table td:last-child { border-right: 0; }
 .overview-table tbody tr:last-child td { border-bottom: 0; }
-
-.ov-cat { width: 84px; color: #64748b; white-space: nowrap; }
-.ov-name { color: #1f2933; line-height: 1.6; }
-/* 写明数据源，读者才知道结论从哪儿来，而不是只看到一个「已完成」 */
-.ov-source { margin-top: 2px; color: #94a3b8; font-size: var(--fs-xs); line-height: 1.6; }
-
-.ov-status {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: var(--fs-xs);
+.overview-table th { background: #eef3f9; color: #31415f; font-weight: 700; }
+.overview-table th:nth-child(1) { width: 17%; }
+.overview-table th:nth-child(2) { width: 23%; }
+.overview-table th:nth-child(3) { width: 16%; }
+.overview-table tbody tr:nth-child(even) { background: #fbfcfe; }
+.overview-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  font-weight: 600;
   white-space: nowrap;
 }
-
-.ov-status.is-clear { background: #f0fdf4; color: #15803d; }
-.ov-status.is-hit { background: #fffbeb; color: #b45309; }
-
-.overview-ai-text { color: #334155; font-size: var(--fs-sm); line-height: 1.9; white-space: pre-wrap; }
-
-.overview-ai-loading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #64748b;
-  font-size: var(--fs-sm);
-}
-
-.overview-ai-dot {
+.overview-status-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #3b82f6;
-  animation: overviewPulse 1.1s ease-in-out infinite;
+  background: #94a3b8;
 }
-
-@keyframes overviewPulse {
-  0%, 100% { opacity: .25; }
-  50% { opacity: 1; }
+.overview-status.is-complete .overview-status-dot { background: #059669; }
+.overview-status.is-partial .overview-status-dot { background: #d97706; }
+.overview-result { color: #334155; font-weight: 600; }
+.overview-result.is-normal { color: #166a57; }
+.overview-result.is-warning { color: #b45309; }
+.overview-result.is-critical { color: #c2413b; }
+.overview-result.is-pending { color: #64748b; }
+.overview-disclaimer {
+  margin: 0;
+  padding: 12px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #fafbfd;
+  color: #7a8697;
+  font-size: var(--fs-xs);
+  line-height: 1.7;
 }
-
 @media (max-width: 768px) {
-  .card-body.overview-body { padding: 16px; }
-  .overview-table th:first-child, .overview-table td:first-child { display: none; }
-  .ov-cat { width: auto; }
+  .overview-headline { grid-template-columns: 1fr; gap: 16px; padding: 18px 16px; }
+  .overview-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .overview-metric { min-height: 62px; }
+  .overview-section { padding: 18px 16px; }
+  .overview-table-wrap { overflow: visible; border: 0; }
+  .overview-table,
+  .overview-table tbody,
+  .overview-table tr,
+  .overview-table td { display: block; width: 100%; }
+  .overview-table thead { display: none; }
+  .overview-table tbody { display: grid; gap: 10px; }
+  .overview-table tr {
+    padding: 11px 12px;
+    border: 1px solid #dbe3ed;
+    border-radius: 5px;
+    background: #fff !important;
+    box-sizing: border-box;
+  }
+  .overview-table td {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 10px;
+    padding: 5px 0;
+    border: 0;
+  }
+  .overview-table td::before {
+    content: attr(data-label);
+    color: #7a8697;
+    font-size: var(--fs-xs);
+    font-weight: 500;
+  }
+  .overview-pending-note { flex-direction: column; gap: 3px; }
+  .overview-disclaimer { padding: 12px 16px; }
+}
+@media print {
+  .overview-risk-list li,
+  .overview-table tr { break-inside: avoid; page-break-inside: avoid; }
 }
 
 .report-card { background: #ffffff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04); width: 100%; max-width: 900px; border: 1px solid #ebeef5; overflow: hidden; }

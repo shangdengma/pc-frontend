@@ -1,5 +1,5 @@
 <template>
-  <div class="contact-page" :class="{ 'contact-page--embedded': embedded }">
+  <div class="contact-page" :class="{ 'contact-page--embedded': embedded, 'workspace-page': embedded, 'workspace-page--narrow': embedded }">
     <header v-if="!embedded" class="contact-header">
       <router-link v-if="!candidateEntry" class="contact-brand" to="/login" aria-label="返回钟馗背调登录页">
         <span class="contact-brand-seal" aria-hidden="true">钟馗</span>
@@ -21,8 +21,14 @@
       </router-link>
     </header>
 
+    <header v-if="embedded" class="page-head">
+      <div class="page-head-main">
+        <h2>联系我们</h2>
+      </div>
+    </header>
+
     <main class="contact-main">
-      <section class="contact-intro">
+      <section v-if="!embedded" class="contact-intro">
         <p>客户服务</p>
         <h1>{{ contact.title || '联系我们' }}</h1>
         <div class="contact-rule"></div>
@@ -224,8 +230,8 @@ onMounted(loadContact)
 }
 
 .contact-page--embedded .contact-main {
-  width: min(920px, 100%);
-  padding: 8px 0 32px;
+  width: 100%;
+  padding: 0 0 32px;
 }
 
 .contact-header {

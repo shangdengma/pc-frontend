@@ -1,12 +1,10 @@
 <template>
-  <div class="agent-page">
+  <div class="agent-page workspace-page workspace-page--wide">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">渠道运营</p>
         <h2>代理中心</h2>
-        <p class="page-head-desc">管理邀请渠道、下级客户及账户额度。</p>
       </div>
-      <div class="page-actions">
+      <div class="page-head-actions">
         <button class="primary-btn" type="button" :disabled="!isAgent" @click="openCreate">
           <Plus :size="17" :stroke-width="2" />
           新建邀请码
@@ -44,7 +42,7 @@
         </dl>
       </section>
 
-      <section class="workspace-shell">
+      <section class="workspace-shell workspace-surface">
         <nav class="workspace-tabs" aria-label="代理中心功能">
           <button type="button" :class="{ active: workspaceTab === 'customers' }" @click="workspaceTab = 'customers'">
             <UsersRound :size="17" :stroke-width="1.9" />
@@ -62,7 +60,6 @@
           <div class="section-toolbar">
             <div>
               <h3>下级客户</h3>
-              <p>查看客户账户余额、充值及消费情况。</p>
             </div>
             <label class="search-box">
               <Search :size="17" :stroke-width="1.8" />
@@ -132,7 +129,6 @@
           <div class="section-toolbar">
             <div>
               <h3>邀请码管理</h3>
-              <p>配置注册赠送额度、使用次数和有效期。</p>
             </div>
             <button class="primary-btn compact" type="button" @click="openCreate">
               <Plus :size="16" :stroke-width="2" />
@@ -563,7 +559,7 @@ useRefresh(loadAll)
 </script>
 
 <style scoped>
-.agent-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: var(--text); }
+.agent-page { width: min(1280px, 100%); margin: 0 auto; color: var(--text); }
 .page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding: 2px 0 18px; border-bottom: 1px solid var(--line); }
 .page-header h2 { margin: 0; font-size: var(--fs-2xl); line-height: 1.3; letter-spacing: 0; }
 .page-actions { display: flex; align-items: center; gap: 10px; }
@@ -591,6 +587,7 @@ useRefresh(loadAll)
 .overview-metrics dd span { margin-left: 4px; color: #7d899b; font-size: var(--fs-xs); font-weight: 600; }
 
 .workspace-shell { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-xs); }
+.overview-band + .workspace-shell { margin-top: 18px; }
 .workspace-tabs { height: 58px; display: flex; align-items: stretch; gap: 28px; padding: 0 24px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
 .workspace-tabs button { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 0 2px; border: 0; color: #667388; background: transparent; font: inherit; font-size: var(--fs-base); font-weight: 700; cursor: pointer; }
 .workspace-tabs button::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: transparent; }
@@ -600,8 +597,7 @@ useRefresh(loadAll)
 .workspace-tabs button.active > span { color: var(--blue); background: #e7efff; }
 .workspace-content { padding: 24px; }
 .section-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
-.section-toolbar h3 { margin: 0 0 5px; font-size: var(--fs-lg); }
-.section-toolbar p { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+.section-toolbar h3 { margin: 0; font-size: var(--fs-lg); }
 .search-box { width: min(380px, 42%); height: 40px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #d7e0eb; border-radius: var(--radius); color: #8a96a8; background: #fff; }
 .search-box:focus-within { border-color: #7ba6ef; box-shadow: 0 0 0 3px rgba(47, 111, 228, .1); }
 .search-box input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--text); background: transparent; font: inherit; font-size: var(--fs-base); }

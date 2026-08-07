@@ -1,16 +1,28 @@
 ﻿<template>
-  <section class="work-card records-card">
-    <div class="work-card-head records-head">
-      <div>
-        <h2>查询记录</h2>
+  <div class="records-page workspace-page workspace-page--wide">
+    <header class="page-head">
+      <div class="page-head-main">
+        <h2>背调记录</h2>
       </div>
-      <div class="records-head-actions">
+      <div class="page-head-actions records-head-actions">
         <button class="ghost-btn" type="button" :disabled="exporting || !records.length" @click="exportCsv">
           {{ exporting ? '导出中…' : '导出' }}
         </button>
         <router-link class="primary-btn" to="/query/create">{{ canOnlineTest ? '在线测试' : '发起背调' }}</router-link>
       </div>
-    </div>
+    </header>
+
+    <section class="work-card records-card workspace-surface">
+      <div
+        v-if="message"
+        class="records-toast"
+        :class="messageType"
+        role="status"
+        aria-live="polite"
+        data-testid="records-toast"
+      >
+        {{ message }}
+      </div>
 
     <!-- 状态放 Tab 而不是下拉：进这一页最常见的动作就是「看哪些在跑 / 哪些出了」，
          一次点击就该到位，也让各状态一眼可见 -->
@@ -25,7 +37,7 @@
     </nav>
 
     <div class="toolbar">
-      <input v-model.trim="filters.keyword" placeholder="搜索姓名 / 身份证号" @keyup.enter="search">
+      <input v-model.trim="filters.keyword" placeholder="搜索候选人姓名 / 手机号" @keyup.enter="search">
       <button class="ghost-btn" @click="search">查询</button>
       <button v-if="hasFilters" class="text-btn" @click="resetFilters">重置</button>
     </div>
@@ -46,7 +58,7 @@
         </thead>
         <tbody>
           <tr v-if="loading" class="skeleton-table-row"><td colspan="7"><span></span></td></tr>
-          <tr v-else-if="records.length === 0"><td colspan="7" class="table-empty">暂无符合条件的查询记录</td></tr>
+          <tr v-else-if="records.length === 0"><td colspan="7" class="table-empty">暂无符合条件的背调记录</td></tr>
           <tr v-for="item in records" :key="item.id" :class="{ 'row-expanded': expandedRows[item.id] }">
             <td data-label="姓名" class="record-name"><strong>{{ item.name }}</strong></td>
             <td data-label="查询类型" class="record-type">{{ item.type }}</td>
@@ -95,14 +107,15 @@
     <div class="pager">
       <span>共 {{ total }} 条</span>
       <select v-model.number="filters.pageSize" @change="search">
+        <option :value="5">5 条/页</option>
         <option :value="10">10 条/页</option>
         <option :value="20">20 条/页</option>
-        <option :value="50">50 条/页</option>
       </select>
       <button class="ghost-btn" :disabled="filters.pageNum <= 1" @click="changePage(-1)">上一页</button>
       <span>{{ filters.pageNum }} / {{ totalPages }} 页</span>
       <button class="ghost-btn" :disabled="filters.pageNum >= totalPages" @click="changePage(1)">下一页</button>
     </div>
+    </section>
 
     <div v-if="fallbackLink" class="fallback-link-mask" @click.self="closeFallbackLink">
       <section class="fallback-link-dialog" role="dialog" aria-modal="true" aria-labelledby="fallback-link-title">
@@ -129,18 +142,7 @@
         </div>
       </section>
     </div>
-
-    <div
-      v-if="message"
-      class="records-toast"
-      :class="messageType"
-      role="status"
-      aria-live="polite"
-      data-testid="records-toast"
-    >
-      {{ message }}
-    </div>
-  </section>
+  </div>
 </template>
 
 <script setup>
@@ -187,7 +189,7 @@ const fallbackLinkInput = ref(null)
 const message = ref('')
 const messageType = ref('info')
 const profile = ref({})
-const filters = reactive({ pageNum: 1, pageSize: 10, keyword: '', status: '' })
+const filters = reactive({ pageNum: 1, pageSize: 5, keyword: '', status: '' })
 
 const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / filters.pageSize)))
 const hasFilters = computed(() => !!(filters.keyword || filters.status))
@@ -224,7 +226,7 @@ async function exportCsv() {
   exporting.value = true
   try {
     const base = { pageSize: EXPORT_PAGE_SIZE }
-    if (filters.keyword) base.idCard = filters.keyword
+    if (filters.keyword) base.searchKeyword = filters.keyword
     if (filters.status) base.displayStatusFilter = filters.status
 
     const all = []
@@ -259,7 +261,7 @@ async function exportCsv() {
     const link = document.createElement('a')
     link.href = url
     const stamp = new Date().toISOString().slice(0, 10)
-    link.download = `背调查询记录_${stamp}.csv`
+    link.download = `背调记录_${stamp}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -419,7 +421,7 @@ async function loadRecords() {
   loading.value = true
   try {
     const params = { pageNum: filters.pageNum, pageSize: filters.pageSize }
-    if (filters.keyword) params.idCard = filters.keyword
+    if (filters.keyword) params.searchKeyword = filters.keyword
     if (filters.status) params.displayStatusFilter = filters.status
     const res = await listData(params)
     if (seq !== loadSeq) return
@@ -427,7 +429,7 @@ async function loadRecords() {
     records.value = (res.rows || []).map(item => mapRecord(item, queryTypeMap.value))
   } catch (err) {
     if (seq !== loadSeq) return
-    show(err?.msg || '查询记录加载失败', 'error')
+    show(err?.msg || '背调记录加载失败', 'error')
   } finally {
     if (seq === loadSeq) loading.value = false
   }

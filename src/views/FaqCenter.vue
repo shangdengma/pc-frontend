@@ -1,10 +1,8 @@
 <template>
-  <section class="faq-page">
+  <section class="faq-page workspace-page workspace-page--narrow">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">服务支持</p>
         <h2>常见问题</h2>
-        <p class="page-head-desc">查找账户、查询、报告与费用相关问题。</p>
       </div>
       <label class="faq-search">
         <Search :size="17" aria-hidden="true" />
@@ -28,7 +26,7 @@
       </button>
     </div>
 
-    <div class="faq-content" :aria-busy="loading">
+    <div class="faq-content workspace-surface" :aria-busy="loading">
       <div v-if="loading" class="faq-state">
         <LoaderCircle class="faq-spinner" :size="22" />
         <span>正在加载常见问题</span>
@@ -157,7 +155,7 @@ onMounted(loadFaqs)
 
 <style scoped>
 .faq-page {
-  width: min(100%, 1040px);
+  width: min(100%, 960px);
   margin: 0 auto;
   color: var(--text);
 }

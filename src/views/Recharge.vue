@@ -1,18 +1,16 @@
 <template>
-  <section class="recharge-page">
+  <section class="recharge-page workspace-page workspace-page--standard">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">账户资金</p>
         <h2>账户充值</h2>
       </div>
     </header>
 
     <div class="recharge-grid">
-      <div class="work-card package-card">
-        <div class="work-card-head compact-head">
+      <div class="work-card package-card workspace-surface">
+        <div class="work-card-head compact-head workspace-section-head">
           <div>
             <h3>选择充值套餐</h3>
-            <p>套餐由平台配置，选择后在右侧扫码支付。</p>
           </div>
         </div>
 
@@ -38,11 +36,10 @@
         </div>
       </div>
 
-      <div class="work-card pay-card">
-        <div class="work-card-head compact-head">
+      <div class="work-card pay-card workspace-surface">
+        <div class="work-card-head compact-head workspace-section-head">
           <div>
             <h3>支付方式</h3>
-            <p>请使用手机扫码完成支付。</p>
           </div>
         </div>
 

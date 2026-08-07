@@ -1,8 +1,7 @@
 <template>
-  <div class="dashboard-page">
+  <div class="dashboard-page workspace-page workspace-page--wide">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">企业背调工作台</p>
         <h2>{{ greeting }}，{{ displayName }}</h2>
       </div>
       <div class="page-head-actions">
@@ -13,7 +12,18 @@
       </div>
     </header>
 
-    <section class="metric-grid">
+    <router-link class="mobile-balance-panel" to="/recharge">
+      <div>
+        <span>可用余额</span>
+        <strong>&yen;{{ balanceText }}</strong>
+      </div>
+      <span class="mobile-balance-action">
+        去充值
+        <ArrowRight :size="16" :stroke-width="1.9" />
+      </span>
+    </router-link>
+
+    <section class="metric-grid" aria-label="业务概览">
       <article class="metric-card" v-for="item in metrics" :key="item.label">
         <div class="metric-top">
           <span>{{ item.label }}</span>
@@ -45,7 +55,7 @@
           </thead>
           <tbody>
             <tr v-if="loadingRecords" class="skeleton-table-row"><td colspan="4"><span></span></td></tr>
-            <tr v-else-if="recentRecords.length === 0"><td colspan="4" class="table-empty">暂无查询记录</td></tr>
+            <tr v-else-if="recentRecords.length === 0"><td colspan="4" class="table-empty">暂无背调记录</td></tr>
             <tr v-for="row in recentRecords" :key="row.id || row.name + row.time">
               <td data-label="姓名"><strong>{{ row.name }}</strong></td>
               <td data-label="查询类型">{{ row.type }}</td>
@@ -60,7 +70,6 @@
         <div class="panel-head">
           <div>
             <h3 class="panel-title-icon"><Megaphone :size="18" />公告栏</h3>
-            <p>平台公告、政策与服务通知</p>
           </div>
           <router-link class="more-link" to="/announcements">查看全部 <ArrowRight :size="15" /></router-link>
         </div>
@@ -73,9 +82,10 @@
             :to="{ path: '/announcements', query: { noticeId: item.id } }"
           >
             <span class="notice-tag" :class="item.type">{{ item.tag }}</span>
-            <div>
+            <div class="notice-copy">
               <strong><span v-if="item.isTop" class="top-flag">置顶</span>{{ item.title }}</strong>
-              <p>{{ item.date }}</p>
+              <p v-if="item.content" class="notice-summary" :title="item.content">{{ item.content }}</p>
+              <time class="notice-date">{{ item.date }}</time>
             </div>
           </router-link>
         </div>
@@ -85,7 +95,6 @@
         <div class="panel-head">
           <div>
             <h3>近 30 天查询趋势</h3>
-            <p>按任务提交日期统计查询数量</p>
           </div>
         </div>
         <div v-if="hasTrendData" ref="trendChartRef" class="line-chart" aria-label="近30天查询趋势图"></div>
@@ -116,7 +125,7 @@ import { getAnnouncements } from '../api/notice'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserBalance, getUserProfile } from '../api/user'
 import { getUser } from '../utils/auth'
-import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
+import { formatDateTime, mapRecord, statusClass, statusText, yuanFromFen } from '../utils/format'
 
 const records = ref([])
 const notices = ref([])
@@ -126,6 +135,7 @@ let trendChart = null
 let chartResizeObserver = null
 const profile = ref(getUser())
 const balance = ref(0)
+const balanceText = computed(() => yuanFromFen(balance.value))
 const queryTypeMap = ref({})
 
 const displayName = computed(() => profile.value.enterpriseName || profile.value.nickName || profile.value.userName || '当前用户')
@@ -134,11 +144,10 @@ const recentRecords = computed(() => records.value.slice(0, 5))
 const runningCount = computed(() => records.value.filter(r => ['processing', 'waiting_auth'].includes(String(r.displayStatus))).length)
 const authCount = computed(() => records.value.filter(r => String(r.displayStatus) === 'waiting_auth').length)
 const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
-// 余额已常驻顶栏，不必在工作台再占一格；「近 30 天查询」下方的趋势图已经表达了同样的信息。
-// 剩下两项是当前真正需要盯的进行中事务，说明文字对老用户是噪音，去掉。
+// 余额已常驻顶栏，工作台概览只保留当前查询进度。
 const metrics = computed(() => [
-  { label: '背调中', value: `${runningCount.value} 单`, icon: LoaderCircle },
-  { label: '待授权', value: `${authCount.value} 单`, icon: FileSignature }
+  { label: '背调中', value: `${runningCount.value} 单`, icon: LoaderCircle, desc: '正在处理的查询任务' },
+  { label: '待授权', value: `${authCount.value} 单`, icon: FileSignature, desc: '等待候选人完成授权' }
 ])
 const trendSeries = computed(() => {
   const buckets = []
@@ -307,6 +316,83 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.dashboard-page {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+}
+
+.dashboard-page .page-head {
+  margin-bottom: 24px;
+}
+
+.dashboard-page .page-head h2 {
+  font-size: 28px;
+  line-height: 1.22;
+}
+
+.dashboard-page .metric-grid {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-bottom: 18px;
+  border-color: #dce4ee;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(31, 45, 68, 0.055);
+}
+
+.dashboard-page .metric-card {
+  min-height: 132px;
+  padding: 22px 24px;
+  transition: background-color 0.16s ease;
+}
+
+.dashboard-page .metric-card:hover {
+  background: #f8fafc;
+}
+
+.dashboard-page .metric-card strong {
+  margin-top: 16px;
+  font-size: 30px;
+}
+
+.dashboard-page .metric-card p {
+  margin-top: 7px;
+  color: #7a8799;
+}
+
+.dashboard-page .metric-icon {
+  width: 38px;
+  height: 38px;
+  color: #315a91;
+  background: #edf4fb;
+  border-radius: 8px;
+}
+
+.dashboard-page .dashboard-grid {
+  gap: 18px;
+}
+
+.dashboard-page .panel {
+  overflow: hidden;
+  border-color: #dce4ee;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
+}
+
+.dashboard-page .panel-head {
+  min-height: 66px;
+  padding: 14px 20px;
+  background: #fbfcfe;
+}
+
+.dashboard-page .panel-head h3 {
+  color: #1a2940;
+  font-size: 15px;
+}
+
+.dashboard-page .data-table th {
+  background: #f6f8fb;
+}
+
 .metric-card,
 .notice-item {
   transition: border-color 0.16s ease, background-color 0.16s ease;
@@ -315,5 +401,82 @@ onBeforeUnmount(() => {
 .notice-item {
   color: inherit;
   text-decoration: none;
+}
+
+.mobile-balance-panel {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .dashboard-page .metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-page .metric-card {
+    min-height: 108px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .dashboard-page .metric-card:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-page .page-head h2 {
+    font-size: 24px;
+  }
+
+  .mobile-balance-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 78px;
+    padding: 15px 17px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--text);
+    background: #fff;
+    text-decoration: none;
+  }
+
+  .mobile-balance-panel > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mobile-balance-panel > div span {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+  }
+
+  .mobile-balance-panel > div strong {
+    margin-top: 4px;
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mobile-balance-action {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    color: var(--blue-dark);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+
+  .dashboard-page .recent-panel tbody tr:nth-child(n + 3) {
+    display: none;
+  }
+
+  .dashboard-page .metric-card {
+    padding: 17px 18px;
+  }
 }
 </style>

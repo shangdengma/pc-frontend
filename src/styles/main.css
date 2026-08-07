@@ -166,14 +166,12 @@ textarea:focus-visible {
 }
 
 .brand-mark {
+  position: relative;
   width: 34px;
   height: 34px;
   flex: 0 0 34px;
   display: grid;
   place-items: center;
-  color: #ffffff;
-  font-size: var(--fs-lg);
-  font-weight: 700;
   /* 与登录页同一枚朱砂方印，保持品牌一致 */
   background: var(--cinnabar);
   border: 0;
@@ -182,6 +180,19 @@ textarea:focus-visible {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.22),
     inset 0 0 5px rgba(120, 28, 20, 0.42);
+}
+
+.brand-mark span {
+  height: 25px;
+  display: grid;
+  place-content: center;
+  color: #ffffff;
+  font-family: "Songti SC", "SimSun", "Noto Serif CJK SC", serif;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1.05;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 
 .brand-title {
@@ -259,37 +270,27 @@ textarea:focus-visible {
 }
 
 .sidebar-footer {
-  padding: 12px;
+  padding: 6px 16px 8px;
   border-top: 1px solid var(--line-soft);
 }
 
-.security-note {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 52px;
-  padding: 10px 12px;
-  color: var(--muted);
-  background: #f7f9fc;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
+.sidebar-brand-signoff {
+  position: relative;
+  height: 46px;
+  overflow: hidden;
 }
 
-.security-note strong,
-.security-note span {
-  display: block;
-}
-
-.security-note strong {
-  color: var(--text-secondary);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-}
-
-.security-note span {
-  margin-top: 1px;
-  font-size: var(--fs-xs);
-  color: var(--faint);
+.sidebar-brand-signoff img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 130px;
+  height: 130px;
+  max-width: none;
+  object-fit: contain;
+  opacity: 0.8;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .main-area {
@@ -300,29 +301,17 @@ textarea:focus-visible {
   position: sticky;
   top: 0;
   z-index: 10;
-  height: 60px;
+  height: 64px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 0 24px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
 
-.topbar-context {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.topbar-context > span {
-  color: var(--faint);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-}
-
-.topbar-context h1,
 .topbar h1 {
   margin: 0;
   color: var(--text);
@@ -335,6 +324,7 @@ textarea:focus-visible {
   position: relative;
   display: flex;
   align-items: center;
+  margin-left: auto;
   gap: 8px;
   color: var(--muted);
 }
@@ -347,9 +337,9 @@ textarea:focus-visible {
 .user-menu-btn {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 4px 8px 4px 4px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 3px 7px 3px 3px;
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
@@ -668,12 +658,6 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
-.panel-head p {
-  margin: 2px 0 0;
-  color: var(--faint);
-  font-size: var(--fs-xs);
-}
-
 .panel-head a,
 .more-link {
   display: inline-flex;
@@ -798,8 +782,11 @@ textarea:focus-visible {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-3);
+  width: 100%;
+  min-width: 0;
   min-height: 58px;
   padding: 11px 4px;
+  overflow: hidden;
   border: 0;
   border-bottom: 1px solid var(--line-soft);
   border-radius: 0;
@@ -811,6 +798,12 @@ textarea:focus-visible {
 
 .notice-item:hover {
   background: var(--line-soft);
+}
+
+.notice-copy {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .notice-tag {
@@ -837,14 +830,31 @@ textarea:focus-visible {
 
 .notice-item strong {
   display: block;
+  overflow: hidden;
   color: var(--text);
   font-size: var(--fs-sm);
   font-weight: 500;
   line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.notice-item p {
+.notice-summary {
+  display: block;
+  width: 100%;
+  max-width: 100%;
   margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-date {
+  display: block;
+  margin-top: 3px;
   color: var(--faint);
   font-size: var(--fs-xs);
 }
@@ -1049,6 +1059,28 @@ textarea:focus-visible {
 
 .data-table td strong {
   font-weight: 600;
+}
+
+/* Desktop list tables share one header alignment. Body cells keep their
+   semantic alignment (text left, amounts right), and mobile hides headers. */
+@media (min-width: 769px) {
+  .data-table.data-table thead th,
+  .detail-table.detail-table thead th,
+  .ledger-table.ledger-table thead th,
+  .data-table.data-table thead th[class],
+  .detail-table.detail-table thead th[class],
+  .ledger-table.ledger-table thead th[class] {
+    text-align: center !important;
+  }
+
+  .data-table.data-table tbody td,
+  .detail-table.detail-table tbody td,
+  .ledger-table.ledger-table tbody td,
+  .data-table.data-table tbody td[class],
+  .detail-table.detail-table tbody td[class],
+  .ledger-table.ledger-table tbody td[class] {
+    text-align: center !important;
+  }
 }
 
 .data-table tbody tr:hover td {
@@ -1263,12 +1295,6 @@ textarea::placeholder {
   margin: 0;
   font-size: var(--fs-xl);
   font-weight: 700;
-}
-
-.work-card-head p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: var(--fs-sm);
 }
 
 .work-card-head h3,
@@ -1672,6 +1698,34 @@ textarea::placeholder {
   font-size: var(--fs-xs);
   color: #b3aca1;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.login-foot-primary {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 6px;
+}
+
+.login-police-record {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  line-height: 1.4;
+}
+
+.login-police-record img {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  object-fit: contain;
 }
 
 .login-foot a {
@@ -1686,6 +1740,11 @@ textarea::placeholder {
   .login-main { padding: 32px 0 26px; }
   .login-brand, .login-card { max-width: 100%; }
   .login-foot { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+}
+
+.register-page {
+  padding-top: 32px;
+  padding-bottom: 32px;
 }
 
 .register-page .login-brand,
@@ -2982,9 +3041,6 @@ textarea::placeholder {
     padding: 0 14px;
   }
 
-  .topbar-context span { display: none; }
-  .topbar-context h1 { font-size: var(--fs-lg); }
-
   /* 用户菜单在窄屏只留头像 */
   .user-menu-copy,
   .menu-chevron { display: none; }
@@ -3088,7 +3144,6 @@ textarea::placeholder {
 @media (max-width: 480px) {
   .overview-metrics,
   .stats-grid { grid-template-columns: minmax(0, 1fr) !important; }
-  .topbar-context h1 { font-size: var(--fs-base); }
 }
 
 /* 触摸目标不小于 40px，避免手机上点不中 */
@@ -3317,7 +3372,6 @@ textarea::placeholder {
   /* 5. 页面主标题降一档，长句不至于占三行 */
   .page-header h2,
   .work-card-head h2 { font-size: var(--fs-xl); }
-  .work-card-head p { font-size: var(--fs-xs); line-height: 1.6; }
 }
 
 /* Dashboard 移动端：类名是 welcome-row / new-query-btn / metric-card，
@@ -3345,19 +3399,13 @@ textarea::placeholder {
    ============================================================ */
 
 /* ---- 1. 顶栏 ---- */
-.topbar-context span {
-  font-size: var(--fs-base);
-  font-weight: 600;
-  color: var(--text);
-}
-
 .rail-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-right: 12px;
+  width: 36px;
+  height: 36px;
+  margin-right: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -3627,15 +3675,16 @@ textarea::placeholder {
   max-width: 720px;   /* 单列时不要拉满整屏，阅读宽度更舒服 */
 }
 
-/* 有历史记录时才回到两栏，并放开宽度 */
+/* 认证状态、资料表单和历史记录始终按业务顺序纵向排列。
+   旧版在存在历史记录时强制切回两栏，会让进度条挤出状态卡并覆盖记录区。 */
 .cert-layout:has(.cert-history-card) {
-  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   max-width: none;
 }
 
 .cert-layout:has(.cert-history-card) .cert-history-card {
-  grid-row: 1 / span 2;
-  grid-column: 2;
+  grid-row: auto;
+  grid-column: auto;
 }
 
 /* 状态卡：主操作放大，不再是行内小按钮 */
@@ -3858,9 +3907,7 @@ textarea::placeholder {
    结构：
      <header class="page-head">
        <div class="page-head-main">
-         <p class="page-head-eyebrow">账户中心</p>   （可选）
          <h2>资金流水</h2>
-         <p class="page-head-desc">一句话说明</p>     （可选）
        </div>
        <div class="page-head-actions"> …按钮… </div>  （可选）
      </header>
@@ -3877,13 +3924,6 @@ textarea::placeholder {
 
 .page-head-main { min-width: 0; }
 
-.page-head-eyebrow {
-  margin: 0 0 var(--sp-1);
-  color: var(--muted);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-}
-
 .page-head h1,
 .page-head h2 {
   margin: 0;
@@ -3891,13 +3931,6 @@ textarea::placeholder {
   font-size: var(--fs-xl);
   font-weight: 600;
   line-height: 1.3;
-}
-
-.page-head-desc {
-  margin: var(--sp-2) 0 0;
-  color: var(--muted);
-  font-size: var(--fs-sm);
-  line-height: 1.6;
 }
 
 .page-head-actions {

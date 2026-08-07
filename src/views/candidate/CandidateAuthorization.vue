@@ -2,7 +2,7 @@
   <main class="candidate-shell">
     <header class="candidate-header">
       <div class="candidate-brand">
-        <span class="candidate-brand-mark">钟</span>
+        <span class="candidate-brand-mark">钟馗</span>
         <span>
           <strong>钟馗背调</strong>
           <small>候选人信息授权</small>
@@ -113,6 +113,15 @@
         河南钟馗科技有限公司 ·
         <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">豫ICP备2025138155号</a>
       </span>
+      <a
+        class="candidate-footer-line candidate-police-record"
+        href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=41019602002676"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img src="/gongan-beian.png" alt="" aria-hidden="true">
+        <span>豫公网安备41019602002676号</span>
+      </a>
     </footer>
 
     <div v-if="documentDialog" class="candidate-document-overlay" @click.self="documentDialog = ''">

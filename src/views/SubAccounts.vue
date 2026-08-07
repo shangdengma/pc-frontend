@@ -1,18 +1,18 @@
 ﻿<template>
-  <div class="sub-page">
+  <div class="sub-page workspace-page workspace-page--wide">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">企业管理</p>
         <h2>{{ labels.subAccountManage }}</h2>
-        <p class="page-head-desc">{{ labels.heroDesc }}</p>
       </div>
-      <button v-if="!isSubAccount" class="primary-btn" type="button" @click="openCreate"><Plus :size="17" />{{ labels.addSub }}</button>
+      <div class="page-head-actions">
+        <button v-if="!isSubAccount" class="primary-btn" type="button" @click="openCreate"><Plus :size="17" />{{ labels.addSub }}</button>
+      </div>
     </header>
 
     <!-- 页面级提示：停用与启用在列表上直接触发，结果需要在列表上方反馈。 -->
     <div v-if="pageMessage" class="form-message" :class="pageMessageType">{{ pageMessage }}</div>
 
-    <section v-if="isSubAccount" class="sub-card no-permission-card">
+    <section v-if="isSubAccount" class="sub-card no-permission-card workspace-surface">
       <div class="no-permission-icon"><ShieldAlert :size="23" :stroke-width="1.8" /></div>
       <h3>子账号无权管理子账号</h3>
       <p>子账号由主账号统一创建和管理。</p>
@@ -30,9 +30,9 @@
       <div><span>{{ labels.totalUsed }}</span><strong>&yen;{{ formatMoney(totalUsed) }}</strong></div>
     </section>
 
-    <section v-if="!isSubAccount" class="sub-card">
-      <div class="card-head">
-        <div><h3>{{ labels.subList }}</h3><p>{{ labels.listDesc }}</p></div>
+    <section v-if="!isSubAccount" class="sub-card workspace-surface">
+      <div class="card-head workspace-section-head">
+        <div><h3>{{ labels.subList }}</h3></div>
       </div>
       <div v-if="loading" class="empty-state">{{ labels.loading }}</div>
       <div v-else-if="!accounts.length" class="empty-state">{{ labels.empty }}</div>
@@ -67,7 +67,7 @@
           <td :data-label="labels.used" class="numeric">&yen;{{ formatMoney(item.subAccountUsed) }}</td>
           <td :data-label="labels.remaining" class="numeric remain">&yen;{{ formatMoney(remaining(item)) }}</td>
           <td data-label="操作" class="row-actions">
-            <button type="button" @click="openRecords(item)">查询记录</button>
+            <button type="button" @click="openRecords(item)">背调记录</button>
             <button type="button" @click="openLogs(item)">流水</button>
             <button v-if="!isAccountDisabled(item)" class="primary-action-btn" type="button" @click="openQuota(item)">{{ labels.adjust }}</button>
             <button v-if="!isAccountDisabled(item)" type="button" @click="openResetPwd(item)">重置密码</button>
@@ -195,7 +195,7 @@
 
     <AppModal
       :open="detailVisible && !isSubAccount"
-      :title="`${detailAccount?.nickName || detailAccount?.userName || '子账号'} 的${detailType === 'records' ? '查询记录' : '账户流水'}`"
+      :title="`${detailAccount?.nickName || detailAccount?.userName || '子账号'} 的${detailType === 'records' ? '背调记录' : '账户流水'}`"
       eyebrow="子账号详情"
       :description="detailAccount?.userName || ''"
       size="xl"
@@ -203,7 +203,7 @@
       @close="closeDetail"
     >
         <div class="detail-tabs">
-          <button :class="{ active: detailType === 'records' }" @click="switchDetail('records')">查询记录</button>
+          <button :class="{ active: detailType === 'records' }" @click="switchDetail('records')">背调记录</button>
           <button :class="{ active: detailType === 'logs' }" @click="switchDetail('logs')">账户流水</button>
         </div>
         <div class="detail-body">
@@ -211,7 +211,7 @@
             <thead><tr><th>姓名</th><th>查询类型</th><th>手机号</th><th>提交时间</th><th>状态</th><th>订单号</th></tr></thead>
             <tbody>
               <tr v-if="detailLoading"><td colspan="6">正在加载...</td></tr>
-              <tr v-else-if="!detailRows.length"><td colspan="6">暂无查询记录</td></tr>
+              <tr v-else-if="!detailRows.length"><td colspan="6">暂无背调记录</td></tr>
               <tr v-for="row in detailRows" :key="row.id">
                 <td data-label="姓名"><strong>{{ row.name || '-' }}</strong></td>
                 <td data-label="查询类型">{{ getQueryTypeName(row.searchType) }}</td>
@@ -265,14 +265,12 @@ import { formatDateTime, statusClass, statusText, yuanFromFen } from '../utils/f
 const labels = {
   accountCenter: '\u8d26\u6237\u4e2d\u5fc3',
   subAccountManage: '\u5b50\u8d26\u53f7\u7ba1\u7406',
-  heroDesc: '\u7edf\u4e00\u7ba1\u7406\u5b50\u8d26\u53f7\u53ca\u53ef\u7528\u989d\u5ea6\u3002',
   addSub: '\u6dfb\u52a0\u5b50\u8d26\u53f7',
   mainBalance: '\u4e3b\u8d26\u53f7\u53ef\u652f\u914d\u4f59\u989d',
   subCount: '\u542f\u7528 / \u5168\u90e8',
   totalQuota: '\u5df2\u5206\u914d\u989d\u5ea6',
   totalUsed: '\u5df2\u6d88\u8d39\u989d\u5ea6',
   subList: '\u5b50\u8d26\u53f7\u5217\u8868',
-  listDesc: '\u67e5\u770b\u5b50\u8d26\u53f7\u989d\u5ea6\u3001\u67e5\u8be2\u8bb0\u5f55\u548c\u8d26\u6237\u6d41\u6c34\u3002',
   loading: '\u6b63\u5728\u52a0\u8f7d\u5b50\u8d26\u53f7...',
   empty: '\u6682\u65e0\u5b50\u8d26\u53f7',
   quota: '\u5206\u914d\u603b\u989d\u5ea6',
@@ -484,7 +482,7 @@ async function submit() {
 }
 async function disable(item) {
   const name = item.nickName || item.userName
-  if (!window.confirm(`确定停用子账号「${name}」吗？\n\n停用后该账号将无法登录，未消费额度会释放；查询记录、资金流水和历史报告仍会保留。存在未完成订单时系统会拒绝停用。`)) return
+  if (!window.confirm(`确定停用子账号「${name}」吗？\n\n停用后该账号将无法登录，未消费额度会释放；背调记录、资金流水和历史报告仍会保留。存在未完成订单时系统会拒绝停用。`)) return
   accountActionId.value = item.userId
   try {
     await disableSubAccount(item.userId)
@@ -605,7 +603,7 @@ useRefresh(loadList)
 </script>
 
 <style scoped>
-.sub-page { width: min(1360px, 100%); margin: 0 auto; display: grid; gap: 16px; }
+.sub-page { width: min(1280px, 100%); margin: 0 auto; }
 .no-permission-card { padding: 52px 40px; text-align: center; color: var(--text-secondary); }
 .no-permission-card h3 { margin: 14px 0 8px; color: var(--text); font-size: var(--fs-2xl); }
 .no-permission-card p { margin: 0 auto; max-width: 560px; line-height: 1.8; }
@@ -626,9 +624,9 @@ useRefresh(loadList)
 .sub-summary span { color: var(--muted); font-size: var(--fs-base); }
 .sub-summary strong { display: block; margin-top: 8px; font-size: var(--fs-2xl); color: var(--text); }
 .sub-card { overflow: hidden; }
+.sub-summary + .sub-card { margin-top: 16px; }
 .card-head { min-height: 68px; padding: 14px 20px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; justify-content: space-between; }
 .card-head h3 { margin: 0; font-size: var(--fs-lg); }
-.card-head p { margin: 8px 0 0; color: var(--muted); }
 .empty-state { padding: 70px 20px; text-align: center; color: #7b8aa0; }
 /* 行高、内边距、边框、hover 全部继承全局 .data-table，
    这里只留本页的列宽与停用态。 */
@@ -639,6 +637,7 @@ useRefresh(loadList)
 .sub-table th:nth-child(3),
 .sub-table th:nth-child(4),
 .sub-table th:nth-child(5) { width: 116px; }
+.sub-table th:nth-child(6) { width: 284px; text-align: center; }
 .sub-table tbody tr.disabled { background: var(--line-soft); }
 .sub-table tbody tr.disabled .account-avatar { color: var(--muted); background: var(--line); }
 .account-main { display: flex; align-items: center; gap: 14px; }
@@ -688,11 +687,12 @@ useRefresh(loadList)
   display: flex;
   align-items: center;
   gap: var(--sp-1);
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  justify-content: center;
+  flex-wrap: nowrap;
 }
 .row-actions button {
-  min-height: 30px;
+  height: 36px;
+  box-sizing: border-box;
   padding: 0 var(--sp-2);
   border: 0;
   border-radius: var(--radius);

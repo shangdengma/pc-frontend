@@ -5,7 +5,7 @@
 
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">钟</div>
+        <div class="brand-mark" aria-hidden="true"><span>钟馗</span></div>
         <div>
           <div class="brand-title">钟馗背调</div>
           <div class="brand-sub">企业风险管理平台</div>
@@ -51,12 +51,8 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div class="security-note">
-          <LockKeyhole :size="17" :stroke-width="1.8" />
-          <div>
-            <strong>数据安全保护中</strong>
-            <span>访问行为全程留痕</span>
-          </div>
+        <div class="sidebar-brand-signoff" aria-label="钟馗科技">
+          <img src="/sidebar-logo.png" alt="钟馗科技" />
         </div>
       </div>
     </aside>
@@ -65,14 +61,12 @@
       <header class="topbar">
         <button class="nav-toggle" type="button" aria-label="打开导航菜单" @click.stop="navOpen = !navOpen">
           <Menu :size="20" :stroke-width="1.9" />
+          <em v-if="unreadCount > 0" class="nav-toggle-unread">{{ unreadCount > 99 ? '99+' : unreadCount }}</em>
         </button>
-        <!-- 顶栏只做定位与全局操作，标题由页面自己承担，避免上下重复两遍 -->
+        <!-- 顶栏只保留全局操作，当前页面名称由内容区标题承担。 -->
         <button class="rail-toggle" type="button" :aria-label="railCollapsed ? '展开侧栏' : '收起侧栏'" @click="toggleRail">
           <PanelLeft :size="18" :stroke-width="1.9" />
         </button>
-        <div class="topbar-context">
-          <span>{{ pageTitle }}</span>
-        </div>
         <div class="topbar-actions">
           <!-- 下单是这个系统的核心动作，之前只有工作台和侧栏两个入口，
                用户在看流水/发票时想下单得先绕回去。窄屏不出现：
@@ -83,10 +77,9 @@
           </router-link>
           <!-- 余额从工作台的一格卡片提到顶栏：它决定了能不能下单，
                每个页面都该看得见，而不是只在工作台第一屏 -->
-          <router-link class="topbar-balance" :class="{ low: balanceLow }" to="/recharge">
-            <span class="tb-label">余额</span>
-            <strong>&yen;{{ balanceText }}</strong>
-          </router-link>
+      <router-link class="topbar-balance" :class="{ low: balanceLow }" to="/recharge">
+        <strong>&yen;{{ balanceText }}</strong>
+      </router-link>
           <div ref="menuRef" class="user-menu">
             <button class="user-menu-btn" type="button" @click.stop="toggleMenu">
               <span class="avatar-btn">{{ userInitial }}</span>
@@ -106,7 +99,10 @@
               </div>
               <div class="dropdown-links">
                 <router-link to="/enterprise-cert" @click="menuOpen = false"><Building2 :size="17" />企业认证</router-link>
-                <router-link to="/messages" @click="menuOpen = false"><Bell :size="17" />消息通知</router-link>
+                <router-link to="/messages" @click="menuOpen = false">
+                  <Bell :size="17" />消息通知
+                  <em v-if="unreadCount > 0" class="dropdown-unread">{{ unreadCount > 99 ? '99+' : unreadCount }}</em>
+                </router-link>
               </div>
               <button class="logout-btn" type="button" @click="handleLogout"><LogOut :size="17" />退出登录</button>
             </div>
@@ -143,7 +139,6 @@ import {
   CircleHelp,
   Headphones,
   LayoutDashboard,
-  LockKeyhole,
   LogOut,
   Menu,
   MessageSquareText,
@@ -165,7 +160,6 @@ import { canRefresh, runRefresh, useRefreshState } from '../composables/pullRefr
 
 const route = useRoute()
 const router = useRouter()
-const pageTitle = computed(() => route.name === 'queryCreate' && canOnlineTest.value ? '在线测试' : (route.meta.title || '工作台'))
 const menuOpen = ref(false)
 // 移动端抽屉导航开关；路由变化时自动收起，避免跳转后遮罩还挂着
 const navOpen = ref(false)
@@ -185,11 +179,17 @@ const unreadCount = ref(0)
 // 藏在二级页面里用户不会主动去看
 const certPending = ref(false)
 
-async function loadNavBadges() {
+async function loadUnreadCount() {
   try {
     const res = await getUnreadCount()
-    unreadCount.value = Number(res?.data ?? res?.count ?? 0) || 0
+    // 后端返回 { data: { unreadCount: n } }。同时兼容旧版直接返回数字或 count 字段。
+    const count = res?.data?.unreadCount ?? res?.unreadCount ?? res?.count ?? res?.data ?? 0
+    unreadCount.value = Number(count) || 0
   } catch (err) { /* 徽章是锦上添花，失败就不显示，不打扰主流程 */ }
+}
+
+async function loadNavBadges() {
+  await loadUnreadCount()
 
   try {
     const res = await getMyEnterpriseCertList()
@@ -197,6 +197,12 @@ async function loadNavBadges() {
     certPending.value = !list.some(item => item.status === 'approved')
   } catch (err) { certPending.value = false }
 }
+
+function refreshUnreadWhenVisible() {
+  if (document.visibilityState === 'visible') loadUnreadCount()
+}
+
+let unreadTimer = null
 
 const balance = ref(0)
 const balanceText = computed(() => yuanFromFen(balance.value))
@@ -216,7 +222,7 @@ const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestE
 const businessMenus = computed(() => [
   { title: '工作台', path: '/dashboard', icon: LayoutDashboard },
   { title: canOnlineTest.value ? '在线测试' : '发起背调', path: '/query/create', icon: ShieldCheck },
-  { title: '查询记录', path: '/records', icon: ClipboardList },
+  { title: '背调记录', path: '/records', icon: ClipboardList },
   {
     title: '消息通知',
     path: '/messages',
@@ -341,6 +347,10 @@ onMounted(() => {
   loadProfile()
   loadNavBadges()
   document.addEventListener('click', handleDocumentClick)
+  document.addEventListener('visibilitychange', refreshUnreadWhenVisible)
+  window.addEventListener('focus', loadUnreadCount)
+  window.addEventListener('zk:notice-count-refresh', loadUnreadCount)
+  unreadTimer = window.setInterval(refreshUnreadWhenVisible, 60000)
   if (isTouchDevice()) {
     // passive:false 是必需的——要靠 preventDefault 压住浏览器自己的下拉刷新
     window.addEventListener('touchstart', onTouchStart, { passive: true })
@@ -352,6 +362,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleDocumentClick)
+  document.removeEventListener('visibilitychange', refreshUnreadWhenVisible)
+  window.removeEventListener('focus', loadUnreadCount)
+  window.removeEventListener('zk:notice-count-refresh', loadUnreadCount)
+  if (unreadTimer) window.clearInterval(unreadTimer)
   window.removeEventListener('touchstart', onTouchStart)
   window.removeEventListener('touchmove', onTouchMove)
   window.removeEventListener('touchend', onTouchEnd)
@@ -414,12 +428,53 @@ onBeforeUnmount(() => {
   background: var(--orange);
 }
 
+/* 折叠侧栏只表达“有待处理事项”，消息与企业认证使用同一橙色提示点。 */
+.rail-collapsed .nav-badge.count {
+  background: var(--orange);
+}
+
+/* 移动端侧栏收起后，把未读数挂在菜单按钮上，避免消息入口失去提示。 */
+.nav-toggle {
+  position: relative;
+}
+
+.nav-toggle-unread {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--cinnabar);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.dropdown-unread {
+  min-width: 18px;
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--cinnabar);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: center;
+}
+
 /* ---- 顶栏主操作 ---- */
 .topbar-cta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
+  height: 36px;
   padding: 0 14px;
   border-radius: var(--radius);
   background: var(--text);
@@ -440,9 +495,9 @@ onBeforeUnmount(() => {
 /* ---- 顶栏余额 ---- */
 .topbar-balance {
   display: inline-flex;
-  align-items: baseline;
-  gap: 7px;
-  height: 34px;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -455,11 +510,6 @@ onBeforeUnmount(() => {
 
 .topbar-balance:hover { border-color: #c9cdd4; background: var(--line-soft); }
 
-.topbar-balance .tb-label {
-  color: var(--muted);
-  font-size: var(--fs-xs);
-}
-
 .topbar-balance strong {
   font-size: var(--fs-base);
   font-weight: 600;
@@ -471,10 +521,7 @@ onBeforeUnmount(() => {
 .topbar-balance.low strong { color: var(--cinnabar); }
 
 @media (max-width: 768px) {
-  /* 窄屏只留金额，「余额」二字由货币符号代替 */
-  .topbar-balance { height: 30px; padding: 0 9px; }
-  .topbar-balance .tb-label { display: none; }
-  .topbar-balance strong { font-size: var(--fs-sm); }
+  .topbar-balance { display: none; }
 }
 
 /* ---- 下拉刷新指示器 ---- */

@@ -1,13 +1,19 @@
 <template>
-  <div class="account-profile-page">
+  <div class="account-profile-page workspace-page workspace-page--standard">
+    <header class="page-head">
+      <div class="page-head-main">
+        <h2>基础信息</h2>
+      </div>
+    </header>
+
     <section class="profile-summary">
       <div class="summary-avatar" :class="{ image: avatarUrl }">
         <img v-if="avatarUrl" :src="avatarUrl" alt="账户头像">
         <span v-else>{{ profileInitial }}</span>
       </div>
       <div class="summary-copy">
-        <p>账户中心</p>
-        <h2>{{ summaryName }}</h2>
+        <p>当前账户</p>
+        <h3>{{ summaryName }}</h3>
         <div class="summary-meta">
           <span>{{ accountTypeLabel }}</span>
           <span v-if="certStatusText" :class="['cert-pill', certStatusClass]">{{ certStatusText }}</span>
@@ -413,23 +419,22 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.account-profile-page { width: min(1180px, 100%); margin: 0 auto; display: grid; gap: 16px; }
-.profile-summary { min-height: auto; padding: 0 0 18px; display: flex; align-items: center; gap: 18px; background: transparent; color: var(--text); border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; box-shadow: none; }
+.account-profile-page { width: min(1120px, 100%); margin: 0 auto; }
+.profile-summary { min-height: 112px; margin-bottom: 18px; padding: 22px 24px; display: flex; align-items: center; gap: 18px; background: linear-gradient(120deg, #fff 0%, #f7fafe 100%); color: var(--text); border: 1px solid #dce4ee; border-radius: 8px; box-shadow: 0 10px 28px rgba(31, 45, 68, .045); }
 .summary-avatar { flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: #fff; color: #1d5baa; font-weight: 800; }
 .summary-avatar { width: 64px; height: 64px; border: 1px solid #dce6f3; border-radius: var(--radius); font-size: var(--fs-2xl); background: #eef4ff; }
 .summary-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .summary-copy { min-width: 0; flex: 1; }
-.summary-copy p, .summary-copy h2 { margin: 0; letter-spacing: 0; }
-.summary-copy p { margin-bottom: 6px; color: var(--blue); font-size: var(--fs-sm); font-weight: 700; }
-.summary-copy h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-2xl); }
+.summary-copy p, .summary-copy h3 { margin: 0; letter-spacing: 0; }
+.summary-copy p { margin-bottom: 5px; color: #718096; font-size: var(--fs-xs); font-weight: 600; }
+.summary-copy h3 { overflow: hidden; color: #17243a; text-overflow: ellipsis; white-space: nowrap; font-size: 22px; }
 .summary-meta { margin-top: 10px; display: flex; align-items: center; gap: 10px; color: var(--muted); }
 .profile-summary .primary-btn { background: var(--blue); color: #fff; box-shadow: none; }
 .primary-btn.compact { min-width: 112px; height: 42px; padding: 0 20px; }
-.profile-detail-card { overflow: hidden; background: #fff; border: 1px solid #e4eaf2; border-radius: var(--radius); box-shadow: var(--shadow-panel); }
+.profile-detail-card { overflow: hidden; margin-bottom: 18px; background: #fff; border: 1px solid #dce4ee; border-radius: var(--radius); box-shadow: 0 10px 28px rgba(31, 45, 68, .045); }
 .detail-card-head { min-height: 68px; padding: 14px 24px; display: flex; align-items: center; border-bottom: 1px solid #e7ebf1; }
-.detail-card-head h3, .detail-card-head p { margin: 0; letter-spacing: 0; }
+.detail-card-head h3 { margin: 0; letter-spacing: 0; }
 .detail-card-head h3 { font-size: var(--fs-xl); color: #17243a; }
-.detail-card-head p { margin-top: 6px; color: #8190a5; font-size: var(--fs-base); }
 .profile-row { min-height: 68px; padding: 12px 24px; display: grid; grid-template-columns: 140px minmax(0, 1fr) minmax(110px, auto); gap: 24px; align-items: center; border-bottom: 1px solid #edf0f4; }
 .profile-row:last-child { border-bottom: 0; }
 .row-label { color: #59677a; font-weight: 600; }

@@ -3,7 +3,6 @@
     <div class="work-card-head records-head">
       <div>
         <h2>报告详情</h2>
-        <p>当前为 PC 迁移第一版，先展示后端记录与报告原始数据，后续把移动端报告组件拆迁过来。</p>
       </div>
       <router-link class="ghost-btn" to="/records">返回记录</router-link>
     </div>

@@ -1,33 +1,27 @@
 <template>
-  <section class="public-announcements-page">
+  <section class="public-announcements-page workspace-page workspace-page--narrow">
     <header class="page-head">
       <div class="page-head-main">
-        <p class="page-head-eyebrow">日常业务</p>
         <h2>平台公告</h2>
-        <p class="page-head-desc">查看系统公告、政策动态、平台活动和服务通知。</p>
       </div>
     </header>
 
-    <nav class="announcement-tabs" aria-label="公告分类">
-      <button
-        v-for="item in filters"
-        :key="item.value"
-        type="button"
-        :class="{ active: filter === item.value }"
-        @click="filter = item.value"
-      >
-        {{ item.label }}
-      </button>
-    </nav>
+    <div class="announcement-toolbar">
+      <nav class="announcement-tabs" aria-label="公告分类">
+        <button
+          v-for="item in filters"
+          :key="item.value"
+          type="button"
+          :class="{ active: filter === item.value }"
+          @click="filter = item.value"
+        >
+          {{ item.label }}
+        </button>
+      </nav>
+      <span class="announcement-count">{{ filteredAnnouncements.length }} 条公告</span>
+    </div>
 
     <div class="announcements-panel">
-      <!-- 页头已经写明「平台公告 / 查看系统公告、政策动态…」，
-           这里原本还有一组「公告列表 + 平台发布的公告对所有企业账号长期可见」，
-           是同一句话说两遍，只留条数 -->
-      <div class="announcements-panel-head">
-        <span>{{ filteredAnnouncements.length }} 条公告</span>
-      </div>
-
       <div v-if="loading" class="announcement-loading" aria-label="正在加载公告">
         <div v-for="index in 4" :key="index" class="announcement-skeleton"></div>
       </div>
@@ -181,67 +175,55 @@ useRefresh(loadAnnouncements)
 
 <style scoped>
 .public-announcements-page {
-  /* 与消息通知取同一宽度：两页都是用来扫的列表，行长要压下来 */
   width: min(960px, 100%);
   margin: 0 auto;
 }
 
-.eyebrow {
-  margin: 0 0 8px;
-  color: var(--blue);
-  font-size: var(--fs-sm);
-  font-weight: 700;
+.public-announcements-page .page-head {
+  margin-bottom: 24px;
 }
 
-.refresh-btn {
-  display: inline-flex;
+.public-announcements-page .page-head h2 {
+  font-size: 28px;
+  line-height: 1.22;
+}
+
+.announcement-toolbar {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 0 18px;
+  border: 1px solid #dce4ee;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #fbfcfe;
 }
 
-.spinning {
-  animation: spin 0.8s linear infinite;
-}
-
-/* 与查询记录、消息通知统一为下划线式。
-   原先是胶囊分段控件——同一个系统里出现两种 Tab 形态，
-   正是「规则不统一」的典型表现。 */
 .announcement-tabs {
   display: flex;
-  gap: var(--sp-6);
-  width: 100%;
-  margin: var(--sp-4) 0 var(--sp-5);
-  padding: 0;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  background: transparent;
+  align-self: stretch;
+  gap: 26px;
 }
 
 .announcement-tabs button {
   position: relative;
-  min-width: 0;
-  height: 36px;
+  height: 100%;
   padding: 0;
   border: 0;
-  border-radius: 0;
-  color: var(--muted);
+  color: #7a8799;
   background: transparent;
   font-size: var(--fs-sm);
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
   transition: color .14s ease;
 }
 
-.announcement-tabs button:hover { color: var(--text-secondary); }
+.announcement-tabs button:hover { color: #4c5b70; }
 
 .announcement-tabs button.active {
-  color: var(--text);
-  background: transparent;
-  font-weight: 600;
-  box-shadow: none;
+  color: #1a2940;
 }
 
 .announcement-tabs button.active::after {
@@ -251,40 +233,30 @@ useRefresh(loadAnnouncements)
   right: 0;
   bottom: -1px;
   height: 2px;
-  background: var(--text);
+  background: #315a91;
+}
+
+.announcement-count {
+  color: #7a8799;
+  font-size: var(--fs-xs);
 }
 
 .announcements-panel {
   overflow: hidden;
-  border: 1px solid #e1e7ef;
-  border-radius: var(--radius);
+  border: 1px solid #dce4ee;
+  border-radius: 0 0 8px 8px;
   background: #ffffff;
-  box-shadow: var(--shadow-panel);
-}
-
-/* 只剩一个条数了，不需要原来那么厚的内边距 */
-.announcements-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--line-soft);
-}
-
-.announcements-panel-head > span {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--fs-xs);
+  box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
 }
 
 .announcement-row {
   display: grid;
-  grid-template-columns: 62px minmax(0, 1fr) 118px;
+  grid-template-columns: 62px minmax(0, 1fr) 124px;
   align-items: center;
   gap: 18px;
   width: 100%;
-  min-height: 88px;
-  padding: 16px 24px;
+  min-height: 98px;
+  padding: 18px 22px;
   border: 0;
   border-bottom: 1px solid var(--line-soft);
   color: inherit;
@@ -298,7 +270,7 @@ useRefresh(loadAnnouncements)
 }
 
 .announcement-row:hover {
-  background: #f8fbff;
+  background: #f8fafc;
 }
 
 .announcement-tag {
@@ -309,15 +281,15 @@ useRefresh(loadAnnouncements)
   min-width: 48px;
   height: 28px;
   padding: 0 10px;
-  border-radius: var(--radius);
+  border-radius: 6px;
   font-size: var(--fs-sm);
   font-weight: 700;
 }
 
-.announcement-tag.system { color: #175cd3; background: #eff8ff; }
-.announcement-tag.policy { color: #027a48; background: #ecfdf3; }
-.announcement-tag.activity { color: #b54708; background: #fff6ed; }
-.announcement-tag.notice { color: var(--text-secondary); background: #f2f4f7; }
+.announcement-tag.system { color: #315a91; background: #eaf2fb; }
+.announcement-tag.policy { color: #326a53; background: #edf7f2; }
+.announcement-tag.activity { color: #8a5b24; background: #fbf3e8; }
+.announcement-tag.notice { color: #5e6d82; background: #f1f4f8; }
 
 .announcement-content,
 .announcement-content strong,
@@ -329,14 +301,14 @@ useRefresh(loadAnnouncements)
 .announcement-content strong {
   overflow: hidden;
   color: #17243a;
-  font-size: var(--fs-base);
+  font-size: 15px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .announcement-summary {
   overflow: hidden;
-  margin-top: 7px;
+  margin-top: 8px;
   color: #7b8798;
   font-size: var(--fs-sm);
   text-overflow: ellipsis;
@@ -419,10 +391,16 @@ useRefresh(loadAnnouncements)
 @keyframes skeleton { to { background-position: -200% 0; } }
 
 @media (max-width: 760px) {
+  .public-announcements-page .page-head h2 { font-size: 24px; }
+
+  .announcement-toolbar {
+    padding: 0 14px;
+    overflow: hidden;
+  }
 
   .announcement-tabs {
-    width: 100%;
-    /* 五个分类在 375px 上正好平分；overflow 是将来加分类时的兜底 */
+    flex: 1;
+    gap: 18px;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -431,13 +409,13 @@ useRefresh(loadAnnouncements)
   .announcement-tabs::-webkit-scrollbar { display: none; }
 
   .announcement-tabs button {
-    /* 桌面端的 min-width:72px 会把容器撑到 368px 超出屏宽，必须解除 */
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0 8px;
+    flex: 0 0 auto;
+    padding: 0;
     font-size: var(--fs-sm);
     white-space: nowrap;
   }
+
+  .announcement-count { display: none; }
 
   /* 分类徽章原先独占左侧一列，把标题挤到只剩半屏、必然截断。
      改成徽章与日期共用顶行，标题拿到整行宽度并允许折两行。 */
@@ -470,9 +448,5 @@ useRefresh(loadAnnouncements)
     font-size: var(--fs-base);
     line-height: 1.45;
   }
-}
-
-@media (max-width: 768px) {
-  .public-layout, .messages-layout { grid-template-columns: minmax(0, 1fr) !important; }
 }
 </style>

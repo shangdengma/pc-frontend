@@ -1,5 +1,5 @@
 <template>
-  <div class="customer-finance-page">
+  <div class="customer-finance-page workspace-page workspace-page--wide">
     <header class="page-head">
       <div class="page-head-main">
         <button class="back-link" type="button" @click="router.push('/agent-center')">
@@ -7,7 +7,6 @@
           返回客户管理
         </button>
         <h2>客户资金明细</h2>
-        <p class="page-head-desc">独立查看该客户的充值和消费流水，数据按时间倒序展示。</p>
       </div>
     </header>
 
@@ -41,11 +40,10 @@
       </dl>
     </section>
 
-    <section class="ledger-workspace">
-      <header class="ledger-toolbar">
+    <section class="ledger-workspace workspace-surface">
+      <header class="ledger-toolbar workspace-section-head">
         <div>
           <h3>资金流水</h3>
-          <p>按时间倒序展示该客户的充值与消费明细。</p>
         </div>
         <div class="ledger-tabs" role="tablist" aria-label="资金流水类型">
           <button type="button" :class="{ active: activeType === 'recharge' }" @click="switchType('recharge')">
@@ -223,7 +221,7 @@ useRefresh(refreshAll)
 </script>
 
 <style scoped>
-.customer-finance-page { width: min(1440px, 100%); margin: 0 auto; display: grid; gap: 18px; color: #172033; }
+.customer-finance-page { width: min(1280px, 100%); margin: 0 auto; color: #172033; }
 .back-link { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: 0; color: #2f6fe4; background: transparent; font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; }
 .refresh-btn { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; border: 1px solid #d6dfeb; border-radius: var(--radius); color: var(--text-secondary); background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .refresh-btn:hover:not(:disabled) { border-color: #9fb4cf; background: var(--line-soft); }
@@ -250,10 +248,9 @@ useRefresh(refreshAll)
 .page-error span { margin-top: 4px; font-size: var(--fs-sm); }
 .page-error button, .ledger-error button { border: 0; color: #245fc8; background: transparent; font: inherit; font-weight: 700; cursor: pointer; }
 
-.ledger-workspace { overflow: hidden; border: 1px solid #dfe6ef; border-radius: var(--radius); background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
+.ledger-workspace { margin-top: 18px; overflow: hidden; border: 1px solid #dfe6ef; border-radius: var(--radius); background: #fff; box-shadow: 0 8px 24px rgba(31, 50, 81, .05); }
 .ledger-toolbar { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 20px; border-bottom: 1px solid #e3e9f1; }
-.ledger-toolbar h3 { margin: 0 0 5px; font-size: var(--fs-lg); }
-.ledger-toolbar p { margin: 0; color: #758196; font-size: var(--fs-sm); }
+.ledger-toolbar h3 { margin: 0; font-size: var(--fs-lg); }
 .ledger-tabs { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid #dfe6ef; border-radius: var(--radius); background: #f5f7fa; }
 .ledger-tabs button { height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 13px; border: 0; border-radius: var(--radius); color: #657287; background: transparent; font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; }
 .ledger-tabs button.active { color: #245fc8; background: #fff; box-shadow: 0 1px 4px rgba(31, 50, 81, .1); }

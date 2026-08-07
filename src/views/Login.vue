@@ -83,8 +83,20 @@
     </main>
 
     <footer class="login-foot">
-      河南钟馗科技有限公司 ·
-      <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">豫ICP备2025138155号</a>
+      <div class="login-foot-primary">
+        <span>河南钟馗科技有限公司</span>
+        <span aria-hidden="true">·</span>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">豫ICP备2025138155号</a>
+      </div>
+      <a
+        class="login-police-record"
+        href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=41019602002676"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img src="/gongan-beian.png" alt="" aria-hidden="true">
+        <span>豫公网安备41019602002676号</span>
+      </a>
     </footer>
 
     <SmsSliderVerify
