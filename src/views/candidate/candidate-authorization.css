@@ -835,8 +835,11 @@
 
 .candidate-document-dialog {
   position: relative;
-  width: min(520px, 100%);
+  display: flex;
+  width: min(760px, 100%);
+  max-height: min(88vh, 860px);
   padding: 28px;
+  flex-direction: column;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 28px 80px rgba(13, 25, 47, 0.25);
@@ -859,10 +862,58 @@
 }
 
 .candidate-dialog-copy {
+  min-height: 0;
   margin-bottom: 22px;
+  padding-right: 10px;
+  overflow-y: auto;
   color: #58667b;
   font-size: var(--fs-base);
   line-height: 1.75;
+  scrollbar-gutter: stable;
+}
+
+.candidate-legal-copy {
+  counter-reset: legal-section;
+}
+
+.candidate-legal-copy .candidate-legal-lead {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--cinnabar);
+  background: #f7f8fa;
+  color: #344054;
+}
+
+.candidate-legal-copy section + section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e8ebf0;
+}
+
+.candidate-legal-copy h3 {
+  margin: 0 0 8px;
+  color: #182230;
+  font-size: var(--fs-lg);
+  line-height: 1.5;
+}
+
+.candidate-legal-copy ol {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.candidate-legal-copy li + li {
+  margin-top: 7px;
+}
+
+.candidate-legal-copy strong {
+  color: #25334a;
+}
+
+.candidate-legal-copy a {
+  color: var(--cinnabar);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .candidate-document-dialog > .candidate-primary-button {
@@ -1199,8 +1250,11 @@
   .candidate-document-dialog {
     max-height: 82vh;
     padding: 26px 20px calc(20px + env(safe-area-inset-bottom));
-    overflow: auto;
     border-radius: 8px 8px 0 0;
+  }
+
+  .candidate-dialog-copy {
+    padding-right: 4px;
   }
 }
 
