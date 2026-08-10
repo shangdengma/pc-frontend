@@ -8,7 +8,7 @@
         <div class="brand-mark" aria-hidden="true"><span>钟馗</span></div>
         <div>
           <div class="brand-title">钟馗背调</div>
-          <div class="brand-sub">企业风险管理平台</div>
+          <div class="brand-sub">企业背景调查工作台</div>
         </div>
       </div>
 
@@ -50,11 +50,6 @@
         </div>
       </nav>
 
-      <div class="sidebar-footer">
-        <div class="sidebar-brand-signoff" aria-label="钟馗科技">
-          <img src="/sidebar-logo.png" alt="钟馗科技" />
-        </div>
-      </div>
     </aside>
 
     <section class="main-area">
@@ -521,7 +516,38 @@ onBeforeUnmount(() => {
 .topbar-balance.low strong { color: var(--cinnabar); }
 
 @media (max-width: 768px) {
-  .topbar-balance { display: none; }
+  .topbar-actions {
+    position: static;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .topbar-balance {
+    position: static;
+    z-index: auto;
+    display: inline-flex;
+    min-width: 0;
+    max-width: 40vw;
+    height: 32px;
+    padding: 0 9px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    transform: none;
+  }
+
+  .topbar-balance:hover {
+    border-color: #c9cdd4;
+    background: var(--line-soft);
+  }
+  .topbar-balance strong {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar-balance.low { background: #fdf5f4; }
+  .user-menu { z-index: 1; }
 }
 
 /* ---- 下拉刷新指示器 ---- */

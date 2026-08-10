@@ -19,3 +19,7 @@ Thumbs.db
 .agents/
 .claude/
 skills-lock.json
+
+# Local browser regression artifacts
+.playwright-cli/
+output/playwright/

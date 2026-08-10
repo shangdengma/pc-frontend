@@ -13,7 +13,6 @@
     <div class="query-card-head">
       <div>
         <h3>候选人与套餐</h3>
-        <p>请确认联系方式准确，候选人将通过该手机号完成授权。</p>
       </div>
     </div>
 
@@ -391,13 +390,6 @@ onMounted(async () => {
   color: #17243a;
   font-size: 18px;
   line-height: 1.4;
-}
-
-.query-card-head p {
-  margin: 6px 0 0;
-  color: #7a8799;
-  font-size: var(--fs-sm);
-  line-height: 1.6;
 }
 
 .query-package-field {

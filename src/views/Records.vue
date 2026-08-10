@@ -147,8 +147,8 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Copy, X } from '@lucide/vue'
 import { listData, getCandidateLink, resendCandidateSms } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
@@ -156,6 +156,7 @@ import { getUserProfile } from '../api/user'
 import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
 
 const router = useRouter()
+const route = useRoute()
 
 // 六个后端状态压成五个 Tab：无结果 / 查询失败 / 已退款 对用户是同一件事
 // ——没拿到报告、钱已退回，分成三个 Tab 只会把高频的三项挤窄。
@@ -167,6 +168,7 @@ const STATUS_TABS = [
   { value: 'success', label: '已完成' },
   { value: 'unfinished', label: '未出结果' }
 ]
+const STATUS_VALUES = new Set(STATUS_TABS.map(item => item.value))
 
 const loading = ref(false)
 const exporting = ref(false)
@@ -202,8 +204,10 @@ function search() {
 
 function selectStatus(value) {
   if (filters.status === value) return
-  filters.status = value
-  search()
+  const query = { ...route.query }
+  if (value) query.status = value
+  else delete query.status
+  router.replace({ path: route.path, query })
 }
 
 /* ---- 导出 ----
@@ -276,8 +280,13 @@ async function exportCsv() {
 
 function resetFilters() {
   filters.keyword = ''
-  filters.status = ''
-  search()
+  if (filters.status) {
+    const query = { ...route.query }
+    delete query.status
+    router.replace({ path: route.path, query })
+  } else {
+    search()
+  }
 }
 
 // 重发邀请短信。后端限制累计 2 次 + 60 秒冷却，超限会返回明确原因
@@ -474,9 +483,20 @@ function downloadPdf(item) {
 }
 
 onMounted(async () => {
+  const routeStatus = String(route.query.status || '')
+  filters.status = STATUS_VALUES.has(routeStatus) ? routeStatus : ''
   const profilePromise = getUserProfile().then(res => { profile.value = res.data || res.user || {} }).catch(() => {})
   await Promise.all([loadQueryTypes(), profilePromise])
   await loadRecords()
+})
+
+watch(() => route.query.status, value => {
+  const routeStatus = String(value || '')
+  const nextStatus = STATUS_VALUES.has(routeStatus) ? routeStatus : ''
+  if (nextStatus === filters.status) return
+  filters.status = nextStatus
+  filters.pageNum = 1
+  loadRecords()
 })
 // 移动端下拉刷新复用同一个加载函数
 useRefresh(loadRecords)

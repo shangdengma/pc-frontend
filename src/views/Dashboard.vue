@@ -1,82 +1,126 @@
 <template>
   <div class="dashboard-page workspace-page workspace-page--wide">
-    <header class="page-head">
-      <div class="page-head-main">
+    <header class="page-head dashboard-head">
+      <div>
         <h2>{{ greeting }}，{{ displayName }}</h2>
       </div>
-      <div class="page-head-actions">
-        <router-link class="primary-btn" to="/query/create">
-          <Plus :size="17" :stroke-width="2" />
+      <div class="dashboard-head-actions">
+        <router-link class="primary-btn dashboard-mobile-action" to="/query/create">
+          <Plus :size="17" :stroke-width="2" aria-hidden="true" />
           {{ canOnlineTest ? '在线测试' : '发起背调' }}
         </router-link>
       </div>
     </header>
 
-    <router-link class="mobile-balance-panel" to="/recharge">
-      <div>
-        <span>可用余额</span>
-        <strong>&yen;{{ balanceText }}</strong>
-      </div>
-      <span class="mobile-balance-action">
-        去充值
-        <ArrowRight :size="16" :stroke-width="1.9" />
-      </span>
-    </router-link>
-
-    <section class="metric-grid" aria-label="业务概览">
-      <article class="metric-card" v-for="item in metrics" :key="item.label">
-        <div class="metric-top">
+    <section class="status-overview" aria-label="背调任务概览">
+      <router-link
+        v-for="item in statusItems"
+        :key="item.value"
+        class="status-overview-item"
+        :class="`tone-${item.tone}`"
+        :to="{ path: '/records', query: { status: item.value } }"
+      >
+        <div class="status-overview-top">
           <span>{{ item.label }}</span>
-          <span class="metric-icon">
-            <component :is="item.icon" :size="18" :stroke-width="1.8" />
-          </span>
+          <component :is="item.icon" :size="18" :stroke-width="1.8" aria-hidden="true" />
         </div>
-        <strong>{{ item.value }}</strong>
-        <p v-if="item.desc">{{ item.desc }}</p>
-      </article>
+        <strong v-if="!loadingStats">{{ item.count }}</strong>
+        <span v-else class="status-number-skeleton" aria-label="正在加载"></span>
+        <p>{{ item.description }}</p>
+      </router-link>
+      <button v-if="statsError" class="overview-retry" type="button" @click="loadStatusCounts">
+        <RefreshCw :size="15" aria-hidden="true" />
+        重新加载概览
+      </button>
     </section>
 
     <section class="dashboard-grid">
-      <article class="panel recent-panel">
-        <div class="panel-head">
-          <div>
-            <h3>最近背调记录</h3>
-          </div>
-          <router-link to="/records">查看全部 <ArrowRight :size="15" /></router-link>
+      <article class="dashboard-panel recent-panel">
+        <div class="dashboard-panel-head">
+          <h3>最近背调</h3>
+          <router-link to="/records">全部记录 <ArrowRight :size="15" aria-hidden="true" /></router-link>
         </div>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>姓名</th>
-              <th>查询类型</th>
-              <th>提交时间</th>
-              <th>状态</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loadingRecords" class="skeleton-table-row"><td colspan="4"><span></span></td></tr>
-            <tr v-else-if="recentRecords.length === 0"><td colspan="4" class="table-empty">暂无背调记录</td></tr>
-            <tr v-for="row in recentRecords" :key="row.id || row.name + row.time">
-              <td data-label="姓名"><strong>{{ row.name }}</strong></td>
-              <td data-label="查询类型">{{ row.type }}</td>
-              <td data-label="提交时间">{{ formatDateTime(row.time) }}</td>
-              <td data-label="状态"><span class="status-pill" :class="statusClass(row.displayStatus)"><i></i>{{ statusText(row.displayStatus, row.displayStatusText) }}</span></td>
-            </tr>
-          </tbody>
-        </table>
+
+        <div class="record-list">
+          <div class="record-list-head" aria-hidden="true">
+            <span>候选人</span>
+            <span>背调套餐</span>
+            <span>提交时间</span>
+            <span>状态</span>
+            <span>操作</span>
+          </div>
+
+          <template v-if="loadingRecords">
+            <div v-for="index in 4" :key="index" class="record-row record-row-skeleton" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </template>
+
+          <div v-else-if="recordsError" class="dashboard-empty error-state">
+            <CircleAlert :size="20" aria-hidden="true" />
+            <span>{{ recordsError }}</span>
+            <button type="button" @click="loadRecentRecords">重新加载</button>
+          </div>
+
+          <div v-else-if="recentRecords.length === 0" class="dashboard-empty">
+            <ClipboardList :size="22" aria-hidden="true" />
+            <span>暂无背调记录</span>
+          </div>
+
+          <button
+            v-for="row in recentRecords"
+            v-else
+            :key="row.id || `${row.name}-${row.time}`"
+            class="record-row"
+            type="button"
+            @click="openRecord(row)"
+          >
+            <span class="record-candidate">
+              <strong>{{ row.name || '-' }}</strong>
+              <small>编号 {{ row.id }}</small>
+            </span>
+            <span class="record-type" :title="row.type">{{ row.type || '-' }}</span>
+            <time>{{ formatDateTime(row.time) }}</time>
+            <span>
+              <em class="status-pill" :class="statusClass(row.displayStatus)">
+                <i></i>{{ statusText(row.displayStatus, row.displayStatusText) }}
+              </em>
+            </span>
+            <span class="record-action">
+              {{ recordActionText(row) }}
+              <ArrowRight :size="14" aria-hidden="true" />
+            </span>
+          </button>
+        </div>
       </article>
 
-      <article class="panel notice-panel">
-        <div class="panel-head">
-          <div>
-            <h3 class="panel-title-icon"><Megaphone :size="18" />公告栏</h3>
-          </div>
-          <router-link class="more-link" to="/announcements">查看全部 <ArrowRight :size="15" /></router-link>
+      <article class="dashboard-panel notice-panel">
+        <div class="dashboard-panel-head">
+          <h3>公告栏</h3>
+          <router-link to="/announcements">查看全部 <ArrowRight :size="15" aria-hidden="true" /></router-link>
         </div>
+
         <div class="notice-list">
-          <div v-if="notices.length === 0" class="empty-inline">暂无公告</div>
+          <template v-if="loadingNotices">
+            <div v-for="index in 4" :key="index" class="notice-item notice-skeleton" aria-hidden="true">
+              <span></span><div><strong></strong><p></p><time></time></div>
+            </div>
+          </template>
+
+          <div v-else-if="noticesError" class="dashboard-empty error-state">
+            <CircleAlert :size="20" aria-hidden="true" />
+            <span>{{ noticesError }}</span>
+            <button type="button" @click="loadNotices">重新加载</button>
+          </div>
+
+          <div v-else-if="notices.length === 0" class="dashboard-empty">
+            <Megaphone :size="22" aria-hidden="true" />
+            <span>暂无公告</span>
+          </div>
+
           <router-link
             v-for="item in notices"
+            v-else
             :key="item.id || item.title"
             class="notice-item"
             :to="{ path: '/announcements', query: { noticeId: item.id } }"
@@ -84,149 +128,97 @@
             <span class="notice-tag" :class="item.type">{{ item.tag }}</span>
             <div class="notice-copy">
               <strong><span v-if="item.isTop" class="top-flag">置顶</span>{{ item.title }}</strong>
-              <p v-if="item.content" class="notice-summary" :title="item.content">{{ item.content }}</p>
-              <time class="notice-date">{{ item.date }}</time>
+              <p v-if="item.content" :title="item.content">{{ item.content }}</p>
+              <time>{{ item.date }}</time>
             </div>
           </router-link>
         </div>
       </article>
-
-      <article v-if="hasTrendData" class="panel chart-panel">
-        <div class="panel-head">
-          <div>
-            <h3>近 30 天查询趋势</h3>
-          </div>
-        </div>
-        <div v-if="hasTrendData" ref="trendChartRef" class="line-chart" aria-label="近30天查询趋势图"></div>
-        <div v-else class="chart-empty">
-          <BarChart3 :size="24" :stroke-width="1.6" />
-          <span>近 30 天暂无查询数据</span>
-        </div>
-      </article>
-
     </section>
-
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import * as echarts from 'echarts'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   ArrowRight,
-  BarChart3,
+  CircleAlert,
+  ClipboardList,
   FileSignature,
   LoaderCircle,
   Megaphone,
-  Plus
+  Plus,
+  RefreshCw
 } from '@lucide/vue'
 import { listData } from '../api/data'
 import { getAnnouncements } from '../api/notice'
 import { listQueryTypeConfig } from '../api/queryType'
-import { getUserBalance, getUserProfile } from '../api/user'
+import { getUserProfile } from '../api/user'
 import { getUser } from '../utils/auth'
-import { formatDateTime, mapRecord, statusClass, statusText, yuanFromFen } from '../utils/format'
+import { formatDateTime, mapRecord, statusClass, statusText } from '../utils/format'
 
-const records = ref([])
+const router = useRouter()
+const profile = ref(getUser() || {})
+const recentRecords = ref([])
 const notices = ref([])
-const loadingRecords = ref(false)
-const trendChartRef = ref(null)
-let trendChart = null
-let chartResizeObserver = null
-const profile = ref(getUser())
-const balance = ref(0)
-const balanceText = computed(() => yuanFromFen(balance.value))
 const queryTypeMap = ref({})
+const loadingStats = ref(true)
+const loadingRecords = ref(true)
+const loadingNotices = ref(true)
+const statsError = ref('')
+const recordsError = ref('')
+const noticesError = ref('')
+const statusCounts = reactive({ waiting_auth: 0, processing: 0 })
 
+const STATUS_DEFINITIONS = [
+  { value: 'waiting_auth', label: '待授权', description: '等待候选人完成授权', icon: FileSignature, tone: 'warning' },
+  { value: 'processing', label: '处理中', description: '正在核验或人工处理', icon: LoaderCircle, tone: 'info' }
+]
+const RECORD_FILTER_STATUSES = new Set(['waiting_auth', 'processing', 'success', 'unfinished'])
+
+const statusItems = computed(() => STATUS_DEFINITIONS.map(item => ({
+  ...item,
+  count: statusCounts[item.value]
+})))
 const displayName = computed(() => profile.value.enterpriseName || profile.value.nickName || profile.value.userName || '当前用户')
-const greeting = computed(() => new Date().getHours() < 12 ? '上午好' : '下午好')
-const recentRecords = computed(() => records.value.slice(0, 5))
-const runningCount = computed(() => records.value.filter(r => ['processing', 'waiting_auth'].includes(String(r.displayStatus))).length)
-const authCount = computed(() => records.value.filter(r => String(r.displayStatus) === 'waiting_auth').length)
-const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
-// 余额已常驻顶栏，工作台概览只保留当前查询进度。
-const metrics = computed(() => [
-  { label: '背调中', value: `${runningCount.value} 单`, icon: LoaderCircle, desc: '正在处理的查询任务' },
-  { label: '待授权', value: `${authCount.value} 单`, icon: FileSignature, desc: '等待候选人完成授权' }
-])
-const trendSeries = computed(() => {
-  const buckets = []
-  const counts = new Map()
-  for (let offset = 29; offset >= 0; offset -= 1) {
-    const date = new Date()
-    date.setHours(0, 0, 0, 0)
-    date.setDate(date.getDate() - offset)
-    const key = dateKey(date)
-    buckets.push({ key, label: `${date.getMonth() + 1}/${date.getDate()}` })
-    counts.set(key, 0)
-  }
-  records.value.forEach(item => {
-    const parsed = parseDate(item.time)
-    if (!parsed) return
-    const key = dateKey(parsed)
-    if (counts.has(key)) counts.set(key, counts.get(key) + 1)
-  })
-  return {
-    labels: buckets.map(item => item.label),
-    values: buckets.map(item => counts.get(item.key) || 0)
-  }
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 6) return '夜深了'
+  if (hour < 12) return '上午好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
 })
-const hasTrendData = computed(() => trendSeries.value.values.some(value => value > 0))
-
-function parseDate(value) {
-  if (!value) return null
-  const parsed = new Date(String(value).replace(/-/g, '/'))
-  return Number.isNaN(parsed.getTime()) ? null : parsed
+const canOnlineTest = computed(() => profile.value && (profile.value.onlineTestEnabled === true || profile.value.onlineTestEnabled === 1 || profile.value.onlineTestEnabled === '1'))
+async function loadProfile() {
+  const response = await getUserProfile().catch(() => null)
+  if (response) profile.value = response.data || response.user || profile.value
 }
 
-function dateKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-async function renderTrendChart() {
-  await nextTick()
-  if (!trendChartRef.value) return
-  if (!trendChart) trendChart = echarts.init(trendChartRef.value)
-  trendChart.setOption({
-    animationDuration: 260,
-    grid: { top: 24, right: 18, bottom: 32, left: 38 },
-    tooltip: { trigger: 'axis', valueFormatter: value => `${value} 次` },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: trendSeries.value.labels,
-      axisLine: { lineStyle: { color: '#dce4ee' } },
-      axisTick: { show: false },
-      axisLabel: { color: '#7a8799', interval: 4, fontSize: 11 }
-    },
-    yAxis: {
-      type: 'value',
-      minInterval: 1,
-      axisLabel: { color: '#7a8799', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#edf1f6' } }
-    },
-    series: [{
-      name: '查询量',
-      type: 'line',
-      data: trendSeries.value.values,
-      smooth: 0.28,
-      symbol: 'none',
-      lineStyle: { color: '#2563eb', width: 2.5 },
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(37,99,235,0.20)' },
-          { offset: 1, color: 'rgba(37,99,235,0.02)' }
-        ])
-      }
-    }]
-  }, true)
+async function loadStatusCounts() {
+  loadingStats.value = true
+  statsError.value = ''
+  try {
+    const responses = await Promise.all(STATUS_DEFINITIONS.map(item => listData({
+      pageNum: 1,
+      pageSize: 1,
+      displayStatusFilter: item.value
+    })))
+    responses.forEach((response, index) => {
+      statusCounts[STATUS_DEFINITIONS[index].value] = Number(response?.total) || 0
+    })
+  } catch (err) {
+    statsError.value = err?.msg || '概览加载失败'
+  } finally {
+    loadingStats.value = false
+  }
 }
 
 async function loadQueryTypes() {
   try {
-    const res = await listQueryTypeConfig({ pageNum: 1, pageSize: 1000 })
+    const response = await listQueryTypeConfig({ pageNum: 1, pageSize: 1000 })
     const map = {}
-    ;(res.rows || []).forEach(item => {
+    ;(response.rows || []).forEach(item => {
       if (item.id != null) map[String(item.id)] = item.callTypeName || item.name || `类型${item.id}`
     })
     queryTypeMap.value = map
@@ -235,31 +227,29 @@ async function loadQueryTypes() {
   }
 }
 
-async function loadProfile() {
-  try {
-    const res = await getUserProfile()
-    profile.value = res.data || res.user || profile.value
-    if (profile.value.userId) {
-      const b = await getUserBalance(profile.value.userId)
-      balance.value = b.data || 0
-    } else {
-      balance.value = profile.value.money || 0
-    }
-  } catch (err) {}
-}
-
-async function loadRecords() {
+async function loadRecentRecords() {
   loadingRecords.value = true
+  recordsError.value = ''
   try {
-    const res = await listData({ pageNum: 1, pageSize: 200 })
-    records.value = (res.rows || []).map(item => mapRecord(item, queryTypeMap.value))
+    const [, response] = await Promise.all([
+      loadQueryTypes(),
+      listData({ pageNum: 1, pageSize: 5 })
+    ])
+    recentRecords.value = (response.rows || []).map(item => mapRecord(item, queryTypeMap.value))
+  } catch (err) {
+    recentRecords.value = []
+    recordsError.value = err?.msg || '最近背调加载失败'
   } finally {
     loadingRecords.value = false
   }
 }
 
 function stripHtml(value) {
-  return String(value || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()
+  return String(value || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function noticeTypeMeta(value) {
@@ -275,13 +265,15 @@ function noticeTypeMeta(value) {
 }
 
 async function loadNotices() {
+  loadingNotices.value = true
+  noticesError.value = ''
   try {
-    const res = await getAnnouncements({ pageNum: 1, pageSize: 5 })
-    notices.value = (res.rows || []).map(item => {
+    const response = await getAnnouncements({ pageNum: 1, pageSize: 4 })
+    notices.value = (response.rows || []).map(item => {
       const meta = noticeTypeMeta(item.noticeType)
       return {
         id: item.noticeId,
-        title: item.noticeTitle || '公告',
+        title: item.noticeTitle || '平台公告',
         content: stripHtml(item.noticeContent),
         date: (item.createTime || '').slice(0, 10),
         tag: meta.tag,
@@ -290,28 +282,35 @@ async function loadNotices() {
       }
     })
   } catch (err) {
-    console.warn('公告列表加载失败', err)
     notices.value = []
+    noticesError.value = err?.msg || '公告加载失败'
+  } finally {
+    loadingNotices.value = false
   }
 }
 
-onMounted(async () => {
-  await loadQueryTypes()
-  await loadProfile()
-  await Promise.all([loadRecords(), loadNotices()])
-  await renderTrendChart()
-  if (trendChartRef.value && 'ResizeObserver' in window) {
-    chartResizeObserver = new ResizeObserver(() => trendChart?.resize())
-    chartResizeObserver.observe(trendChartRef.value)
+function recordActionText(row) {
+  return String(row.displayStatus) === 'success' ? '查看报告' : '查看进度'
+}
+
+function openRecord(row) {
+  if (String(row.displayStatus) === 'success') {
+    router.push(`/report/${row.id}`)
+    return
   }
-})
+  const status = RECORD_FILTER_STATUSES.has(String(row.displayStatus))
+    ? String(row.displayStatus)
+    : ''
+  router.push({ path: '/records', query: status ? { status } : {} })
+}
 
-watch(trendSeries, renderTrendChart, { deep: true })
-
-onBeforeUnmount(() => {
-  chartResizeObserver?.disconnect()
-  trendChart?.dispose()
-  trendChart = null
+onMounted(() => {
+  Promise.all([
+    loadProfile(),
+    loadStatusCounts(),
+    loadRecentRecords(),
+    loadNotices()
+  ])
 })
 </script>
 
@@ -321,162 +320,452 @@ onBeforeUnmount(() => {
   margin: 0 auto;
 }
 
-.dashboard-page .page-head {
-  margin-bottom: 24px;
+.dashboard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 48px;
 }
 
-.dashboard-page .page-head h2 {
-  font-size: 28px;
-  line-height: 1.22;
+.dashboard-head h2 {
+  margin: 0;
+  font-size: clamp(25px, 2vw, 29px);
+  line-height: 1.25;
 }
 
-.dashboard-page .metric-grid {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  margin-bottom: 18px;
-  border-color: #dce4ee;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 12px 32px rgba(31, 45, 68, 0.055);
-}
-
-.dashboard-page .metric-card {
-  min-height: 132px;
-  padding: 22px 24px;
-  transition: background-color 0.16s ease;
-}
-
-.dashboard-page .metric-card:hover {
-  background: #f8fafc;
-}
-
-.dashboard-page .metric-card strong {
-  margin-top: 16px;
-  font-size: 30px;
-}
-
-.dashboard-page .metric-card p {
-  margin-top: 7px;
-  color: #7a8799;
-}
-
-.dashboard-page .metric-icon {
-  width: 38px;
-  height: 38px;
-  color: #315a91;
-  background: #edf4fb;
-  border-radius: 8px;
-}
-
-.dashboard-page .dashboard-grid {
-  gap: 18px;
-}
-
-.dashboard-page .panel {
-  overflow: hidden;
-  border-color: #dce4ee;
-  border-radius: 8px;
-  box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
-}
-
-.dashboard-page .panel-head {
-  min-height: 66px;
-  padding: 14px 20px;
-  background: #fbfcfe;
-}
-
-.dashboard-page .panel-head h3 {
-  color: #1a2940;
-  font-size: 15px;
-}
-
-.dashboard-page .data-table th {
-  background: #f6f8fb;
-}
-
-.metric-card,
-.notice-item {
-  transition: border-color 0.16s ease, background-color 0.16s ease;
-}
-
-.notice-item {
-  color: inherit;
-  text-decoration: none;
-}
-
-.mobile-balance-panel {
+.dashboard-head-actions,
+.dashboard-mobile-action {
   display: none;
 }
 
-@media (max-width: 900px) {
-  .dashboard-page .metric-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.status-overview {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  margin-bottom: 18px;
+  border: 1px solid #dfe2e7;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(23, 25, 30, .035);
+}
 
-  .dashboard-page .metric-card {
-    min-height: 108px;
-    border-right: 0;
-    border-bottom: 1px solid var(--line-soft);
-  }
+.status-overview-item {
+  position: relative;
+  min-width: 0;
+  padding: 19px 20px 18px;
+  border-right: 1px solid #eceef1;
+  color: #17191e;
+  text-decoration: none;
+  transition: background-color .16s ease;
+}
 
-  .dashboard-page .metric-card:last-child {
-    border-bottom: 0;
-  }
+.status-overview-item:last-of-type { border-right: 0; }
+.status-overview-item:hover { background: #fafafa; }
+
+.status-overview-item::after {
+  content: '';
+  position: absolute;
+  right: 18px;
+  bottom: 0;
+  left: 18px;
+  height: 2px;
+  opacity: 0;
+  background: currentColor;
+  transition: opacity .16s ease;
+}
+
+.status-overview-item:hover::after { opacity: .55; }
+
+.status-overview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #68707c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-overview-item.tone-warning .status-overview-top svg { color: #c26b16; }
+.status-overview-item.tone-info .status-overview-top svg { color: #426b94; }
+.status-overview-item.tone-success .status-overview-top svg { color: #168455; }
+.status-overview-item.tone-danger .status-overview-top svg { color: #b7453b; }
+
+.status-overview-item > strong {
+  display: block;
+  margin-top: 13px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-overview-item > p {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: #8a9099;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-number-skeleton {
+  display: block;
+  width: 46px;
+  height: 30px;
+  margin-top: 13px;
+  border-radius: 4px;
+  background: #eceef1;
+  animation: dashboard-pulse 1.25s ease-in-out infinite;
+}
+
+.overview-retry {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border: 0;
+  color: #a43b32;
+  background: #fff;
+  font-size: 11px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.72fr) minmax(300px, .88fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.dashboard-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dfe2e7;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(23, 25, 30, .035);
+}
+
+.dashboard-panel-head {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #eceef1;
+}
+
+.dashboard-panel-head h3 {
+  margin: 0;
+  color: #9a352c;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.dashboard-panel-head > a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  color: #5f6671;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-panel-head > a:hover { color: #8f3027; }
+
+.record-list-head,
+.record-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.05fr) minmax(150px, 1.35fr) minmax(130px, .95fr) minmax(104px, .7fr) 92px;
+  align-items: center;
+  gap: 14px;
+}
+
+.record-list-head {
+  min-height: 42px;
+  padding: 0 20px;
+  color: #777e89;
+  background: #fafafa;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.record-row {
+  width: 100%;
+  min-height: 70px;
+  padding: 10px 20px;
+  border: 0;
+  border-top: 1px solid #f0f1f3;
+  color: #353a43;
+  background: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
+.record-list-head + .record-row { border-top: 0; }
+.record-row:hover { background: #fafafa; }
+
+.record-row > span,
+.record-row > time {
+  min-width: 0;
+}
+
+.record-candidate {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.record-candidate strong {
+  overflow: hidden;
+  color: #20232a;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-candidate small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #9a9fa7;
+  font-size: 10px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-type {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-row time {
+  color: #747b86;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.record-row .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.record-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  color: #73342f;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.record-row-skeleton > span {
+  height: 12px;
+  border-radius: 3px;
+  background: #eceef1;
+  animation: dashboard-pulse 1.25s ease-in-out infinite;
+}
+
+.record-row-skeleton > span:nth-child(4),
+.record-row-skeleton > span:nth-child(5) { width: 64px; margin: 0 auto; }
+
+.notice-list { padding: 0 18px; }
+
+.notice-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 88px;
+  padding: 15px 0;
+  border-bottom: 1px solid #f0f1f3;
+  color: inherit;
+}
+
+.notice-item:last-child { border-bottom: 0; }
+.notice-item:hover .notice-copy strong { color: #8f3027; }
+
+.notice-tag {
+  min-width: 38px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.notice-tag.system { color: #315f8a; background: #eef5fb; }
+.notice-tag.policy { color: #18734d; background: #edf8f2; }
+.notice-tag.activity { color: #a55a10; background: #fff5e8; }
+.notice-tag.notice { color: #814a73; background: #f8f0f5; }
+
+.notice-copy { min-width: 0; }
+
+.notice-copy strong {
+  display: block;
+  overflow: hidden;
+  color: #262a31;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-flag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #a43b32;
+  background: #fbefee;
+  font-size: 10px;
+}
+
+.notice-copy p {
+  margin: 5px 0 0;
+  overflow: hidden;
+  color: #777e89;
+  font-size: 12px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-copy time {
+  display: block;
+  margin-top: 4px;
+  color: #a0a5ad;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.notice-skeleton > span,
+.notice-skeleton strong,
+.notice-skeleton p,
+.notice-skeleton time {
+  display: block;
+  border-radius: 3px;
+  background: #eceef1;
+  animation: dashboard-pulse 1.25s ease-in-out infinite;
+}
+
+.notice-skeleton > span { width: 38px; height: 22px; }
+.notice-skeleton strong { width: 72%; height: 12px; }
+.notice-skeleton p { width: 92%; height: 10px; margin-top: 8px; }
+.notice-skeleton time { width: 60px; height: 9px; margin-top: 8px; }
+
+.dashboard-empty {
+  min-height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 9px;
+  padding: 32px;
+  color: #8b919a;
+  font-size: 12px;
+  text-align: center;
+}
+
+.dashboard-empty button {
+  padding: 4px 0;
+  border: 0;
+  color: #8f3027;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.error-state { color: #a43b32; }
+
+@keyframes dashboard-pulse {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+
+@media (max-width: 1080px) {
+  .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .notice-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+  .notice-item:nth-child(odd) { border-right: 1px solid #f0f1f3; padding-right: 20px; }
 }
 
 @media (max-width: 768px) {
-  .dashboard-page .page-head h2 {
-    font-size: 24px;
-  }
-
-  .mobile-balance-panel {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    min-height: 78px;
-    padding: 15px 17px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    color: var(--text);
-    background: #fff;
-    text-decoration: none;
-  }
-
-  .mobile-balance-panel > div {
-    display: flex;
-    min-width: 0;
+  .dashboard-head {
+    align-items: stretch;
     flex-direction: column;
-    align-items: flex-start;
+    gap: 12px;
   }
 
-  .mobile-balance-panel > div span {
-    color: var(--muted);
-    font-size: var(--fs-xs);
-  }
+  .dashboard-head > div:first-child { min-width: 0; }
+  .dashboard-head h2 { font-size: 23px; }
 
-  .mobile-balance-panel > div strong {
-    margin-top: 4px;
-    font-size: 24px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .mobile-balance-action {
-    display: inline-flex;
-    flex: 0 0 auto;
+  .dashboard-head-actions {
+    display: flex;
     align-items: center;
-    gap: 4px;
-    color: var(--blue-dark);
-    font-size: var(--fs-sm);
-    font-weight: 600;
+    width: 100%;
   }
 
-  .dashboard-page .recent-panel tbody tr:nth-child(n + 3) {
-    display: none;
+  .dashboard-mobile-action { display: inline-flex; width: 100%; height: 40px; padding: 0 14px; }
+
+  .status-overview { margin-bottom: 14px; }
+  .status-overview-item { padding: 15px 15px 14px; }
+  .status-overview-item > strong { font-size: 24px; }
+  .status-overview-item > p { font-size: 11px; }
+
+  .dashboard-grid { gap: 14px; }
+  .dashboard-panel-head { min-height: 64px; padding: 12px 15px; }
+  .record-list-head { display: none; }
+
+  .record-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "candidate status" "type action";
+    gap: 6px 14px;
+    min-height: 84px;
+    padding: 13px 15px;
+    text-align: left;
   }
 
-  .dashboard-page .metric-card {
-    padding: 17px 18px;
+  .record-row:not(.record-row-skeleton):nth-of-type(n + 3) { display: none; }
+  .record-row-skeleton:nth-of-type(n + 4) { display: none; }
+  .record-candidate { grid-area: candidate; }
+  .record-type { grid-area: type; color: #777e89; font-size: 12px; }
+  .record-row > time { display: none; }
+  .record-row > span:nth-child(4) { grid-area: status; }
+  .record-row .status-pill { margin: 0; }
+  .record-action { grid-area: action; justify-content: flex-end; }
+
+  .record-row-skeleton { display: grid; }
+  .record-row-skeleton > span:nth-child(3) { display: none; }
+
+  .notice-list { display: block; padding: 0 15px; }
+  .notice-item:nth-child(odd) { border-right: 0; padding-right: 0; }
+}
+
+@media (max-width: 520px) {
+  .dashboard-head {
+    gap: 12px;
   }
+  .status-overview-top { gap: 6px; }
+  .status-overview-top svg { width: 16px; height: 16px; }
+  .status-overview-item > p { white-space: normal; line-height: 1.4; }
 }
 </style>
