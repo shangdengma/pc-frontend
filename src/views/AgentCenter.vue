@@ -181,10 +181,10 @@
       size="md"
       @close="closeCodeDialog"
     >
-      <div class="notice-tip">注册赠送余额将从代理可用余额中扣除。余额不足时，新用户不会获得赠送额度。</div>
+      <div class="notice-tip">赠送余额大于 0 时从代理可用余额中扣除；设为 0 时仅建立客户归属并参与后续分成。</div>
 
         <div class="form-grid">
-          <label>赠送余额（元）<input v-model.trim="codeForm.giftAmount" type="number" min="0" step="0.01" placeholder="例如 50" /></label>
+          <label>赠送余额（元）<input v-model.trim="codeForm.giftAmount" type="number" min="0" step="0.01" placeholder="0 表示不赠送" /></label>
           <label>最大使用次数<input v-model.trim="codeForm.maxUses" type="number" min="0" step="1" placeholder="0 表示不限" /></label>
           <label>过期时间<input v-model="codeForm.expireTime" type="datetime-local" /></label>
           <label>备注<input v-model.trim="codeForm.remark" placeholder="例如 7月活动渠道" /></label>
@@ -360,7 +360,7 @@ function codeStatusText(item) {
   if (item.expireTime && new Date(String(item.expireTime).replace(/-/g, '/')) < new Date()) return '已过期'
   const max = Number(item.maxUses || 0)
   if (max > 0 && Number(item.remainingUses || 0) <= 0) return '已用完'
-  if (!(Number(item.giftAmount) > 0)) return '金额无效'
+  if (!Number.isFinite(Number(item.giftAmount)) || Number(item.giftAmount) < 0) return '金额无效'
   return '生效中'
 }
 function codeStatusClass(item) {
@@ -440,7 +440,7 @@ function openCreate() {
 }
 function openEdit(item) {
   editingCode.value = item
-  codeForm.giftAmount = item.giftAmount || ''
+  codeForm.giftAmount = item.giftAmount ?? ''
   codeForm.maxUses = item.maxUses || 0
   // 后端 @JsonFormat 返回 "yyyy-MM-dd HH:mm:ss"（空格分隔），
   // 而 datetime-local 只接受 "YYYY-MM-DDTHH:mm"（T 分隔）。
@@ -457,7 +457,10 @@ function closeCodeDialog() {
 }
 async function saveCode() {
   message.value = ''
-  if (!codeForm.giftAmount || Number(codeForm.giftAmount) <= 0) return (message.value = '请输入大于 0 的赠送余额')
+  const giftAmount = Number(codeForm.giftAmount)
+  if (codeForm.giftAmount === '' || !Number.isFinite(giftAmount) || giftAmount < 0) {
+    return (message.value = '请输入不小于 0 的赠送余额')
+  }
   if (Number(codeForm.maxUses) < 0) return (message.value = '最大使用次数不能小于 0')
   saving.value = true
   try {
