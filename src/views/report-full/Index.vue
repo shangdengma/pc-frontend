@@ -5,7 +5,7 @@
     <!-- 顶部返回按钮移除，改为底部固定按钮 -->
 <div ref="pdfdom" class="module-container">
     <!-- 报告头部：Logo + 标题 + 元信息 -->
-    <div class="report-header">
+    <div v-if="!isOnlineTestReport" class="report-header">
       <div class="report-brand">
         <div class="report-logo">
           <i class="fas fa-shield-alt"></i>
@@ -359,6 +359,23 @@
           </div>
         </div>
       </div>
+    </div>
+
+
+    <!-- 健康风险提示：仅在后端实际返回任一指数时展示。 -->
+    <div class="module-container" id="health-risk" v-if="hasHealthRiskData">
+      <div class="module-title">健康风险提示</div>
+      <div class="health-risk-list">
+        <div
+          v-for="item in healthRiskIndexItems"
+          :key="item.field"
+          class="health-risk-row"
+        >
+          <span class="label">{{ item.category }}</span>
+          <span class="status-chip" :class="item.statusClass">{{ item.statusText }}</span>
+        </div>
+      </div>
+      <p class="health-risk-note">说明：本结果仅作风险提示，不代表医疗诊断。</p>
     </div>
 
 
@@ -1984,7 +2001,7 @@
     </div>
 
     <!-- 底部导流栏 -->
-    <div class="report-cta-bar" v-if="!exporting">
+    <div class="report-cta-bar" v-if="!exporting && !isOnlineTestReport">
       <div class="cta-inner">
         <div class="cta-brand">
         
@@ -2016,16 +2033,9 @@
 
 
 <script>
-	import { jsPDF } from "jspdf";
+import { jsPDF } from "jspdf";
 import { getData } from "../../api/data.js";
 import { getDicts } from "../../api/dict.js";
-import {
-  largeVariable,
-  largeVariable1,
-  largeVariable2,
-  largeVariable3,
-  largeVariable4,
-} from "./largeData.js";
 
 export default {
   data() {
@@ -2049,27 +2059,21 @@ export default {
       },
       historyWorkValue: [], // 过往工作履历，由后台人工录入
       historyWorkWithMoney: false, // 任一记录填写缴纳基数时显示该列
-      data_for_fan_du_fan_zha: [],
       dataAll: [],
       currentId: null,
       reportNo: '',
       queryTime: '',
       searchType: null, // 与报告编号同级，1=基础通用 15=基层员工 16=高管
-      activeNames: ["1"],
+      isOnlineTestReport: false,
 	  exporting: false,
 	  autoDownloadStarted: false,
-      Fan_du_fan_zha_list: [],
       // 性能优化：缓存司法数据转换结果，避免重复计算
       _cachedJudicialData: null,
       _judicialDataCacheKey: null,
-      // 贷款申请标签页状态
-      activeLoanTab: 'identity', // 'identity' or 'phone'
       // 字典数据
       dictData: {},
       // 字典值缓存
       dictCache: {},
-      // 显示值缓存
-      displayCache: {},
       // comprehensiveScoress 方法结果缓存（提升性能）
       comprehensiveScoressCache: {},
       // getItemByFiledName 方法结果缓存（提升性能）
@@ -2116,43 +2120,6 @@ export default {
 		zc_verification:"sanyaosuheyancode",
         searchType: "reporttype", // 报告类型，用于报告大标题
         eduModuleBySearchType: "if_edu_exist", // dictLabel=报告类型id，dictValue=1 显示学历模块，0 不显示
-      },
-      // 导出相关状态
-      exporting: false,
-      fraudGamingPayload: {
-        api_name: "反赌反炸核验",
-        api_code: "",
-        success: true,
-        message: "反赌反炸核验查询完成",
-        data: {
-          code: "200",
-          message: "查询成功",
-          data: {
-            value: [],
-          },
-        },
-        call_time: "2025-07-14T16:31:47.123456+00:00",
-      },
-      dataForComponents: largeVariable,
-      dataForComponents2: {
-        api_name: "个人司法涉诉",
-        data: { data: { entout: [] } },
-      },
-      dataForComponents3: {
-        api_name: "人企关联",
-        data: { data: { data: { datalist: [] } } },
-      },
-      dataForComponents4: {
-        api_name: "借贷意向",
-        data: { data: {} },
-      },
-      relationMap: {
-        lp: '法人',
-        sh: '股东',
-        tm: '主要人员', // 对应 "高管"
-        his_lp: '历史法人',
-        his_sh: '历史股东',
-        his_tm: '历史主要人员' // 对应 "历史高管"
       },
       laborRiskItems: [
         { key: 'ty_labor_contract', label: '劳动合同纠纷' },
@@ -2211,6 +2178,7 @@ export default {
           this.reportNo = res.data.outTradeNo || '';
           this.queryTime = res.data.createTime || '';
           this.searchType = res.data.searchType ?? null;
+          this.isOnlineTestReport = String(res.data.authorizationStatus || '').trim().toUpperCase() === 'NOT_REQUIRED';
           this.name = res.data.name || res.data.userName || res.data.realName || '';
           this.idCard = res.data.idCard || '';
           this.phoneNumber = res.data.phoneNumber || '';
@@ -2222,20 +2190,6 @@ export default {
 
           // 即使数据为空，也要初始化dataAll为空数组，避免其他地方出错
           this.dataAll = [];
-
-          // 继续处理其他数据转换，使用空数据
-
-
-          // 性能优化：使用 nextTick 延迟非关键数据转换
-          this.$nextTick(() => {
-          // 转换人企关联数据
-          const transformedCompanyData = this.transformCompanyRelationData();
-          this.dataForComponents3 = transformedCompanyData;
-
-          // 转换司法涉诉数据
-          const transformedJudicialData = this.transformJudicialData();
-          this.dataForComponents2 = transformedJudicialData;
-          });
 
           return;
         }
@@ -2259,16 +2213,9 @@ export default {
         this._cachedJudicialData = null; // 清除司法数据缓存
         this._judicialDataCacheKey = null;
 
-        // 性能优化：使用 nextTick 将非关键数据转换延迟到下一帧，避免阻塞渲染
+        // 数据渲染完成后再处理自动下载，确保导出内容完整。
         this.$nextTick(async () => {
-        // 转换人企关联数据
-        const transformedCompanyData = this.transformCompanyRelationData();
-        this.dataForComponents3 = transformedCompanyData;
-
-        // 转换司法涉诉数据
-        const transformedJudicialData = this.transformJudicialData();
-        this.dataForComponents2 = transformedJudicialData;
-        await this.startAutoDownloadIfNeeded();
+          await this.startAutoDownloadIfNeeded();
         });
       } catch (error) {
         console.error("获取数据失败:", error);
@@ -2277,6 +2224,66 @@ export default {
     })();
   },
   computed: {
+    healthRiskIndexItems() {
+      const definitions = [
+        { category: '精神健康风险', field: 'yingShiAIndex' },
+        { category: '传染性疾病风险', field: 'yingShiBIndex' },
+        { category: '肿瘤相关风险', field: 'yingShiCIndex' },
+        { category: '功能缺失与残疾风险', field: 'yingShiDIndex' },
+        { category: '心脑血管健康风险', field: 'yingShiEIndex' }
+      ];
+
+      return definitions.map((definition) => {
+        const source = this.comprehensiveScoress(definition.field, true);
+        const rawCode = source && source.value !== null && source.value !== undefined
+          ? String(source.value).trim()
+          : '';
+        const returned = rawCode !== '';
+        const known = rawCode === '01' || rawCode === '03';
+
+        return {
+          ...definition,
+          rawCode,
+          returned,
+          known,
+          tone: rawCode === '03' ? 'attention' : (rawCode === '01' ? 'safe' : 'pending'),
+          statusClass: rawCode === '03' ? 'risk-high' : (rawCode === '01' ? 'risk-safe' : 'risk-pending'),
+          statusText: rawCode === '03'
+            ? '有风险'
+            : (rawCode === '01' ? '无风险' : (returned ? '待确认' : '未返回'))
+        };
+      });
+    },
+
+    hasHealthRiskData() {
+      return this.healthRiskIndexItems.some(item => item.returned);
+    },
+
+    healthRiskSummary() {
+      const items = this.healthRiskIndexItems;
+      const returned = items.filter(item => item.returned);
+      const attention = items.filter(item => item.rawCode === '03');
+      const incomplete = items.filter(item => !item.returned || !item.known);
+      const resultParts = [];
+
+      if (attention.length) {
+        resultParts.push(`${attention.length} 类需关注：${attention.map(item => item.category).join('、')}`);
+      } else if (!incomplete.length && returned.length === items.length) {
+        resultParts.push('五类健康风险均为无风险');
+      }
+      if (incomplete.length) {
+        resultParts.push(`${incomplete.length} 类结果未完整返回或代码待确认`);
+      }
+
+      return {
+        status: !returned.length
+          ? '待补充'
+          : (incomplete.length ? '部分完成' : '已完成'),
+        result: resultParts.join('；') || '健康风险提示结果已返回',
+        tone: attention.length ? 'critical' : (incomplete.length ? 'pending' : 'normal')
+      };
+    },
+
     /* ---------- 报告总述 ----------
        每一行与正文模块使用同一组显隐条件和数据源。未返回、接口失败与真实命中
        分开标记，避免把“缺数据”误读成“有风险”。 */
@@ -2324,6 +2331,18 @@ export default {
           status,
           parts.join('，') || '尚无学历核验结果',
           notFound ? 'warning' : (unfinished ? 'pending' : 'normal')
+        );
+      }
+
+      if (this.hasHealthRiskData) {
+        const summary = this.healthRiskSummary;
+        add(
+          'health-risk',
+          '健康核验',
+          '健康风险提示',
+          summary.status,
+          summary.result,
+          summary.tone
         );
       }
 
@@ -2563,10 +2582,6 @@ export default {
       return rows;
     },
 
-    overviewScopeList() {
-      return this.overviewSummaryRows.map(item => item.project);
-    },
-
     overviewCompletedCount() {
       return this.overviewSummaryRows.filter(item => item.status === '已完成').length;
     },
@@ -2579,6 +2594,7 @@ export default {
       const recommendationMap = {
         identity: '建议核对候选人提交资料与实名核验结果，确认差异原因后再作判断。',
         education: '建议核对学历证书编号，必要时要求候选人补充有效证明材料。',
+        'health-risk': '建议结合候选人授权材料、结果时效及岗位要求进行人工复核；指数仅作风险提示，不代表医疗诊断。',
         employment: '建议重点查看 HR 与直属上级核验明细，并就不一致项向候选人复核。',
         'career-risk': '建议结合争议类型、案件时间、候选人角色及岗位要求进行人工复核。',
         judicial: '建议查看案件阶段、案由、涉案身份、金额及当前执行状态，避免仅按记录数量判断。',
@@ -2880,10 +2896,6 @@ export default {
       
       return false;
     },
-    // 判断是否存在失信被执行信息（后端不传才隐藏；传了 dishonesty 但 shixinList 为空仍显示）
-    hasShixinData() {
-      return !!this.judicialData?.data?.data?.dishonesty;
-    },
     // 系统字典 if_edu_exist：dictLabel=报告类型 id，dictValue=1 显示学历模块、0 隐藏；字典未加载或无匹配行时默认显示（兼容）
     // 仅在后端返回新的学历证书核验标准结构时展示。
     hasEducationData() {
@@ -2896,10 +2908,6 @@ export default {
     // 工作履历显隐只服从本单套餐配置，不再依赖字典或报告类型。
     hasHistoryWorkData() {
       return this.candidateModules.includes('work_history');
-    },
-    hasEmploymentVerification() {
-      return this.candidateModules.includes('employment_one')
-        || this.candidateModules.includes('employment_two');
     },
     // 后台仍分别保存 HR 核验和上级访谈，报告按工作经历序号将二者归并展示。
     employmentVerificationSections() {
@@ -2958,11 +2966,6 @@ export default {
     historyWorkList() {
       return Array.isArray(this.historyWorkValue) ? this.historyWorkValue : [];
     },
-    // 判断是否存在“是否有房”字段（只要后端返回该字段就显示，即使值为空也显示）
-    hasHouseData() {
-      const houseData = this.comprehensiveScoress("house_ownership_bool", true);
-      return !!houseData;
-    },
     // 判断是否存在公安重点人员核验数据
     hasPoliceData() {
       // 只检查是否存在公安重点人员核验的标签，只要标签存在就显示板块（使用短路求值优化性能）
@@ -2982,15 +2985,6 @@ export default {
     hasInternetBehaviorData() {
       // 只检查是否存在互联网行为推测的标签，只要标签存在就显示板块（使用短路求值优化性能）
       return !!(this.comprehensiveScoress("sjbq_zlbz", true)?.pointed_object);
-    },
-    // 判断是否存在名下资产数据（后端不传才隐藏；传了但 list_result 为空仍显示）
-    hasAssetsData() {
-      const carNumData = this.comprehensiveScoress("carNum", true);
-      const carListData = this.comprehensiveScoress("carListAll", true);
-      const oldCarListData = this.comprehensiveScoress("list_youshuche", true);
-      if ((carNumData && carNumData.pointed_object) || (oldCarListData && oldCarListData.pointed_object)) return true;
-      if (carListData && carListData.list_result && Array.isArray(carListData.list_result)) return true;
-      return false;
     },
     // 黑名单命中机构数（统计各类型 zc_is* 为 1 的个数）
     blacklistOrgCount() {
@@ -4645,25 +4639,6 @@ export default {
       };
     },
 
-    getHeimingdanColorClass(text) {
-      if (text === '命中') {
-        return 'red-color';
-      } else {
-        return 'green-color';
-      }
-    },
-    getHeimingdandengjiColorClass(text) {
-      if (text === '0') {
-        return 'green-color';
-      } else {
-        return 'red-color';
-      }
-    },
-    getHeimingdanNumColorClass(text) {
-      if (text != '0.000') {
-        return 'red-color';
-      }
-    },
     // 根据字段名获取对应的字典类型
     getDictTypeByFieldName(filed_name) {
       return this.dictMapping[filed_name];
@@ -5121,7 +5096,8 @@ normalbadtext(){
     formatHistoryWorkPeriod(row) {
       if (!row) return '—';
       const start = String(row.startMonth || '').trim();
-      const end = row.currentlyActive ? '至今' : String(row.endMonth || '').trim();
+      if (row.currentlyActive) return start ? `${start} 至今` : '至今';
+      const end = String(row.endMonth || '').trim();
       if (!start && !end) return '—';
       return `${start || '—'} 至 ${end || '—'}`;
     },
@@ -5195,23 +5171,6 @@ normalbadtext(){
       }
     },
 
-	//黑名单去除小数点前
-	getheimingdanText(text = ''){
-		if(text[0]==='0'){
-			return '0';
-		}
-		let result ='';
-		for(let i = 2;i<text.length;i++){
-			if(i===2&&text[i]==='0'){
-				continue;
-			}
-			if(i===3&&text[i]==='0'&&text[2]==='0'){
-				continue;
-			}
-			result+=text[i];
-		}
-		return result;
-	},
 	getBehaviorText(text){
 		// 仅考虑新格式：直接传入字符串或数值（如 '0' / '1' / 0 / 1）
 		if (text == null) return '未命中';
@@ -5374,39 +5333,6 @@ normalbadtext(){
   color: #64748b;
 }
 
-.bottom-action {
-  /* position: fixed; */
-  left: 0;
-  right: 0;
-  bottom: 20px;
-  display: flex;
-  justify-content: center;
-  z-index: 2000;
-  pointer-events: none;
-}
-
-.bottom-action .back-button.page-bottom {
-  width: auto;
-  height: 40px;
-  background: #ffffff;
-  color: #333333;
-  border: 1px solid #e6e6e6;
-  padding: 10px 40px;
-  border-radius: 8px;
-  font-size: var(--fs-base);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  pointer-events: auto;
-}
-
-.bottom-action .back-button.page-bottom:active {
-  background: #f5f5f5;
-}
-
-/* 导出时隐藏底部按钮 */
-.exporting-capturing+.bottom-action {
-  display: none;
-}
-
 .module-container {
   max-width: 900px;
   margin: 0 auto 32px auto;
@@ -5416,6 +5342,7 @@ normalbadtext(){
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
   transition: box-shadow 0.2s ease;
+  scroll-margin-top: 60px;
 }
 
 /* 各板块主题色区分：左侧强调条 + 标题色 + 微背景 */
@@ -5431,6 +5358,10 @@ normalbadtext(){
 .module-container[id="education"] {
   border-left-color: #7c3aed;
   background: linear-gradient(to right, rgba(124, 58, 237, 0.04) 0%, #fff 8%);
+}
+.module-container[id="health-risk"] {
+  border-left-color: #0f766e;
+  background: linear-gradient(to right, rgba(15, 118, 110, 0.04) 0%, #fff 8%);
 }
 .module-container[id="career-risk"] {
   border-left-color: #d97706;
@@ -5620,6 +5551,7 @@ normalbadtext(){
 /* 板块标题与左侧色条联动 */
 .module-container[id="identity"] .module-title { border-bottom-color: #2563eb; color: #1e40af; }
 .module-container[id="education"] .module-title { border-bottom-color: #7c3aed; color: #5b21b6; }
+.module-container[id="health-risk"] .module-title { border-bottom-color: #0f766e; color: #115e59; }
 .module-container[id="career-risk"] .module-title { border-bottom-color: #d97706; color: #b45309; }
 .module-container[id="assets"] .module-title { border-bottom-color: #059669; color: #047857; }
 .module-container[id="police"] .module-title { border-bottom-color: #dc2626; color: #b91c1c; }
@@ -5632,6 +5564,66 @@ normalbadtext(){
 .module-container[id="economic"] .module-title { border-bottom-color: #047857; color: #065f46; }
 .module-container[id="extra"] .module-title { border-bottom-color: #475569; color: #334155; }
 .module-container[id="history-work"] .module-title { border-bottom-color: #0e7490; color: #0d6a7a; }
+
+/* 健康风险提示：沿用职业风险模块的明细行结构。 */
+.health-risk-list {
+  padding: 4px 16px;
+  border: 1px solid #e4e7f0;
+  border-radius: 6px;
+  background: #f7f9fc;
+}
+.health-risk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  color: #333;
+  font-size: var(--fs-base);
+  line-height: 1.5;
+}
+.health-risk-row:not(:last-child) {
+  border-bottom: 1px solid #e4e7f0;
+}
+.health-risk-row .label {
+  color: #333;
+}
+.health-risk-row .status-chip {
+  min-width: 64px;
+  padding: 4px 12px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.health-risk-list .status-chip.risk-pending {
+  border-color: #ffe58f;
+  background: #fffbe6;
+  color: #d48806;
+}
+.health-risk-note {
+  margin: 10px 0 0;
+  color: #8c8c8c;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+}
+
+@media (max-width: 767px) {
+  .health-risk-list {
+    padding: 4px 12px;
+  }
+  .health-risk-row {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .health-risk-row .label {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.45;
+  }
+  .health-risk-row .status-chip {
+    flex-shrink: 0;
+  }
+}
 
 /* 过往工作履历表格 */
 .history-work-table-wrap {
@@ -8028,17 +8020,6 @@ summary::-webkit-details-marker {
   font-weight: 500;
 }
 
-/* 无数据时的提示信息样式 */
-.empty-data-placeholder {
-  padding: 20px 15px;
-  color: #888;
-  text-align: center;
-  font-size: var(--fs-base);
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  margin-top: 10px;
-}
-
 /* ============================================= */
 /* ==   司法案件模块 CSS (真正还原图片最终版)  == */
 /* ============================================= */
@@ -8189,11 +8170,6 @@ summary::-webkit-details-marker {
 /* 旧的 exporting 捕获也隐藏 */
 .exporting-capturing + .bottom-action { display:none; }
 
-/* 确保所有模块都有对应的id和适当的滚动边距 */
-.module-container {
-  scroll-margin-top: 60px;
-  /* 滚动时留出导航栏空间 */
-}
 /* 互联网行为推测网格布局 */
 .internet-behavior-grid {
     display: grid;

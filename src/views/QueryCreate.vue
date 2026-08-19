@@ -270,8 +270,14 @@ function show(text, type = 'info') {
 
 function validate() {
   if (!form.name) return '请填写候选人姓名'
-  if (!form.mobile) return '请填写候选人手机号'
-  if (!/^1[3-9]\d{9}$/.test(form.mobile)) return '手机号格式不正确'
+  if (canOnlineTest.value) {
+    if (!form.mobile && !form.idCard) return '手机号与身份证号至少填写一项'
+    if (form.mobile && !mobileValid.value) return '手机号格式不正确'
+    if (form.idCard && !idCardValid.value) return '身份证号格式不正确'
+  } else {
+    if (!form.mobile) return '请填写候选人手机号'
+    if (!mobileValid.value) return '手机号格式不正确'
+  }
   if (!form.callTypeId) return '请选择查询套餐'
   return ''
 }
@@ -301,13 +307,17 @@ async function submitQuery() {
   show('正在发起背调...', 'info')
   const queryData = buildQueryData()
   try {
+    let pre
     try {
-      const pre = await preCheckQuery(queryData)
-      if (pre?.data?.duplicate) {
-        const ok = window.confirm('检测到 10 分钟内相同条件的重复查询，是否继续？')
-        if (!ok) return show('已取消重复查询', 'info')
-      }
-    } catch (err) {}
+      pre = await preCheckQuery(queryData)
+    } catch (preCheckError) {
+      const msg = preCheckError?.msg || preCheckError?.message || '重复查询校验失败，请稍后重试'
+      return show(msg, 'error')
+    }
+    if (pre?.data?.duplicate) {
+      const ok = window.confirm('检测到 10 分钟内相同条件的重复查询，是否继续？')
+      if (!ok) return show('已取消重复查询', 'info')
+    }
 
     if (canOnlineTest.value) {
       await launchOnlineTest(queryData)
