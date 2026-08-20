@@ -3377,9 +3377,10 @@ export default {
     transformEducationData() {
       const block = this.findEducationVerificationBlock(this.dataAll);
       const rows = Array.isArray(block?.list_result) ? block.list_result : [];
+      const notFoundMessage = "未查询到与所填信息匹配的学历记录。可能原因：候选人提供的学历证书编号有误，或姓名、身份证号与学历记录不一致；建议核对后重新查询";
       const statusMeta = {
         MATCHED: { label: "核验一致", className: "matched", message: "学历证书信息核验成功" },
-        NOT_FOUND: { label: "未查询到记录", className: "not-found", message: "未查询到与该证书编号匹配的学历记录" },
+        NOT_FOUND: { label: "未查询到记录", className: "not-found", message: notFoundMessage },
         ERROR: { label: "核验失败", className: "error", message: "学历核验服务暂时不可用" },
         NO_INPUT: { label: "未提供编号", className: "no-input", message: "候选人未提供学历证书编号，未执行自动核验" },
       };
@@ -3395,8 +3396,14 @@ export default {
                 field?.value == null ? "" : String(field.value).trim();
             }
           });
-          const queryStatus = statusMeta[values.queryStatus]
-            ? values.queryStatus
+          const rawMessage = values.message || "";
+          // 兼容旧报告：旧后端曾把“接口成功但结果为空”保存为 ERROR（错误码：0）。
+          // 这类记录属于未查询到数据，不应展示为服务异常。
+          const isSuccessfulEmptyResult = values.queryStatus === "ERROR"
+            && /错误码[：:]\s*0(?:\D|$)/.test(rawMessage);
+          const normalizedStatus = isSuccessfulEmptyResult ? "NOT_FOUND" : values.queryStatus;
+          const queryStatus = statusMeta[normalizedStatus]
+            ? normalizedStatus
             : "ERROR";
           const meta = statusMeta[queryStatus];
           const sequence = Number.parseInt(values.sequence, 10);
@@ -3406,7 +3413,7 @@ export default {
             queryStatus,
             statusLabel: meta.label,
             statusClass: meta.className,
-            message: values.message || meta.message,
+            message: isSuccessfulEmptyResult ? notFoundMessage : (rawMessage || meta.message),
             school: values.school || "",
             major: values.major || "",
             majorCategory: values.majorCategory || "",
