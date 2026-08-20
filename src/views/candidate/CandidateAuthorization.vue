@@ -353,7 +353,7 @@ const ticket = ref('')
 let countdownTimer = null
 
 const task = reactive({
-  token: String(route.params.token || route.query.token || 'demo'),
+  token: String(route.params.token || route.query.token || '').trim(),
   companyName: String(route.query.company || '河南钟馗科技有限公司'),
   expectedPhone: String(route.query.phone || '15936323268'),
   maskedPhone: '',
@@ -424,6 +424,10 @@ const stepForStatus = {
 }
 
 onMounted(async () => {
+  if (!task.token) {
+    terminalState.value = 'INVALID'
+    return
+  }
   if (demoMode.value) return
   taskLoading.value = true
   try {
