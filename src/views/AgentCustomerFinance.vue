@@ -96,7 +96,8 @@
       <footer class="ledger-pagination">
         <div>
           <span>共 {{ ledgerPage.total }} 条记录</span>
-          <select v-model.number="ledgerPage.pageSize" :disabled="loadingRows" @change="changePageSize">
+          <select v-model.number="ledgerPage.pageSize" :disabled="loadingRows" aria-label="每页条数" @change="changePageSize">
+            <option :value="5">5 条/页</option>
             <option :value="10">10 条/页</option>
             <option :value="20">20 条/页</option>
             <option :value="50">50 条/页</option>
@@ -114,6 +115,7 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
+import { getResponsivePageSize } from '../composables/responsivePagination'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, CircleAlert, CircleMinus, CirclePlus } from '@lucide/vue'
@@ -128,7 +130,7 @@ const loadingRows = ref(false)
 const customerError = ref('')
 const ledgerError = ref('')
 const activeType = ref(route.query.type === 'consume' ? 'consume' : 'recharge')
-const ledgerPage = reactive({ pageNum: 1, pageSize: 20, total: 0 })
+const ledgerPage = reactive({ pageNum: 1, pageSize: getResponsivePageSize(), total: 0 })
 
 const userId = computed(() => route.params.userId)
 const totalPages = computed(() => Math.max(1, Math.ceil(ledgerPage.total / ledgerPage.pageSize)))
@@ -212,7 +214,7 @@ function changePageSize() {
 }
 
 function refreshAll() {
-  Promise.all([loadCustomer(), loadLedger()])
+  return Promise.all([loadCustomer(), loadLedger()])
 }
 
 onMounted(refreshAll)

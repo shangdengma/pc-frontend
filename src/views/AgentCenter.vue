@@ -114,7 +114,15 @@
               </table>
             </div>
             <div class="pagination-bar">
-              <span>共 {{ customerPage.total }} 位客户，每页 {{ customerPage.pageSize }} 位</span>
+              <div>
+                <span>共 {{ customerPage.total }} 位客户</span>
+                <select v-model.number="customerPage.pageSize" :disabled="customerLoading" aria-label="每页条数" @change="changeCustomerPageSize">
+                  <option :value="5">5 位/页</option>
+                  <option :value="10">10 位/页</option>
+                  <option :value="20">20 位/页</option>
+                  <option :value="50">50 位/页</option>
+                </select>
+              </div>
               <div>
                 <button type="button" :disabled="customerPage.pageNum <= 1 || customerLoading" @click="changeCustomerPage(-1)">上一页</button>
                 <strong>{{ customerPage.pageNum }} / {{ customerPageCount }}</strong>
@@ -229,6 +237,7 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
+import { getResponsivePageSize } from '../composables/responsivePagination'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -303,7 +312,7 @@ const allocationDialog = ref(false)
 const allocationSaving = ref(false)
 const allocationMessage = ref('')
 const workspaceTab = ref('customers')
-const customerPage = reactive({ pageNum: 1, pageSize: 20, total: 0 })
+const customerPage = reactive({ pageNum: 1, pageSize: getResponsivePageSize(), total: 0 })
 const totalRecharge = ref(0)
 const totalConsume = ref(0)
 const commissionRate = ref(0)
@@ -424,6 +433,10 @@ async function changeCustomerPage(step) {
   if (target < 1 || target > customerPageCount.value) return
   customerPage.pageNum = target
   await loadCustomers()
+}
+function changeCustomerPageSize() {
+  customerPage.pageNum = 1
+  loadCustomers()
 }
 function resetCodeForm() {
   codeForm.giftAmount = ''
@@ -648,6 +661,7 @@ useRefresh(loadAll)
 .icon-actions button:hover { border-color: #cfdbeb; color: var(--blue); background: #f4f8ff; }
 .pagination-bar { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 14px; color: #738096; font-size: var(--fs-xs); }
 .pagination-bar > div { display: flex; align-items: center; gap: 9px; }
+.pagination-bar select { height: 32px; padding: 0 28px 0 9px; border: 1px solid var(--line); border-radius: var(--radius); color: #45546a; background: #fff; font: inherit; }
 .pagination-bar button { height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius); color: #45546a; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .pagination-bar button:hover:not(:disabled) { border-color: #8eabe0; color: var(--blue); background: var(--line-soft); }
 .pagination-bar button:disabled { opacity: .45; cursor: not-allowed; }

@@ -95,10 +95,11 @@
 
     <div class="pager">
       <span>共 {{ total }} 条</span>
-      <select v-model.number="filters.pageSize" @change="search">
+      <select v-model.number="filters.pageSize" aria-label="每页条数" @change="changePageSize">
         <option :value="5">5 条/页</option>
         <option :value="10">10 条/页</option>
         <option :value="20">20 条/页</option>
+        <option :value="50">50 条/页</option>
       </select>
       <button class="ghost-btn" :disabled="filters.pageNum <= 1" @click="changePage(-1)">上一页</button>
       <span>{{ filters.pageNum }} / {{ totalPages }} 页</span>
@@ -136,6 +137,7 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
+import { getResponsivePageSize } from '../composables/responsivePagination'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Copy, X } from '@lucide/vue'
@@ -179,7 +181,7 @@ const fallbackLink = ref('')
 const fallbackPhone = ref('')
 const fallbackLinkInput = ref(null)
 const profile = ref({})
-const filters = reactive({ pageNum: 1, pageSize: 5, keyword: '', status: '' })
+const filters = reactive({ pageNum: 1, pageSize: getResponsivePageSize(), keyword: '', status: '' })
 
 const totalPages = computed(() => Math.max(1, Math.ceil((total.value || 0) / filters.pageSize)))
 const hasFilters = computed(() => !!(filters.keyword || filters.status))
@@ -275,6 +277,11 @@ function resetFilters() {
   } else {
     search()
   }
+}
+
+function changePageSize() {
+  filters.pageNum = 1
+  loadRecords()
 }
 
 // 重发邀请短信。后端限制累计 2 次 + 60 秒冷却，超限会返回明确原因

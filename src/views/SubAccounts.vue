@@ -254,9 +254,15 @@
       <template #footer>
         <div class="pager">
           <span>共 {{ detailTotal }} 条</span>
+          <select v-model.number="detailPage.pageSize" :disabled="detailLoading" aria-label="每页条数" @change="changeDetailPageSize">
+            <option :value="5">5 条/页</option>
+            <option :value="10">10 条/页</option>
+            <option :value="20">20 条/页</option>
+            <option :value="50">50 条/页</option>
+          </select>
           <button class="ghost-btn" :disabled="detailPage.pageNum <= 1 || detailLoading" @click="changeDetailPage(-1)">上一页</button>
-          <span>第 {{ detailPage.pageNum }} 页</span>
-          <button class="ghost-btn" :disabled="detailRows.length < detailPage.pageSize || detailLoading" @click="changeDetailPage(1)">下一页</button>
+          <span>{{ detailPage.pageNum }} / {{ detailTotalPages }} 页</span>
+          <button class="ghost-btn" :disabled="detailPage.pageNum >= detailTotalPages || detailLoading" @click="changeDetailPage(1)">下一页</button>
         </div>
       </template>
     </AppModal>
@@ -265,6 +271,7 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
+import { getResponsivePageSize } from '../composables/responsivePagination'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus, ShieldAlert } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
@@ -352,7 +359,8 @@ const detailAccount = ref(null)
 const detailRows = ref([])
 const detailTotal = ref(0)
 const detailLoading = ref(false)
-const detailPage = reactive({ pageNum: 1, pageSize: 8 })
+const detailPage = reactive({ pageNum: 1, pageSize: getResponsivePageSize() })
+const detailTotalPages = computed(() => Math.max(1, Math.ceil(detailTotal.value / detailPage.pageSize)))
 const subTotalQuotaYuan = computed(() => Number(profile.value?.subAccountQuota || 0) / 100)
 const subUsedQuotaYuan = computed(() => Number(profile.value?.subAccountUsed || 0) / 100)
 const subRemainingQuotaYuan = computed(() => Math.max(0, (Number(profile.value?.subAccountQuota || 0) - Number(profile.value?.subAccountUsed || 0)) / 100))
@@ -620,7 +628,13 @@ async function loadDetail() {
   }
 }
 function changeDetailPage(delta) {
-  detailPage.pageNum += delta
+  const target = detailPage.pageNum + delta
+  if (target < 1 || target > detailTotalPages.value) return
+  detailPage.pageNum = target
+  loadDetail()
+}
+function changeDetailPageSize() {
+  detailPage.pageNum = 1
   loadDetail()
 }
 onMounted(async () => {

@@ -1,11 +1,11 @@
 import request from '../utils/request'
 
 export function getUserNotices(userId, opts = {}) {
-  const { pageNum = 1, pageSize = 10 } = opts
+  const { pageNum = 1, pageSize = 10, status } = opts
   return request({
     url: '/system/notification/list',
     method: 'get',
-    params: { userId, pageNum, pageSize }
+    params: { userId, pageNum, pageSize, status }
   })
 }
 

@@ -8,14 +8,14 @@
 
     <div class="message-toolbar">
       <nav class="message-tabs" aria-label="消息筛选">
-        <button :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</button>
-        <button :class="{ active: filter === 'unread' }" @click="filter = 'unread'">未读</button>
-        <button :class="{ active: filter === 'read' }" @click="filter = 'read'">已读</button>
+        <button :class="{ active: filter === 'all' }" @click="selectFilter('all')">全部</button>
+        <button :class="{ active: filter === 'unread' }" @click="selectFilter('unread')">未读</button>
+        <button :class="{ active: filter === 'read' }" @click="selectFilter('read')">已读</button>
       </nav>
       <span class="message-count">{{ unreadCount ? `${unreadCount} 条未读` : '全部已读' }}</span>
     </div>
 
-    <div class="messages-panel">
+    <div class="messages-panel" :class="{ paged: !loading && !loadError && total > 0 }">
       <UiState v-if="loading" type="loading" title="正在加载消息" />
       <UiState
         v-else-if="loadError"
@@ -48,6 +48,23 @@
       </article>
     </div>
 
+    <div v-if="!loading && !loadError && total > 0" class="message-pager" aria-label="消息分页">
+      <div class="page-size-control">
+        <span>共 {{ total }} 条</span>
+        <select v-model.number="pageSize" aria-label="每页条数" @change="changePageSize">
+          <option :value="5">5 条/页</option>
+          <option :value="10">10 条/页</option>
+          <option :value="20">20 条/页</option>
+          <option :value="50">50 条/页</option>
+        </select>
+      </div>
+      <div>
+        <button type="button" :disabled="pageNum <= 1" @click="changePage(-1)">上一页</button>
+        <span>{{ pageNum }} / {{ totalPages }} 页</span>
+        <button type="button" :disabled="pageNum >= totalPages" @click="changePage(1)">下一页</button>
+      </div>
+    </div>
+
     <AppModal
       :open="!!detail"
       :title="detail?.title || '消息通知'"
@@ -75,11 +92,12 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
+import { getResponsivePageSize } from '../composables/responsivePagination'
 import { computed, onMounted, ref } from 'vue'
 import { Mail, MailOpen } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
 import UiState from '../components/UiState.vue'
-import { getUserNotices, markNoticeRead } from '../api/notice'
+import { getUnreadCount, getUserNotices, markNoticeRead } from '../api/notice'
 import { getUser } from '../utils/auth'
 
 const loading = ref(false)
@@ -87,7 +105,11 @@ const loadError = ref('')
 const messages = ref([])
 const detail = ref(null)
 const filter = ref('all')
-const unreadCount = computed(() => messages.value.filter(item => !isRead(item)).length)
+const pageNum = ref(1)
+const pageSize = ref(getResponsivePageSize())
+const total = ref(0)
+const unreadCount = ref(0)
+const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 
 const filteredMessages = computed(() => messages.value.filter(item => {
   if (filter.value === 'unread') return !isRead(item)
@@ -115,14 +137,49 @@ async function loadMessages() {
   loadError.value = ''
   try {
     const user = getUser()
-    const res = await getUserNotices(user.userId, { pageNum: 1, pageSize: 100 })
+    const status = filter.value === 'unread' ? 0 : filter.value === 'read' ? 1 : undefined
+    const res = await getUserNotices(user.userId, { pageNum: pageNum.value, pageSize: pageSize.value, status })
     messages.value = res.rows || []
+    total.value = Number(res.total || 0)
+    if (!messages.value.length && total.value > 0 && pageNum.value > totalPages.value) {
+      pageNum.value = totalPages.value
+      return loadMessages()
+    }
+    await loadUnreadCount()
     window.dispatchEvent(new CustomEvent('zk:notice-count-refresh'))
   } catch (error) {
     loadError.value = error?.msg || error?.message || '请稍后重试'
   } finally {
     loading.value = false
   }
+}
+
+async function loadUnreadCount() {
+  try {
+    const res = await getUnreadCount()
+    unreadCount.value = Number(res?.data?.unreadCount || 0)
+  } catch {
+    // 未读总数失败不影响消息列表本身。
+  }
+}
+
+function selectFilter(value) {
+  if (filter.value === value) return
+  filter.value = value
+  pageNum.value = 1
+  loadMessages()
+}
+
+function changePage(delta) {
+  const next = pageNum.value + delta
+  if (next < 1 || next > totalPages.value || next === pageNum.value) return
+  pageNum.value = next
+  loadMessages()
+}
+
+function changePageSize() {
+  pageNum.value = 1
+  loadMessages()
 }
 
 function openDetail(item) {
@@ -135,7 +192,9 @@ async function markRead(item) {
   if (detail.value && detail.value.id === item.id) {
     detail.value.status = 1
   }
-  window.dispatchEvent(new CustomEvent('zk:notice-count-refresh'))
+  unreadCount.value = Math.max(0, unreadCount.value - 1)
+  if (filter.value === 'unread') await loadMessages()
+  else window.dispatchEvent(new CustomEvent('zk:notice-count-refresh'))
 }
 
 onMounted(loadMessages)
@@ -213,6 +272,57 @@ useRefresh(loadMessages)
   border-radius: 0 0 8px 8px;
   background: #fff;
   box-shadow: 0 10px 28px rgba(31, 45, 68, 0.045);
+}
+
+.message-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 0 16px;
+  border: 1px solid #dce4ee;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  color: #7a8799;
+  background: #fbfcfe;
+  font-size: var(--fs-xs);
+}
+
+.messages-panel.paged {
+  border-radius: 0;
+}
+
+.message-pager > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.message-pager button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #dce4ee;
+  border-radius: 6px;
+  color: #4c5b70;
+  background: #fff;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+
+.message-pager select {
+  height: 32px;
+  padding: 0 26px 0 9px;
+  border: 1px solid #dce4ee;
+  border-radius: 6px;
+  color: #4c5b70;
+  background: #fff;
+  font: inherit;
+}
+
+.message-pager button:disabled {
+  color: #a8b1bf;
+  background: #f5f7fa;
+  cursor: not-allowed;
 }
 
 .state-box {
@@ -370,5 +480,10 @@ useRefresh(loadMessages)
   .message-line-1 { flex-direction: column; align-items: flex-start; gap: 2px; }
   .message-line-2 { flex-direction: column; align-items: flex-start; gap: 4px; }
   .message-line-2 p { white-space: normal; }
+  .message-pager {
+    padding: 10px 12px;
+  }
+  .message-pager > div { gap: 6px; }
+  .message-pager button { padding: 0 9px; }
 }
 </style>

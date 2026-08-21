@@ -99,12 +99,12 @@
       <footer class="pagination-bar">
         <div>
           <span>共 {{ pagination.total }} 条记录</span>
-          <select v-if="!isMobile" v-model.number="pagination.pageSize" :disabled="loading" @change="changePageSize">
+          <select v-model.number="pagination.pageSize" :disabled="loading" aria-label="每页条数" @change="changePageSize">
+            <option :value="5">5 条/页</option>
             <option :value="10">10 条/页</option>
             <option :value="20">20 条/页</option>
             <option :value="50">50 条/页</option>
           </select>
-          <span v-else class="mobile-page-size">每页 5 条</span>
         </div>
         <div class="page-controls">
           <button type="button" :disabled="pagination.pageNum <= 1 || loading" @click="changePage(-1)">上一页</button>
@@ -118,7 +118,8 @@
 
 <script setup>
 import { useRefresh } from '../composables/pullRefresh'
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { getResponsivePageSize } from '../composables/responsivePagination'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { CircleAlert, ReceiptText, Search } from '@lucide/vue'
 import { listMyAccountLedger } from '../api/accountLedger'
 import { yuanFromFen } from '../utils/format'
@@ -127,10 +128,7 @@ const rows = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
 const filters = reactive({ changeStyle: '', outTradeNo: '' })
-const pagination = reactive({ pageNum: 1, pageSize: 20, total: 0 })
-const isMobile = ref(false)
-const desktopPageSize = ref(20)
-let mobileMediaQuery = null
+const pagination = reactive({ pageNum: 1, pageSize: getResponsivePageSize(), total: 0 })
 
 const typeOptions = [
   { value: '1', label: '在线充值' },
@@ -228,26 +226,8 @@ function changePage(step) {
 }
 
 function changePageSize() {
-  desktopPageSize.value = pagination.pageSize
   pagination.pageNum = 1
   loadLedger()
-}
-
-function applyViewportPageSize(matches, shouldLoad = true) {
-  if (matches === isMobile.value && pagination.pageSize === (matches ? 5 : desktopPageSize.value)) {
-    if (shouldLoad) loadLedger()
-    return
-  }
-
-  if (matches && !isMobile.value) desktopPageSize.value = pagination.pageSize
-  isMobile.value = matches
-  pagination.pageSize = matches ? 5 : desktopPageSize.value
-  pagination.pageNum = 1
-  if (shouldLoad) loadLedger()
-}
-
-function handleViewportChange(event) {
-  applyViewportPageSize(event.matches)
 }
 
 function refreshPage() {
@@ -255,15 +235,7 @@ function refreshPage() {
   return loadLedger()
 }
 
-onMounted(() => {
-  mobileMediaQuery = window.matchMedia('(max-width: 768px)')
-  applyViewportPageSize(mobileMediaQuery.matches)
-  mobileMediaQuery.addEventListener('change', handleViewportChange)
-})
-
-onBeforeUnmount(() => {
-  mobileMediaQuery?.removeEventListener('change', handleViewportChange)
-})
+onMounted(loadLedger)
 // 移动端下拉刷新复用同一个加载函数
 useRefresh(refreshPage)
 </script>
