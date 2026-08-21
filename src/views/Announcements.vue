@@ -16,8 +16,20 @@
     </div>
 
     <div class="messages-panel">
-      <div v-if="loading" class="state-box">正在加载消息...</div>
-      <div v-else-if="filteredMessages.length === 0" class="state-box">暂无消息通知</div>
+      <UiState v-if="loading" type="loading" title="正在加载消息" />
+      <UiState
+        v-else-if="loadError"
+        type="error"
+        title="消息加载失败"
+        :description="loadError"
+        action-label="重新加载"
+        @action="loadMessages"
+      />
+      <UiState
+        v-else-if="filteredMessages.length === 0"
+        title="暂无消息通知"
+        :description="filter === 'all' ? '新的业务进度和系统提醒会显示在这里。' : '当前筛选条件下没有消息。'"
+      />
       <article v-for="item in filteredMessages" :key="item.id" class="message-card" :class="{ unread: !isRead(item) }" @click="openDetail(item)">
         <span class="message-icon" :class="{ unread: !isRead(item) }" aria-hidden="true">
           <Mail v-if="!isRead(item)" :size="18" />
@@ -66,10 +78,12 @@ import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, ref } from 'vue'
 import { Mail, MailOpen } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
+import UiState from '../components/UiState.vue'
 import { getUserNotices, markNoticeRead } from '../api/notice'
 import { getUser } from '../utils/auth'
 
 const loading = ref(false)
+const loadError = ref('')
 const messages = ref([])
 const detail = ref(null)
 const filter = ref('all')
@@ -98,11 +112,14 @@ function imageList(item) {
 
 async function loadMessages() {
   loading.value = true
+  loadError.value = ''
   try {
     const user = getUser()
     const res = await getUserNotices(user.userId, { pageNum: 1, pageSize: 100 })
     messages.value = res.rows || []
     window.dispatchEvent(new CustomEvent('zk:notice-count-refresh'))
+  } catch (error) {
+    loadError.value = error?.msg || error?.message || '请稍后重试'
   } finally {
     loading.value = false
   }

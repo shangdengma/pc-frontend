@@ -123,6 +123,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
 import {
   ArrowLeftRight,
   BadgePercent,
@@ -152,6 +153,11 @@ import { getMyEnterpriseCertList } from '../api/enterpriseCert'
 import { getUser, removeToken, setUser } from '../utils/auth'
 import { yuanFromFen } from '../utils/format'
 import { canRefresh, runRefresh, useRefreshState } from '../composables/pullRefresh'
+import {
+  startPendingPaymentMonitor,
+  stopPendingPaymentMonitor,
+  subscribePendingPayment
+} from '../utils/pendingPayment'
 
 const route = useRoute()
 const router = useRouter()
@@ -198,6 +204,13 @@ function refreshUnreadWhenVisible() {
 }
 
 let unreadTimer = null
+let unsubscribePendingPayment = null
+
+function handlePendingPaymentEvent(event) {
+  if (event?.type !== 'paid') return
+  if (route.name !== 'reportDetail') toast.success('充值已到账，账户余额已更新')
+  loadProfile()
+}
 
 const balance = ref(0)
 const balanceText = computed(() => yuanFromFen(balance.value))
@@ -277,9 +290,11 @@ async function loadProfile() {
     setUser(merged)
     userName.value = user.nickName || user.userName || userName.value
     // 余额常驻顶栏，所以放在这里拉：任何页面扣费后触发 balance-updated 都会刷新到最新值
-    if (user.userId) {
-      const result = await getUserBalance(user.userId)
+    const userId = user.userId || user.id
+    if (userId) {
+      const result = await getUserBalance(userId)
       balance.value = result.data || 0
+      startPendingPaymentMonitor(userId)
     } else {
       balance.value = user.money || 0
     }
@@ -339,6 +354,7 @@ async function onTouchEnd() {
 }
 
 onMounted(() => {
+  unsubscribePendingPayment = subscribePendingPayment(handlePendingPaymentEvent)
   loadProfile()
   loadNavBadges()
   document.addEventListener('click', handleDocumentClick)
@@ -356,6 +372,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  unsubscribePendingPayment?.()
+  stopPendingPaymentMonitor()
   document.removeEventListener('click', handleDocumentClick)
   document.removeEventListener('visibilitychange', refreshUnreadWhenVisible)
   window.removeEventListener('focus', loadUnreadCount)

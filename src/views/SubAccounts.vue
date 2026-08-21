@@ -34,8 +34,20 @@
       <div class="card-head workspace-section-head">
         <div><h3>{{ labels.subList }}</h3></div>
       </div>
-      <div v-if="loading" class="empty-state">{{ labels.loading }}</div>
-      <div v-else-if="!accounts.length" class="empty-state">{{ labels.empty }}</div>
+      <UiState v-if="loading" type="loading" :title="labels.loading" />
+      <UiState
+        v-else-if="listError"
+        type="error"
+        title="子账号加载失败"
+        :description="listError"
+        action-label="重新加载"
+        @action="loadList"
+      />
+      <UiState
+        v-else-if="!accounts.length"
+        :title="labels.empty"
+        description="创建后可为不同团队成员分配独立账号和使用额度。"
+      />
       <!-- 原先是 div 列表：76px 行高、没有表头，三个额度各自带标签重复出现，
            跟查询记录、资金流水那几页完全不是一套。改成表格后列义由表头承担，
            行内不再重复「已分配/已消费/剩余」，样式跟着全局 .data-table 走。 -->
@@ -256,6 +268,8 @@ import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus, ShieldAlert } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
+import UiState from '../components/UiState.vue'
+import { confirmAction } from '../utils/confirm'
 import { createSubAccount, disableSubAccount, enableSubAccount, listSubAccountLogs, listSubAccountRecords, listSubAccounts, resetSubAccountPassword, updateSubAccountQuota } from '../api/subAccount'
 import { getUserProfile } from '../api/user'
 import { getUser, setUser } from '../utils/auth'
@@ -317,6 +331,7 @@ const editing = ref(null)
 const message = ref('')
 const pageMessage = ref('')
 const pageMessageType = ref('info')
+const listError = ref('')
 let pageMessageTimer = null
 
 function notify(text, type = 'info') {
@@ -402,10 +417,13 @@ async function loadQueryTypes() {
 }
 async function loadList() {
   loading.value = true
+  listError.value = ''
   try {
     const res = await listSubAccounts()
     accounts.value = res.data || []
     mainBalance.value = res.mainBalance || 0
+  } catch (error) {
+    listError.value = error?.msg || error?.message || '请稍后重试'
   } finally { loading.value = false }
 }
 async function loadProfile() {
@@ -482,7 +500,13 @@ async function submit() {
 }
 async function disable(item) {
   const name = item.nickName || item.userName
-  if (!window.confirm(`确定停用子账号「${name}」吗？\n\n停用后该账号将无法登录，未消费额度会释放；背调记录、资金流水和历史报告仍会保留。存在未完成订单时系统会拒绝停用。`)) return
+  const confirmed = await confirmAction({
+    title: `停用子账号「${name}」`,
+    content: '停用后该账号将无法登录，未消费额度会释放；背调记录、资金流水和历史报告仍会保留。存在未完成订单时系统会拒绝停用。',
+    confirmText: '确认停用',
+    danger: true
+  })
+  if (!confirmed) return
   accountActionId.value = item.userId
   try {
     await disableSubAccount(item.userId)
@@ -537,7 +561,12 @@ async function submitResetPwd() {
 
 async function enable(item) {
   const name = item.nickName || item.userName
-  if (!window.confirm(`确定重新启用子账号「${name}」吗？\n\n系统会恢复该账号原额度；若主账号当前可分配余额不足，将无法启用。`)) return
+  const confirmed = await confirmAction({
+    title: `重新启用子账号「${name}」`,
+    content: '系统会恢复该账号原额度；若主账号当前可分配余额不足，将无法启用。',
+    confirmText: '确认启用'
+  })
+  if (!confirmed) return
   accountActionId.value = item.userId
   try {
     await enableSubAccount(item.userId)

@@ -49,6 +49,20 @@
       </section>
 
       <template v-else>
+        <div
+          v-if="!demoMode && (currentStep === 2 || currentStep === 3)"
+          class="candidate-autosave"
+          :class="`is-${draftSaveStatus}`"
+          role="status"
+          aria-live="polite"
+        >
+          <TriangleAlert v-if="draftSaveStatus === 'error'" :size="16" />
+          <CheckCircle2 v-else-if="draftSaveStatus === 'saved' || draftSaveStatus === 'restored'" :size="16" />
+          <Clock3 v-else :size="16" />
+          <span>{{ draftStatusText }}</span>
+          <button v-if="draftSaveStatus === 'error'" type="button" @click="flushDraftSave">重新保存</button>
+        </div>
+
         <PhoneVerifyStep
           v-if="currentStep === 0"
           v-model:phone="verification.phone"
@@ -306,7 +320,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CheckCircle2, ChevronLeft, CircleHelp, CircleSlash, Clock3, ShieldCheck, TriangleAlert, X } from '@lucide/vue'
 import ConsentStep from './components/ConsentStep.vue'
@@ -327,6 +341,7 @@ import {
   sendCandidateCode,
   verifyCandidateCode,
   consentCandidate,
+  saveCandidateDraft,
   submitCandidateForm
 } from '../../api/candidate'
 import './candidate-authorization.css'
@@ -350,7 +365,14 @@ const documentDialog = ref('')
 const taskLoading = ref(false)
 const terminalState = ref('')
 const ticket = ref('')
+const draftSaveStatus = ref('idle')
+const draftSavedAt = ref('')
+const draftSaveError = ref('')
 let countdownTimer = null
+let draftSaveTimer = null
+let draftSaveInFlight = false
+let draftSaveQueued = false
+let restoringDraft = false
 
 const task = reactive({
   token: String(route.params.token || route.query.token || '').trim(),
@@ -397,6 +419,13 @@ const terminalTone = computed(() => terminalVisual[terminalState.value]?.tone ||
 
 const terminalTitle = computed(() => terminalCopy[terminalState.value]?.title || '任务已结束')
 const terminalMessage = computed(() => terminalCopy[terminalState.value]?.message || '')
+const draftStatusText = computed(() => {
+  if (draftSaveStatus.value === 'saving') return '正在安全保存填写内容…'
+  if (draftSaveStatus.value === 'saved') return `已自动保存${draftSavedAt.value ? ` · ${draftSavedAt.value}` : ''}`
+  if (draftSaveStatus.value === 'restored') return '已恢复上次填写的内容'
+  if (draftSaveStatus.value === 'error') return draftSaveError.value || '自动保存失败，请检查网络后重试'
+  return '填写内容将自动保存'
+})
 
 const verification = reactive({
   phone: '',
@@ -424,6 +453,7 @@ const stepForStatus = {
 }
 
 onMounted(async () => {
+  document.addEventListener('visibilitychange', saveDraftWhenHidden)
   if (!task.token) {
     terminalState.value = 'INVALID'
     return
@@ -539,6 +569,7 @@ async function verifyPhone() {
       task.modules = data.modules.filter(key => moduleDefinitions[key])
       syncEmploymentSegments()
     }
+    if (data.draft) await restoreDraft(data.draft, data.draftUpdatedAt)
     const resumeStep = stepForStatus[data.status]
     goToStep(resumeStep === undefined ? 1 : resumeStep)
   } catch (e) {
@@ -555,7 +586,8 @@ async function confirmConsent() {
     return
   }
   try {
-    await consentCandidate(task.token, ticket.value)
+    const res = await consentCandidate(task.token, ticket.value)
+    if (res?.data?.draft) await restoreDraft(res.data.draft, res.data.draftUpdatedAt)
     // 身份证号始终需候选人在填写步骤录入并核验，无论是否配置了其它模块
     goToStep(2)
   } catch (e) {
@@ -690,6 +722,96 @@ function buildFormPayload() {
   }
 }
 
+function scheduleDraftSave() {
+  if (demoMode.value || restoringDraft || !ticket.value || currentStep.value < 2 || currentStep.value > 3) return
+  window.clearTimeout(draftSaveTimer)
+  draftSaveStatus.value = 'idle'
+  draftSaveTimer = window.setTimeout(flushDraftSave, 900)
+}
+
+async function flushDraftSave() {
+  window.clearTimeout(draftSaveTimer)
+  draftSaveTimer = null
+  if (demoMode.value || !ticket.value || currentStep.value < 2 || currentStep.value > 3) return
+  if (draftSaveInFlight) {
+    draftSaveQueued = true
+    return
+  }
+
+  draftSaveInFlight = true
+  draftSaveStatus.value = 'saving'
+  draftSaveError.value = ''
+  try {
+    const res = await saveCandidateDraft(task.token, {
+      ticket: ticket.value,
+      form: buildFormPayload()
+    })
+    const savedAt = res?.data?.savedAt ? new Date(res.data.savedAt) : new Date()
+    draftSavedAt.value = Number.isNaN(savedAt.getTime())
+      ? ''
+      : savedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    draftSaveStatus.value = 'saved'
+  } catch (error) {
+    draftSaveStatus.value = 'error'
+    draftSaveError.value = errorMessage(error, '自动保存失败，请检查网络后重试')
+  } finally {
+    draftSaveInFlight = false
+    if (draftSaveQueued) {
+      draftSaveQueued = false
+      draftSaveTimer = window.setTimeout(flushDraftSave, 120)
+    }
+  }
+}
+
+async function restoreDraft(draft, updatedAt) {
+  if (!draft || typeof draft !== 'object') return
+  restoringDraft = true
+  const candidate = draft.candidate || {}
+  formModel.candidate.idCard = String(candidate.idCard || '')
+  formModel.candidate.email = String(candidate.email || '')
+
+  if (task.modules.includes(MODULE_KEYS.EDUCATION) && Array.isArray(draft.educations) && draft.educations.length) {
+    formModel.educations.splice(0, formModel.educations.length, ...draft.educations
+      .slice(0, MAX_EDUCATION_ITEMS)
+      .map(item => ({
+        ...createEducation(),
+        credentialNo: String(item?.credentialNo || ''),
+        noCredential: !!item?.noCredential
+      })))
+  }
+
+  syncEmploymentSegments()
+  const count = employmentSegmentCount(task.modules)
+  if (count > 0 && Array.isArray(draft.employments)) {
+    draft.employments.slice(0, count).forEach((item, index) => {
+      const base = createEmployment()
+      const target = formModel.employments[index]
+      if (!target || !item) return
+      Object.assign(target, base, item, {
+        id: target.id,
+        hrReference: { ...base.hrReference, ...(item.hrReference || {}) },
+        supervisorReference: { ...base.supervisorReference, ...(item.supervisorReference || {}) }
+      })
+    })
+  }
+
+  await nextTick()
+  restoringDraft = false
+  draftSaveStatus.value = 'restored'
+  if (updatedAt) {
+    const date = new Date(updatedAt)
+    if (!Number.isNaN(date.getTime())) {
+      draftSavedAt.value = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    }
+  }
+}
+
+function saveDraftWhenHidden() {
+  if (document.visibilityState === 'hidden' && draftSaveTimer !== null) flushDraftSave()
+}
+
+watch(formModel, scheduleDraftSave, { deep: true })
+
 function syncEmploymentSegments() {
   const count = employmentSegmentCount(task.modules)
   while (formModel.employments.length < count) formModel.employments.push(createEmployment())
@@ -710,5 +832,9 @@ function wait(ms) {
   return new Promise(resolve => window.setTimeout(resolve, ms))
 }
 
-onBeforeUnmount(() => clearInterval(countdownTimer))
+onBeforeUnmount(() => {
+  clearInterval(countdownTimer)
+  window.clearTimeout(draftSaveTimer)
+  document.removeEventListener('visibilitychange', saveDraftWhenHidden)
+})
 </script>

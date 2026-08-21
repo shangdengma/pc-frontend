@@ -13,17 +13,6 @@
     </header>
 
     <section class="work-card records-card workspace-surface">
-      <div
-        v-if="message"
-        class="records-toast"
-        :class="messageType"
-        role="status"
-        aria-live="polite"
-        data-testid="records-toast"
-      >
-        {{ message }}
-      </div>
-
     <!-- 状态放 Tab 而不是下拉：进这一页最常见的动作就是「看哪些在跑 / 哪些出了」，
          一次点击就该到位，也让各状态一眼可见 -->
     <nav class="status-tabs" aria-label="按状态筛选">
@@ -68,7 +57,7 @@
             <td data-label="状态">
               <div class="record-status-cell">
                 <span class="status-pill" :class="statusClass(item.displayStatus)">{{ statusText(item.displayStatus, item.displayStatusText) }}</span>
-                <div v-if="item.statusReason" class="record-status-reason">{{ item.statusReason }}</div>
+                <div v-if="item.statusReason" class="record-status-reason" :title="item.statusReason">{{ item.statusReason }}</div>
               </div>
             </td>
             <td data-label="操作" class="actions-cell">
@@ -150,6 +139,7 @@ import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Copy, X } from '@lucide/vue'
+import { toast } from 'vue-sonner'
 import { listData, getCandidateLink, resendCandidateSms } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserProfile } from '../api/user'
@@ -188,8 +178,6 @@ const smsLoadingId = ref(null)
 const fallbackLink = ref('')
 const fallbackPhone = ref('')
 const fallbackLinkInput = ref(null)
-const message = ref('')
-const messageType = ref('info')
 const profile = ref({})
 const filters = reactive({ pageNum: 1, pageSize: 5, keyword: '', status: '' })
 
@@ -385,12 +373,10 @@ function closeFallbackLink() {
   fallbackPhone.value = ''
 }
 
-let messageTimer
 function show(text, type = 'info') {
-  message.value = text
-  messageType.value = type
-  if (messageTimer) window.clearTimeout(messageTimer)
-  messageTimer = window.setTimeout(() => { message.value = '' }, 3000)
+  if (!text) return
+  const notify = typeof toast[type] === 'function' ? toast[type] : toast
+  notify(text)
 }
 
 function maskIdCard(value) {

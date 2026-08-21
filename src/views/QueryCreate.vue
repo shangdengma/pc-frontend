@@ -134,6 +134,7 @@ import { useRouter } from 'vue-router'
 import { getAllData, launchOnlineTest, preCheckQuery } from '../api/data'
 import { listQueryTypeConfig } from '../api/queryType'
 import { getUserBalance, getUserProfile, updateNotifyChannels } from '../api/user'
+import { confirmAction } from '../utils/confirm'
 
 const emit = defineEmits(['balance-updated'])
 const router = useRouter()
@@ -315,7 +316,11 @@ async function submitQuery() {
       return show(msg, 'error')
     }
     if (pre?.data?.duplicate) {
-      const ok = window.confirm('检测到 10 分钟内相同条件的重复查询，是否继续？')
+      const ok = await confirmAction({
+        title: '确认重复查询',
+        content: '检测到 10 分钟内存在相同条件的查询。继续提交可能产生重复费用，请确认是否仍要发起。',
+        confirmText: '继续发起'
+      })
       if (!ok) return show('已取消重复查询', 'info')
     }
 

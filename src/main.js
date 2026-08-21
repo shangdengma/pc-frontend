@@ -1,17 +1,26 @@
 ﻿import { createApp } from 'vue'
 import App from './App.vue'
+import { toast } from 'vue-sonner'
 import router from './router'
+import { confirmAction } from './utils/confirm'
 import './styles/main.css'
 import './styles/workspace.css'
 
 function showToastMessage(type, message) {
   if (!message) return
-  if (type === 'error') {
-    console.error(message)
-    window.alert(message)
+  // 报告页保持原有反馈方式，避免影响 PDF 捕获区域与既有导出流程。
+  if (router.currentRoute.value.name === 'reportDetail') {
+    if (type === 'error') window.alert(message)
+    else console.log(message)
     return
   }
-  console.log(message)
+  if (type === 'error') {
+    toast.error(message)
+    return
+  }
+  if (type === 'success') toast.success(message)
+  else if (type === 'warning') toast.warning(message)
+  else toast.info(message)
 }
 
 function normalizeUniUrl(url = '') {
@@ -31,8 +40,10 @@ if (!window.uni) {
     showToast({ title = '' } = {}) {
       showToastMessage('success', title)
     },
-    showModal({ title = '提示', content = '', success } = {}) {
-      const confirmed = window.confirm(`${title}${content ? `\n${content}` : ''}`)
+    async showModal({ title = '提示', content = '', success } = {}) {
+      const confirmed = router.currentRoute.value.name === 'reportDetail'
+        ? window.confirm(`${title}${content ? `\n${content}` : ''}`)
+        : await confirmAction({ title, content })
       if (typeof success === 'function') {
         success({ confirm: confirmed, cancel: !confirmed })
       }

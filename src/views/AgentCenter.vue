@@ -224,7 +224,6 @@
       </template>
     </AppModal>
 
-    <div v-if="toast" class="toast">{{ toast }}</div>
   </div>
 </template>
 
@@ -232,6 +231,7 @@
 import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
 import {
   ArrowRightLeft,
   Copy,
@@ -292,7 +292,6 @@ const loading = ref(false)
 const customerLoading = ref(false)
 const saving = ref(false)
 const message = ref('')
-const toast = ref('')
 const inviteCodes = ref([])
 const customers = ref([])
 const customerKeyword = ref('')
@@ -369,10 +368,10 @@ function codeStatusClass(item) {
   if (text === '停用') return 'off'
   return 'warn'
 }
-function showToast(text) {
-  toast.value = text
-  window.clearTimeout(showToast.timer)
-  showToast.timer = window.setTimeout(() => { toast.value = '' }, 1800)
+function showToast(text, type = 'success') {
+  if (!text) return
+  const notify = typeof toast[type] === 'function' ? toast[type] : toast
+  notify(text)
 }
 async function loadAll() {
   loading.value = true
@@ -415,7 +414,7 @@ async function loadCustomers() {
     })
     applyCustomerPage(res.data)
   } catch (err) {
-    showToast(err?.msg || '客户列表加载失败')
+    showToast(err?.msg || '客户列表加载失败', 'error')
   } finally {
     customerLoading.value = false
   }
@@ -482,7 +481,7 @@ async function toggleStatus(item) {
     await loadAll()
     showToast(item.status === 0 ? '邀请码已停用' : '邀请码已启用')
   } catch (err) {
-    showToast(err?.msg || '操作失败，请稍后重试')
+    showToast(err?.msg || '操作失败，请稍后重试', 'error')
   }
 }
 async function copyCode(code) {
@@ -490,7 +489,7 @@ async function copyCode(code) {
     await navigator.clipboard.writeText(code)
     showToast('邀请码已复制')
   } catch (err) {
-    showToast('复制失败，请手动复制')
+    showToast('复制失败，请手动复制', 'error')
   }
 }
 function openCustomerFinance(item) {
@@ -683,7 +682,6 @@ useRefresh(loadAll)
 .allocation-summary span { display: block; margin-bottom: 7px; color: #6e7b90; font-size: var(--fs-xs); }
 .allocation-summary strong { font-size: var(--fs-xl); font-variant-numeric: tabular-nums; }
 .allocation-hint { margin: 14px 0 0; color: #6f7c90; font-size: var(--fs-xs); line-height: 1.6; }
-.toast { position: fixed; right: 30px; bottom: 30px; z-index: 100; padding: 11px 16px; border-radius: var(--radius); color: #fff; background: var(--text); box-shadow: 0 12px 30px rgba(23, 32, 51, .22); font-size: var(--fs-sm); font-weight: 700; }
 
 @media (max-width: 1180px) {
   .overview-band { grid-template-columns: 1fr; }

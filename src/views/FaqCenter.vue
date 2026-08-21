@@ -27,23 +27,22 @@
     </div>
 
     <div class="faq-content workspace-surface" :aria-busy="loading">
-      <div v-if="loading" class="faq-state">
-        <LoaderCircle class="faq-spinner" :size="22" />
-        <span>正在加载常见问题</span>
-      </div>
+      <UiState v-if="loading" type="loading" title="正在加载常见问题" />
 
-      <div v-else-if="loadError" class="faq-state faq-state--error">
-        <CircleAlert :size="22" />
-        <strong>常见问题加载失败</strong>
-        <span>{{ loadError }}</span>
-        <button type="button" @click="loadFaqs">重新加载</button>
-      </div>
+      <UiState
+        v-else-if="loadError"
+        type="error"
+        title="常见问题加载失败"
+        :description="loadError"
+        action-label="重新加载"
+        @action="loadFaqs"
+      />
 
-      <div v-else-if="!filteredFaqs.length" class="faq-state">
-        <SearchX :size="24" />
-        <strong>没有找到相关问题</strong>
-        <span>可更换关键词或选择其他分类。</span>
-      </div>
+      <UiState
+        v-else-if="!filteredFaqs.length"
+        title="没有找到相关问题"
+        description="可更换关键词或选择其他分类。"
+      />
 
       <div v-else class="faq-list">
         <article
@@ -86,13 +85,11 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   ChevronDown,
-  CircleAlert,
-  LoaderCircle,
   MessageSquareText,
   Search,
-  SearchX,
   X
 } from '@lucide/vue'
+import UiState from '../components/UiState.vue'
 import { getFaqList } from '../api/support'
 
 const loading = ref(true)

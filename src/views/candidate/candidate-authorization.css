@@ -1280,3 +1280,41 @@
   color: #374151;
   line-height: 1.7;
 }
+.candidate-autosave {
+  width: min(100%, 920px);
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 12px;
+  padding: 8px 12px;
+  border: 1px solid #dce4ee;
+  border-radius: 8px;
+  color: #5f6b7c;
+  background: #f8fafc;
+  font-size: 13px;
+}
+
+.candidate-autosave.is-saved,
+.candidate-autosave.is-restored {
+  border-color: #b7e2c8;
+  color: #147a4b;
+  background: #f0fbf5;
+}
+
+.candidate-autosave.is-error {
+  border-color: #f3c4bf;
+  color: #b42318;
+  background: #fff5f4;
+}
+
+.candidate-autosave button {
+  margin-left: auto;
+  padding: 3px 0;
+  border: 0;
+  color: currentColor;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

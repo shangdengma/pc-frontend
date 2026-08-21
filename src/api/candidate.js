@@ -35,6 +35,15 @@ export function consentCandidate(token, ticket) {
   })
 }
 
+export function saveCandidateDraft(token, data) {
+  return request({
+    url: `/candidate/task/${token}/draft`,
+    method: 'post',
+    headers: { isToken: false },
+    data
+  })
+}
+
 export function submitCandidateForm(token, data) {
   return request({
     url: `/candidate/task/${token}/submit`,

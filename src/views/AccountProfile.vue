@@ -80,19 +80,6 @@
       </div>
     </section>
 
-    <Teleport to="body">
-      <Transition name="profile-toast">
-        <p
-          v-if="message"
-          :class="['profile-message', messageType]"
-          role="status"
-          aria-live="polite"
-        >
-          {{ message }}
-        </p>
-      </Transition>
-    </Teleport>
-
     <AppModal
       :open="emailEditorVisible"
       title="修改绑定邮箱"
@@ -172,6 +159,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
 import AppModal from '../components/AppModal.vue'
 import { getMyEnterpriseCertList } from '../api/enterpriseCert'
 import { getUserProfile, sendEmailChangeCode, sendPasswordCode, updateUserEmail, updateUserPassword } from '../api/user'
@@ -190,8 +178,6 @@ const passwordChanging = ref(false)
 const smsSending = ref(false)
 const smsCountdown = ref(0)
 const showPassword = ref(false)
-const message = ref('')
-const messageType = ref('success')
 const emailInput = ref(null)
 const currentPasswordInput = ref(null)
 const emailForm = reactive({ email: '', code: '' })
@@ -376,10 +362,9 @@ async function changePassword() {
 }
 
 function showMessage(text, type = 'success') {
-  message.value = text
-  messageType.value = type
-  window.clearTimeout(showMessage.timer)
-  showMessage.timer = window.setTimeout(() => { message.value = '' }, 3200)
+  if (!text) return
+  const notify = typeof toast[type] === 'function' ? toast[type] : toast
+  notify(text)
 }
 
 async function loadProfile() {
@@ -451,10 +436,6 @@ onBeforeUnmount(() => {
 .profile-summary .cert-pill.approved { background: #e8f8ef; color: #087443; }
 .profile-summary .cert-pill.pending, .profile-summary .cert-pill.reviewing { background: #fff4df; color: #a15c00; }
 .profile-summary .cert-pill.rejected { background: #fff0f0; color: #b42318; }
-.profile-message { position: fixed; top: 24px; left: 50%; z-index: 3100; width: max-content; max-width: min(520px, calc(100vw - 32px)); margin: 0; padding: 11px 18px; transform: translateX(-50%); border: 1px solid #abefc6; border-radius: var(--radius); background: #ecfdf3; color: #027a48; box-shadow: 0 12px 30px rgba(16, 24, 40, .18); font-weight: 600; line-height: 1.5; text-align: center; pointer-events: none; }
-.profile-message.error { border-color: #fecdca; background: #fef3f2; color: #b42318; }
-.profile-toast-enter-active, .profile-toast-leave-active { transition: opacity .18s ease, transform .18s ease; }
-.profile-toast-enter-from, .profile-toast-leave-to { opacity: 0; transform: translate(-50%, -8px); }
 .editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .editor-grid label { display: grid; gap: 8px; color: var(--text-secondary); font-weight: 600; }
 .editor-grid input, .editor-grid select { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #d8e0eb; border-radius: var(--radius); background: #fff; color: #17243a; font: inherit; outline: none; }

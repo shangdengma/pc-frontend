@@ -22,18 +22,20 @@
     </div>
 
     <div class="announcements-panel">
-      <div v-if="loading" class="announcement-loading" aria-label="正在加载公告">
-        <div v-for="index in 4" :key="index" class="announcement-skeleton"></div>
-      </div>
-      <div v-else-if="error" class="state-box announcement-error">
-        <CircleAlert :size="22" />
-        <span>{{ error }}</span>
-        <button type="button" @click="loadAnnouncements">重新加载</button>
-      </div>
-      <div v-else-if="filteredAnnouncements.length === 0" class="state-box announcement-empty">
-        <Megaphone :size="28" :stroke-width="1.6" />
-        <span>当前分类暂无公告</span>
-      </div>
+      <UiState v-if="loading" type="loading" title="正在加载公告" />
+      <UiState
+        v-else-if="error"
+        type="error"
+        title="公告加载失败"
+        :description="error"
+        action-label="重新加载"
+        @action="loadAnnouncements"
+      />
+      <UiState
+        v-else-if="filteredAnnouncements.length === 0"
+        title="当前分类暂无公告"
+        description="后续发布的平台通知会显示在这里。"
+      />
       <div v-else class="announcement-list">
         <button
           v-for="item in filteredAnnouncements"
@@ -78,8 +80,9 @@
 import { useRefresh } from '../composables/pullRefresh'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { CalendarDays, CircleAlert, Megaphone, Pin } from '@lucide/vue'
+import { CalendarDays, Pin } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
+import UiState from '../components/UiState.vue'
 import { getAnnouncements } from '../api/notice'
 
 const route = useRoute()

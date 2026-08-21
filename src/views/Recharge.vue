@@ -6,6 +6,19 @@
       </div>
     </header>
 
+    <section v-if="pendingOrders.length" class="pending-payment-notice workspace-surface" role="status">
+      <strong>{{ pendingOrders.length === 1 ? '有一笔充值正在确认' : `有 ${pendingOrders.length} 笔充值正在确认` }}</strong>
+      <div class="pending-payment-list">
+        <div v-for="order in pendingOrders" :key="order.outTradeNo" class="pending-payment-item">
+          <span>{{ order.packageName || '充值订单' }} · ¥{{ formatYuan(order.amount) }}</span>
+          <div class="pending-payment-actions">
+            <button type="button" class="ghost-btn" @click="openPendingOrder(order)">查看状态</button>
+            <button type="button" class="text-btn" @click="abandonPendingOrder(order)">不再提醒</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="recharge-grid">
       <div class="work-card package-card workspace-surface">
         <div class="work-card-head compact-head workspace-section-head">
@@ -14,8 +27,20 @@
           </div>
         </div>
 
-        <div v-if="loading" class="state-box">正在加载充值套餐...</div>
-        <div v-else-if="!packages.length" class="state-box muted">暂无可用充值套餐</div>
+        <UiState v-if="loading" type="loading" title="正在加载充值套餐" />
+        <UiState
+          v-else-if="errorMsg && !packages.length"
+          type="error"
+          title="充值信息加载失败"
+          :description="errorMsg"
+          action-label="重新加载"
+          @action="loadPage"
+        />
+        <UiState
+          v-else-if="!packages.length"
+          title="暂无可用充值套餐"
+          description="请稍后重试或联系服务人员。"
+        />
         <div v-else class="package-list">
           <button
             v-for="item in packages"
@@ -93,9 +118,10 @@
     >
       <div class="qr-wrap">
         <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="支付二维码" />
-        <div v-else class="state-box">正在生成二维码...</div>
+        <div v-else class="state-box">正在确认本次支付结果</div>
       </div>
       <p class="polling-text">{{ pollingText }}</p>
+      <p class="polling-hint">可放心关闭此窗口，到账后会及时通知您。</p>
       <template #footer>
         <a v-if="payInfo" class="ghost-btn" :href="payInfo" target="_blank" rel="noreferrer">打开支付链接</a>
         <button class="primary-action small" type="button" @click="queryPayStatus">我已支付，刷新状态</button>
@@ -107,10 +133,21 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import QRCode from 'qrcode'
+import { toast } from 'vue-sonner'
 import AppModal from '../components/AppModal.vue'
+import UiState from '../components/UiState.vue'
 import { getUserBalance, getUserProfile } from '../api/user'
 import { getUserPackageList } from '../api/comboMeal'
-import { createEpayOrder, queryOrder } from '../api/pay'
+import { createEpayOrder } from '../api/pay'
+import { confirmAction } from '../utils/confirm'
+import {
+  checkPendingPaymentNow,
+  clearPendingPayment,
+  getPendingPayments,
+  savePendingPayment,
+  startPendingPaymentMonitor,
+  subscribePendingPayment
+} from '../utils/pendingPayment'
 
 const emit = defineEmits(['balance-updated'])
 
@@ -128,8 +165,8 @@ const payInfo = ref('')
 const outTradeNo = ref('')
 const currentOrderPayType = ref('')
 const pollingText = ref('等待扫码支付...')
-let timer = null
-let pollCount = 0
+const pendingOrders = ref([])
+let unsubscribePendingPayment = null
 
 const payMethods = [
   { id: 'alipay', name: '支付宝支付', tag: '推荐' },
@@ -217,6 +254,8 @@ async function loadPage() {
     if (!userId.value) throw new Error('未获取到用户信息，请重新登录')
 
     await refreshBalance()
+    pendingOrders.value = getPendingPayments(userId.value)
+    if (pendingOrders.value.length) startPendingPaymentMonitor(userId.value)
     const pkgRes = await getUserPackageList(userId.value)
     packages.value = extractPackages(pkgRes)
     selectedPackage.value = packages.value[0] || null
@@ -231,7 +270,7 @@ async function loadPage() {
 
 async function handleSubmit() {
   if (payType.value === 'bank') {
-    window.alert('请按页面展示的对公账户信息转账，并联系服务人员人工入账。')
+    toast.info('请按页面展示的对公账户信息转账，并联系服务人员人工入账。')
     return
   }
   if (!selectedPackage.value || !selectedPackage.value.payAmount) {
@@ -242,7 +281,6 @@ async function handleSubmit() {
     errorMsg.value = '未获取到用户信息，请重新登录'
     return
   }
-
   paying.value = true
   errorMsg.value = ''
   try {
@@ -261,8 +299,20 @@ async function handleSubmit() {
     currentOrderPayType.value = data.payType || backendPayType
     qrCodeUrl.value = await QRCode.toDataURL(data.payInfo, { width: 260, margin: 1, errorCorrectionLevel: 'M' })
     payDialogVisible.value = true
-    pollingText.value = '等待扫码支付...'
-    startPolling()
+    if (outTradeNo.value) {
+      savePendingPayment({
+        userId: userId.value,
+        outTradeNo: outTradeNo.value,
+        payType: currentOrderPayType.value,
+        packageName: selectedPackage.value.packageName || selectedPackage.value.name,
+        amount: selectedPackage.value.payAmount
+      })
+      pendingOrders.value = getPendingPayments(userId.value)
+      pollingText.value = '等待扫码支付...'
+      startPendingPaymentMonitor(userId.value)
+    } else {
+      pollingText.value = '本次支付暂不支持到账提醒。支付完成后，请在资金流水中查看。'
+    }
   } catch (error) {
     errorMsg.value = error.msg || error.message || '支付下单失败，请稍后重试'
   } finally {
@@ -270,59 +320,100 @@ async function handleSubmit() {
   }
 }
 
-function startPolling() {
-  stopPolling()
-  if (!outTradeNo.value) {
-    pollingText.value = '未返回订单号，请支付后手动刷新状态。'
-    return
-  }
-  pollCount = 0
-  timer = window.setInterval(queryPayStatus, 5000)
-}
-
 async function queryPayStatus() {
-  if (!outTradeNo.value) return
-  try {
-    pollCount += 1
-    pollingText.value = `正在确认支付结果...（第 ${pollCount} 次）`
-    const res = await queryOrder(outTradeNo.value)
-    const data = res.data || {}
-    if (data.status === true || data.status === 'true') {
-      stopPolling()
-      pollingText.value = '支付成功，正在刷新余额...'
-      await refreshBalance()
-      window.setTimeout(() => {
-        payDialogVisible.value = false
-      }, 1200)
-    } else if (pollCount >= 100) {
-      stopPolling()
-      pollingText.value = '长时间未确认支付结果，请稍后刷新余额或联系服务人员。'
-    }
-  } catch (error) {
-    pollingText.value = error.msg || error.message || '查询支付状态失败，可稍后手动刷新。'
-  }
+  if (!userId.value || !outTradeNo.value) return
+  await checkPendingPaymentNow(userId.value, outTradeNo.value)
 }
 
 function closePayDialog() {
   payDialogVisible.value = false
-  stopPolling()
 }
 
-function stopPolling() {
-  if (timer) {
-    window.clearInterval(timer)
-    timer = null
+function openPendingOrder(order) {
+  if (!order) return
+  outTradeNo.value = order.outTradeNo
+  currentOrderPayType.value = order.payType || 'alipay'
+  qrCodeUrl.value = ''
+  payInfo.value = ''
+  pollingText.value = '正在确认本次支付结果，请稍候...'
+  payDialogVisible.value = true
+  startPendingPaymentMonitor(userId.value)
+}
+
+async function abandonPendingOrder(order) {
+  if (!order) return
+  const confirmed = await confirmAction({
+    title: '不再提醒本次充值',
+    content: '关闭提醒后，将不再显示本次支付进度。已完成的支付不会受到影响，您仍可在资金流水中查看到账记录。',
+    confirmText: '不再提醒',
+    danger: true
+  })
+  if (!confirmed) return
+  clearPendingPayment(userId.value, order.outTradeNo)
+  pendingOrders.value = getPendingPayments(userId.value)
+  if (outTradeNo.value === order.outTradeNo) payDialogVisible.value = false
+  pollingText.value = '等待扫码支付...'
+}
+
+async function handlePendingPaymentEvent(event) {
+  if (!event?.payment || String(event.payment.userId) !== String(userId.value)) return
+  pendingOrders.value = getPendingPayments(userId.value)
+  const isCurrentOrder = event.payment.outTradeNo === outTradeNo.value
+  if (!isCurrentOrder) {
+    if (event.type === 'paid') await refreshBalance()
+    return
+  }
+  if (event.type === 'checking') {
+    pollingText.value = '正在确认支付结果，请稍候...'
+  } else if (event.type === 'pending') {
+    pollingText.value = '支付结果确认中，请稍候。'
+  } else if (event.type === 'error') {
+    pollingText.value = '支付结果确认稍有延迟，请稍后刷新，或前往资金流水查看。'
+  } else if (event.type === 'paid') {
+    pollingText.value = '充值成功，余额已更新。'
+    await refreshBalance()
+    window.setTimeout(() => {
+      payDialogVisible.value = false
+    }, 1200)
   }
 }
 
-onMounted(loadPage)
-onBeforeUnmount(stopPolling)
+onMounted(() => {
+  unsubscribePendingPayment = subscribePendingPayment(handlePendingPaymentEvent)
+  loadPage()
+})
+onBeforeUnmount(() => unsubscribePendingPayment?.())
 </script>
 
 <style scoped>
 
-@media (max-width: 760px) {
+.pending-payment-notice {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 15px 18px;
+  border: 1px solid #f1d39a;
+  border-radius: var(--radius);
+  background: #fffaf0;
+}
 
+.pending-payment-notice strong { color: var(--text); }
+.pending-payment-notice span { color: var(--muted); font-size: var(--fs-sm); }
+.pending-payment-list { display: grid; }
+.pending-payment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 46px;
+  border-top: 1px solid #f3dfb8;
+}
+.pending-payment-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.polling-hint { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-xs); text-align: center; }
+
+@media (max-width: 760px) {
+  .pending-payment-item { align-items: stretch; flex-direction: column; gap: 8px; padding: 12px 0; }
+  .pending-payment-actions > * { flex: 1; justify-content: center; }
 }
 
 @media (max-width: 900px) {

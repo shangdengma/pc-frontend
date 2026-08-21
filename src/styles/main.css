@@ -1154,15 +1154,21 @@ textarea:focus-visible {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
+  width: 100%;
+  max-width: 100%;
   gap: 6px;
 }
 
 .record-status-reason {
-  max-width: 300px;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   color: #b42318;
   font-size: var(--fs-xs);
-  line-height: 1.5;
-  white-space: normal;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ============================================================
@@ -3854,6 +3860,25 @@ textarea::placeholder {
   .records-table tbody td.actions-cell::before { margin-right: auto; }
 }
 
+/* 退款/失败原因只修正对齐，不改变记录卡原有结构。 */
+@media (max-width: 768px) {
+  .records-table .record-status-cell {
+    align-items: flex-end;
+    max-width: calc(100% - 58px);
+    text-align: right;
+  }
+
+  .records-table .record-status-reason {
+    display: -webkit-box;
+    width: auto;
+    max-width: 240px;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
 /* ============================================================
    查询记录工具栏：控件对齐
    原状态：输入框/下拉 40px 圆角 6px，「查询」按钮 38px 圆角 8px，
@@ -4046,38 +4071,7 @@ textarea::placeholder {
   gap: 7px;
 }
 
-.records-toast {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  z-index: 1100;
-  max-width: min(520px, calc(100vw - 32px));
-  padding: 11px 16px;
-  border: 1px solid #bfdbfe;
-  border-radius: var(--radius);
-  color: #175cd3;
-  background: #eff6ff;
-  box-shadow: 0 12px 30px rgba(23, 32, 51, .16);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  line-height: 1.5;
-  transform: translateX(-50%);
-}
-
-.records-toast.success {
-  border-color: #abefc6;
-  color: #027a48;
-  background: var(--green-soft);
-}
-
-.records-toast.error {
-  border-color: #fee4e2;
-  color: #b42318;
-  background: var(--red-soft);
-}
-
 @media (max-width: 640px) {
   .fallback-link-dialog { padding: 18px; }
   .fallback-link-actions > * { flex: 1; justify-content: center; }
-  .records-toast { top: 14px; }
 }

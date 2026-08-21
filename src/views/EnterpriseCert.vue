@@ -6,9 +6,18 @@
       </div>
     </header>
 
-    <div v-if="!initialized" class="work-card cert-initial-loading" role="status" aria-live="polite">
-      <span class="cert-loading-spinner" aria-hidden="true"></span>
-      <span>正在加载企业认证信息...</span>
+    <div v-if="!initialized" class="work-card workspace-surface">
+      <UiState type="loading" title="正在加载企业认证信息" />
+    </div>
+
+    <div v-else-if="listLoadError" class="work-card workspace-surface">
+      <UiState
+        type="error"
+        title="企业认证信息加载失败"
+        :description="listLoadError"
+        action-label="重新加载"
+        @action="retryLoadList"
+      />
     </div>
 
     <div v-else class="cert-layout">
@@ -134,6 +143,8 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import CertFormBody from './components/CertFormBody.vue'
 import { BadgeCheck, Building2, CircleX, Clock3, FilePenLine, ShieldCheck } from '@lucide/vue'
 import AppModal from '../components/AppModal.vue'
+import UiState from '../components/UiState.vue'
+import { confirmAction } from '../utils/confirm'
 import { getUserProfile } from '../api/user'
 import { getUser, setUser } from '../utils/auth'
 import {
@@ -157,6 +168,7 @@ const STATUS_MAP = {
 
 const loading = ref(false)
 const initialized = ref(false)
+const listLoadError = ref('')
 const detailLoading = ref(false)
 const saving = ref(false)
 const uploading = ref(false)
@@ -277,13 +289,24 @@ function resetForm() {
 
 async function loadList() {
   loading.value = true
+  listLoadError.value = ''
   try {
     const res = await getMyEnterpriseCertList()
-    certList.value = (Array.isArray(res.data) ? res.data : []).filter(Boolean)
+    const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.rows) ? res.rows : [])
+    certList.value = list.filter(Boolean)
   } catch (error) {
-    certList.value = []
+    listLoadError.value = error?.msg || error?.message || '认证信息暂时无法获取，请稍后重试'
   } finally {
     loading.value = false
+  }
+}
+
+async function retryLoadList() {
+  initialized.value = false
+  try {
+    await loadList()
+  } finally {
+    initialized.value = true
   }
 }
 
@@ -424,7 +447,13 @@ async function removeLocalFile(file) {
     return
   }
   if (file.id) {
-    if (!window.confirm('确定删除该附件？')) return
+    const confirmed = await confirmAction({
+      title: '删除营业执照附件',
+      content: '删除后需要重新上传营业执照才能提交认证。',
+      confirmText: '确认删除',
+      danger: true
+    })
+    if (!confirmed) return
     try { await deleteEnterpriseCertFile(file.id) } catch (error) {
       errorMsg.value = error?.msg || error?.message || '删除附件失败，请稍后重试'
       return
@@ -512,7 +541,12 @@ async function submitAudit() {
     errorMsg.value = validationError
     return
   }
-  if (!window.confirm('提交后将无法修改，确认提交审核？')) return
+  const confirmed = await confirmAction({
+    title: '提交企业认证审核',
+    content: '提交后当前资料将进入审核流程，审核完成前无法修改。请确认企业名称、统一社会信用代码和营业执照均准确无误。',
+    confirmText: '确认提交'
+  })
+  if (!confirmed) return
 
   saving.value = true
   try {
